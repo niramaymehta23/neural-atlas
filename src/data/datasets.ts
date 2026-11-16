@@ -17,6 +17,8 @@ export type DatasetOptions = {
   seed?: number;
   /** Groups, for blobs and spiral (2–3); the others always have two. */
   classes?: number;
+  /** How far each spiral arm winds, in radians (a full turn is about 6.3). */
+  spin?: number;
 };
 
 type Generator = (
@@ -24,7 +26,10 @@ type Generator = (
   label: number,
   classes: number,
   random: Random,
+  spin: number,
 ) => [number, number];
+
+const SPIN = 3.5;
 
 const GENERATORS: Record<DatasetName, Generator> = {
   blobs: (_index, label, classes, random) => {
@@ -40,9 +45,9 @@ const GENERATORS: Record<DatasetName, Generator> = {
       ? [0.6 * Math.cos(t) - 0.25, 0.6 * Math.sin(t) - 0.15]
       : [0.6 - 0.6 * Math.cos(t) - 0.35, 0.15 - 0.6 * Math.sin(t)];
   },
-  spiral: (_index, label, classes, random) => {
+  spiral: (_index, label, classes, random, spin) => {
     const t = random.next();
-    const angle = t * 3.5 + (label / classes) * Math.PI * 2;
+    const angle = t * spin + (label / classes) * Math.PI * 2;
     return [0.9 * t * Math.cos(angle), 0.9 * t * Math.sin(angle)];
   },
   xor: (_index, label, _classes, random) => {
@@ -63,13 +68,13 @@ const MULTI_CLASS: readonly DatasetName[] = ["blobs", "spiral"];
 
 export function makeDataset(
   name: DatasetName,
-  { count = 200, noise = 0.05, seed = 1, classes = 2 }: DatasetOptions = {},
+  { count = 200, noise = 0.05, seed = 1, classes = 2, spin = SPIN }: DatasetOptions = {},
 ): Point[] {
   const random = createRandom(seed);
   const groups = MULTI_CLASS.includes(name) ? Math.min(3, Math.max(2, classes)) : 2;
   return Array.from({ length: count }, (_, index) => {
     const label = index % groups;
-    const [x, y] = GENERATORS[name](index, label, groups, random);
+    const [x, y] = GENERATORS[name](index, label, groups, random, spin);
     const clamp = (value: number) => Math.min(1, Math.max(-1, value));
     return { x: clamp(x + random.normal() * noise), y: clamp(y + random.normal() * noise), label };
   });

@@ -27,6 +27,8 @@ export const world3: WorldEntry = {
       idea: "Layers of cells combine simple bends into any shape",
       playWith: "Draw your own dots and add layers",
       prerequisites: ["the-decision-curve"],
+      load: () =>
+        import("@/modules/w3-neural-networks/stacking-cells").then(({ definition }) => definition),
     },
     {
       id: "thinking-forwards",

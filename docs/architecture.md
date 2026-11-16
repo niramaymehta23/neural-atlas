@@ -225,3 +225,34 @@ fetched cross-origin at runtime.
 - **Evidence page**: `/styleguide/platform` runs the fixture lesson (`platform/fixture/`) in the real shell;
   `e2e/platform.spec.ts` covers layout, phone stacking, scrubbing, mission + star after reload, snapshot restore,
   companion persistence, locked page, palette and puzzle.
+
+## Headline lessons hand-over (from stage 05)
+
+- **The four lessons**: `w1-foundations/rolling-downhill` (gradient descent), `w3-neural-networks/stacking-cells`
+  (MLP), `w5-transformers/who-is-looking-at-whom` (attention) and `w6-reinforcement/scoring-every-move`
+  (Q-learning). Each is `model.ts` (pure state, frames, run logic), `captions.ts`, `missions.ts`,
+  `predictions.ts`, `scene.tsx`, `controls.tsx`, `drawer.tsx`, `index.ts`. Copy their shape for later lessons.
+- **Where the work runs**: walkers and the gridworld simulate on the main thread (cheap, deterministic, replayable
+  from state); stacking-cells trains in the `ModelEngine` worker and redraws its field on the main thread with
+  `createFieldReader` (`engine/model/forward.ts`) from `readLive` parameters; attention runs in its own worker.
+- **Replaying links**: each lesson keeps a progress counter in state (`runs`, `epochs`, `episodes`) and rebuilds
+  its run from it with the same seed. Links replay with the final dots or board, not the edit history.
+- **Gridworld** (`engine/rl/`): `gridworld.ts` (tiles floor/wall/goal/trap/coin, `step` slips sideways with
+  `SLIP = 0.1`, which is what keeps a too-fast learner from settling) and `q-learning.ts` (`createQRunner(world,
+  settings, seed)` → `advance(moves)` returns finished episodes; how moves are chunked never changes the run;
+  `Episode.jump` is the mean score change per move, the "still jumping about" measure).
+- **Pretrained reader** (`engine/pretrained/`): `attentionReader()` is a shared lazy worker client that remembers
+  32 sentences. The model is `sentence-transformers/all-MiniLM-L6-v2` (Apache-2.0, 22.7 M parameters, 6 layers × 12
+  heads), exported by `scripts/export-attention-model.py` with one `attentions` output and int8 per-channel
+  quantisation: 21.4 MB in `public/models/attention-minilm/` (its README has the details). The ONNX runtime files
+  are copied into `public/models/ort/` (gitignored) by `scripts/copy-runtime.ts` before `dev` and `build`.
+  `env.localModelPath` must stay root-relative (`/models/`): Transformers.js 4 skips its local-file check for a full
+  URL and then fails with "reading 'tokenizer_class'". No request leaves the site, as COEP requires.
+- **Shared additions**: `LossLandscape` gained marker tones, `trails` and `onPick`; `Board` gained `floorTones`,
+  `overlay` and `onPaint` (pointer drag or arrows + Enter); encodings gained the `coin` tile and `valueTone`;
+  DataKit generators take an optional `spin` (the stacking-cells spiral uses 9 so one cell cannot fit it).
+- **Evidence**: `e2e/headline.spec.ts` has a smoke test per lesson (story first, real name held back, no console
+  errors, no cross-origin requests), the fly-off mission, 60 fps while the boundary morphs, threads within 3 s after
+  a cached reload plus drag re-routing, and painting mid-practice plus the too-fast mission. The stability bound and
+  the 50-episode re-plan are unit tests (`rolling-downhill/model.test.ts`, `engine/rl/gridworld.test.ts`).
+  `e2e/frames.ts` holds the shared frame-timing helpers.

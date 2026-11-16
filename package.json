@@ -7,8 +7,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "tsx scripts/copy-runtime.ts && next dev",
+    "build": "tsx scripts/copy-runtime.ts && next build",
     "serve": "tsx scripts/serve-static.ts",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
@@ -19,6 +19,7 @@
     "check-captions": "tsx scripts/check-captions.ts"
   },
   "dependencies": {
+    "@huggingface/transformers": "4.3.2",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "@tensorflow/tfjs": "4.22.0",

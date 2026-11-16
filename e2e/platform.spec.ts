@@ -139,15 +139,13 @@ test("the companion model survives navigation and reload", async ({ page }) => {
 });
 
 test("an unbuilt lesson shows its locked page", async ({ page }) => {
-  await page.goto("/learn/rolling-downhill");
-  await expect(page.getByRole("heading", { name: "Rolling downhill" })).toBeVisible();
+  await page.goto("/learn/keeping-score-of-mistakes");
+  await expect(page.getByRole("heading", { name: "Keeping score of mistakes" })).toBeVisible();
   await expect(page.getByText("Still being drawn")).toBeVisible();
-  await expect(
-    page.getByText("Learning is walking downhill in a valley of mistakes"),
-  ).toBeVisible();
-  await expect(page.getByText("Gradient descent")).toHaveCount(0);
-  await page.getByRole("link", { name: "Keeping score of mistakes" }).click();
-  await expect(page).toHaveURL(/\/learn\/keeping-score-of-mistakes$/);
+  await expect(page.getByText('One score for "how wrong"')).toBeVisible();
+  await expect(page.getByText("Loss function")).toHaveCount(0);
+  await page.getByRole("link", { name: "Drawing the best line" }).click();
+  await expect(page).toHaveURL(/\/learn\/drawing-the-best-line$/);
 });
 
 test("the palette jumps to a lesson by its real term", async ({ page }) => {
@@ -158,9 +156,7 @@ test("the palette jumps to a lesson by its real term", async ({ page }) => {
   await expect(page).toHaveURL(/\/learn\/who-is-looking-at-whom$/);
 });
 
-test("the daily puzzle picks today's mission, and waits while no lesson is built", async ({
-  page,
-}) => {
+test("the daily puzzle picks today's mission from a built lesson", async ({ page }) => {
   await openFixture(page);
   const puzzle = page.getByTestId("fixture-puzzle");
   await expect(puzzle.getByText("Take steps so big the ball flies off")).toBeVisible();
@@ -170,5 +166,11 @@ test("the daily puzzle picks today's mission, and waits while no lesson is built
   );
 
   await page.goto("/puzzle");
-  await expect(page.getByText("The first puzzle arrives with the first lessons.")).toBeVisible();
+  const link = page.getByRole("link", { name: "Try it" });
+  await expect(link).toHaveAttribute(
+    "href",
+    /^\/learn\/(rolling-downhill|stacking-cells|who-is-looking-at-whom|scoring-every-move)#mission=/,
+  );
+  await link.click();
+  await expect(page.locator("[data-region=scene]")).toBeVisible();
 });

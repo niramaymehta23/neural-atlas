@@ -11,3 +11,5 @@ test-results/
 next-env.d.ts
 docs/*/implementation/
 .claude/
+# Copied from node_modules by scripts/copy-runtime.ts
+public/models/ort/

@@ -51,6 +51,8 @@ export const world1: WorldEntry = {
       idea: "Learning is walking downhill in a valley of mistakes",
       playWith: "Balls racing down the valley",
       prerequisites: ["keeping-score-of-mistakes"],
+      load: () =>
+        import("@/modules/w1-foundations/rolling-downhill").then(({ definition }) => definition),
     },
     {
       id: "memorising-vs-understanding",
