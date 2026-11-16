@@ -1,12 +1,12 @@
 # Neural Atlas — Architecture and Code Conventions
 
 Shared facts every split spec links to. Source: [requirements.md](requirements.md).
-The repository root (`visualML/`) is the app; the package is named `neural-atlas`.
+The repository root (`neural-atlas/`) is the app.
 
 ## Directory layout
 
 ```text
-visualML/
+neural-atlas/
 ├── docs/                         requirements, this file, split specs (NN-name/spec.md)
 ├── public/
 │   ├── models/                   self-hosted pretrained weights, lazy-loaded per module
