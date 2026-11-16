@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { fontVariables } from "@/design/fonts";
 import { themeInitScript } from "@/design/theme";
+import { CatalogPalette } from "./CatalogPalette";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <CatalogPalette />
+      </body>
     </html>
   );
 }

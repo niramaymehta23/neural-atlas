@@ -1,3 +1,4 @@
+import { uiCaptions } from "../captions";
 type RobotProps = {
   className?: string;
   /** Accessible name; the robot is the learner the stories follow. */
@@ -8,7 +9,7 @@ type RobotProps = {
  * The robot learner, cut from paper: flat shapes with slightly uneven edges, a darker paper layer
  * peeking out behind for depth, and no glow.
  */
-export function Robot({ className = "size-40", title = "Robot learner" }: RobotProps) {
+export function Robot({ className = "size-40", title = uiCaptions.robot }: RobotProps) {
   return (
     <svg viewBox="0 0 160 160" role="img" aria-label={title} className={className}>
       {/* Back layer: the same silhouette, nudged, reads as a second sheet of paper. */}

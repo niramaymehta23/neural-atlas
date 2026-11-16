@@ -1,0 +1,35 @@
+/** Every learner-facing word in the platform's own screens, here so check-captions can read them. */
+export const platformCaptions = {
+  loading: "Setting the scene…",
+  share: "Copy a link to this view",
+  shared: "Link copied. Whoever opens it sees exactly this.",
+  dials: "Dials",
+  scene: "The scene",
+  compare: "Compare side by side",
+  replay: "Watch why it happened",
+  nextMission: "On to the next mission",
+  star: "You earned a star.",
+  prediction: {
+    label: "Make a guess",
+    reveal: "Show me what happens",
+    waiting: "Play a little more, then look.",
+    guessed: (guess: string) => `You guessed: ${guess}`,
+    happened: (answer: string) => `What happened: ${answer}`,
+    right: "Spot on.",
+    wrong: "Not this time, and now you know why.",
+    next: "On to the next guess",
+  },
+  locked: {
+    badge: "Still being drawn",
+    note: "This lesson isn’t ready yet. Come back soon.",
+    playWith: "You will get to play with",
+    first: "Good to try first",
+    home: "Back to the map",
+  },
+  puzzle: {
+    title: "Today’s puzzle",
+    note: "One break-it mission a day, the same for everyone.",
+    empty: "The first puzzle arrives with the first lessons.",
+    go: "Try it",
+  },
+};

@@ -140,8 +140,9 @@ fetched cross-origin at runtime.
 - Colour, font, easing and spring literals are lint-banned outside `src/design`; use token classes
   (`bg-paper`, `text-ink`, `bg-accent`) or `var(--…)`. Motion via `useSpring` / `useReducedMotion` from
   `src/design/motion.ts`; tests mock with `mockReducedMotion`.
-- `check-captions` reads module `captions.ts` / `missions.ts` and `src/catalog/*.ts`, skipping keys `id`,
-  `realTerm`, `term`, `prerequisites`, `world`. CI needs the `GEMINI_API_KEY` secret once real captions exist.
+- `check-captions` reads module `captions.ts` / `missions.ts` / `predictions.ts`, `src/catalog/*.ts`,
+  `src/ui/captions.ts` and `src/platform/captions.ts`, skipping keys `id`, `realTerm`, `term`, `prerequisites`,
+  `world` and the code keys `load`, `when`, `answer`. CI needs the `GEMINI_API_KEY` secret.
 
 ## Engines hand-over (from stage 02)
 
@@ -177,3 +178,50 @@ fetched cross-origin at runtime.
   wiggling edges, saves a Chrome trace to `test-results/engines-training-trace.json`, and checks field redraws
   stay under 16 ms.
 
+
+## Platform hand-over (from stage 03)
+
+- **Contract** (`platform/contract.ts`): a module's `index.ts` does
+  `export const definition = defineModule<State>({ initialState, scene, controls, captions, missions, predictions,
+  underTheHood?, compare?, trains? })`. `State` is a `type` (not an `interface`) of plain JSON data; it is the
+  snapshot body, so keep derived values out of it. Scene, controls and drawer get `{ state, update, timeline, side }`;
+  the first `update` counts as the learner's first touch. A training module records its `ModelEngine` snapshots
+  into `timeline` (frames need `epoch` and `loss`) and sets `trains: true`. `missions` and `predictions` each need at
+  least one entry (mastery needs both).
+- **Compare split**: shown when both `compare(state) → alternative state` and `captions.compare` exist. The right
+  half gets `side: "alternative"`, a no-op `update` and a private timeline, so it must not drive the learner's run.
+- **Snapshot moment**: a snapshot carries state, guesses, first touch and the timeline position, not frames. A
+  training scene must rebuild its recorded frames from state (same seed, same run) after mount; the shell seeks to
+  the saved moment as soon as it has been recorded.
+- **Words**: `captions.ts` exports `{ opening, story, compare? }` for the shell plus every other learner-facing
+  word the module shows (dial names, `describe` words, buttons, scene labels, drawer text); check-captions reads all
+  of its exports. `missions.ts`: `{ id, goal, hint?, success, replay: { before, after }, when(state, newestFrame) }`;
+  `predictions.ts`: `{ id, question, choices: { id, label }[], answer(state, frame) → choice id | null }` (null keeps
+  the reveal waiting; the answer at the reveal is stored with the guess). `platform/fixture/` is the worked example.
+- **Catalog**: to switch a lesson on, add to its entry in `catalog/world-N.ts`
+  `load: () => import("@/modules/<world>/<id>").then(({ definition }) => definition)`. Ids are everyday slugs
+  (`rolling-downhill`); `/learn/[id]` is static for all 74, and an entry without `load` shows the locked page.
+  `lessons` (curriculum order, with `world`), `worlds` and `lessonById` come from `@/catalog`. Prerequisites were
+  authored in stage 03 (v2 lists none); RLHF needs "Treats and tricks", which is how RL joins the language world.
+- **Shell behaviour**: story caption after the first touch; the real term (`TermTag`) once any mission is done.
+  The mission card shows the daily puzzle's mission (`#mission=<id>`), else the one that just fired (with why and
+  its replay, then "next mission"), else the first unfinished one. Predictions work the same way, one at a time.
+  The timeline shows only when `trains`. A replay plays `before` moments before the one the mission fired on to
+  `after` after it; the window is kept as epochs, so it survives the ring buffer dropping old frames.
+- **Progress** (`platform/progress`): IndexedDB key `progress-v1`; `useProgress(selector)`, `isMastered`,
+  `starCount`, `nextSuggested(lessons, progress)` = first unmastered lesson in curriculum order whose built
+  prerequisites are all mastered (an unbuilt one cannot hold others back), built lessons first, null when all are
+  mastered. Home (stage 04) should use these.
+- **Companion** (`platform/companion`): `useCompanion(selector)`, `companionStore.update({ hidden, activation,
+  convolution })`, `reset()`; IndexedDB key `companion-v1`. Persisted writes wait for hydration and apply to the
+  freshly saved value, so two tabs do not erase each other's changes (an open tab only sees them after a reload).
+- **Snapshots**: `#s=<base64url deflate-raw JSON>` with `v: 1`; other versions, other lessons and links over 32k
+  characters are ignored. Bump the version (and keep a reader for the old one) if a module changes its state shape
+  incompatibly. Restore happens when the lesson opens; changing only the hash of an open lesson does nothing.
+- **Puzzle**: `pickDaily(key, items)` is FNV-1a + `createRandom`; the lesson pick uses the local date
+  `YYYY-MM-DD`, the mission pick `date/lessonId`. `/puzzle` waits until a lesson is built.
+- **Palette**: the root layout mounts the catalog-fed `CommandPalette` (search by everyday name or real term) on
+  every page; do not mount a second one.
+- **Evidence page**: `/styleguide/platform` runs the fixture lesson (`platform/fixture/`) in the real shell;
+  `e2e/platform.spec.ts` covers layout, phone stacking, scrubbing, mission + star after reload, snapshot restore,
+  companion persistence, locked page, palette and puzzle.

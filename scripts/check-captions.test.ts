@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { collectStrings, main } from "./check-captions";
+import { collectStrings, defaultFiles, main } from "./check-captions";
 
 const FIXTURE = "scripts/fixtures/jargon-captions.ts";
 
@@ -80,6 +80,46 @@ describe("check-captions", () => {
       caption: "  You nudged it.  ",
     });
     expect(strings).toEqual(["A tiny voter", "One dot decides.", "You nudged it."]);
+  });
+
+  it("never runs code held under load, when or answer", () => {
+    const code = vi.fn(() => "Should not be read.");
+    const strings = collectStrings({
+      lessons: [{ title: "Rolling downhill", load: code }],
+      missions: [{ goal: "Make it fly off", when: code }],
+      predictions: [{ question: "Where will it stop?", answer: code }],
+    });
+    expect(strings).toEqual(["Rolling downhill", "Make it fly off", "Where will it stop?"]);
+    expect(code).not.toHaveBeenCalled();
+  });
+
+  it("reads the catalog and the ui and platform captions by default", async () => {
+    const files = await defaultFiles();
+    expect(files).toEqual(
+      expect.arrayContaining([
+        "src/catalog/world-1.ts",
+        "src/ui/captions.ts",
+        "src/platform/captions.ts",
+      ]),
+    );
+    expect(files.some((file) => file.endsWith(".test.ts"))).toBe(false);
+  });
+
+  it("reads catalog titles and ideas but not real terms or slugs", async () => {
+    const strings = collectStrings((await import("../src/catalog")).worlds);
+    expect(strings).toContain("Rolling downhill");
+    expect(strings).toContain("Learning is walking downhill in a valley of mistakes");
+    expect(strings).toContain("Learning from examples");
+    expect(strings).not.toContain("Gradient descent");
+    expect(strings).not.toContain("rolling-downhill");
+  });
+
+  it("finds the ui words", async () => {
+    const { uiCaptions } = await import("../src/ui/captions");
+    const strings = collectStrings(uiCaptions);
+    expect(strings).toEqual(
+      expect.arrayContaining(["Peek under the hood", "Moment a few of a few"]),
+    );
   });
 
   it("rates templated captions with a stand-in value", () => {

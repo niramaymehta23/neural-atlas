@@ -21,6 +21,12 @@ export default function StyleguidePage() {
           >
             Engines
           </a>
+          <a
+            href="/styleguide/platform"
+            className="text-sm text-accent underline-offset-4 hover:underline"
+          >
+            Platform
+          </a>
           <ThemeSwitch />
         </div>
       </header>

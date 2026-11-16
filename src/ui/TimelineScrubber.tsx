@@ -3,6 +3,7 @@
 import { Slider as RadixSlider } from "radix-ui";
 import { count } from "@/design/copy";
 import { extent, linePath } from "@/design/encodings";
+import { uiCaptions } from "./captions";
 
 type TimelineScrubberProps = {
   /** Recorded moments so far. */
@@ -24,7 +25,7 @@ type TimelineScrubberProps = {
 const SPARK = { width: 400, height: 36 };
 
 const momentWords = (position: number, length: number) =>
-  `Moment ${count(position + 1)} of ${count(length)}`;
+  uiCaptions.timeline.moment(count(position + 1), count(length));
 
 const BUTTON =
   "grid size-9 shrink-0 place-items-center rounded-pill border border-hairline bg-paper text-ink transition-colors duration-200 ease-settle hover:bg-card disabled:opacity-40";
@@ -56,7 +57,7 @@ export function TimelineScrubber({
       <button
         type="button"
         className={BUTTON}
-        aria-label="Back one moment"
+        aria-label={uiCaptions.timeline.back}
         disabled={empty || position <= 0}
         onClick={() => seek(position - 1)}
       >
@@ -65,7 +66,7 @@ export function TimelineScrubber({
       <button
         type="button"
         className={BUTTON}
-        aria-label={playing ? "Pause" : "Play"}
+        aria-label={playing ? uiCaptions.timeline.pause : uiCaptions.timeline.play}
         disabled={empty}
         onClick={onPlayToggle}
       >
@@ -74,7 +75,7 @@ export function TimelineScrubber({
       <button
         type="button"
         className={BUTTON}
-        aria-label="Forward one moment"
+        aria-label={uiCaptions.timeline.forward}
         disabled={empty || position >= last}
         onClick={() => seek(position + 1)}
       >
@@ -118,8 +119,8 @@ export function TimelineScrubber({
           <RadixSlider.Range className="absolute h-full rounded-pill bg-ink-soft" />
         </RadixSlider.Track>
         <RadixSlider.Thumb
-          aria-label="Moment"
-          aria-valuetext={empty ? "Nothing recorded yet" : describe(position, length)}
+          aria-label={uiCaptions.timeline.track}
+          aria-valuetext={empty ? uiCaptions.timeline.empty : describe(position, length)}
           className="block h-10 w-1.5 cursor-grab rounded-pill bg-accent active:cursor-grabbing"
         />
       </RadixSlider.Root>

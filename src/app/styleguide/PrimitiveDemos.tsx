@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { count, outOf } from "@/design/copy";
-import { CommandPalette } from "@/ui/CommandPalette";
 import { CompareSplit } from "@/ui/CompareSplit";
 import { Dial } from "@/ui/Dial";
 import { HoverNote } from "@/ui/HoverNote";
@@ -22,11 +21,6 @@ const SHAPES = [
   { value: "pointy", label: "Pointy" },
   { value: "wobbly", label: "Wobbly" },
 ] as const;
-const PALETTE_ITEMS = [
-  { id: "neuron", label: "A tiny voter", hint: "one neuron" },
-  { id: "downhill", label: "Rolling downhill", hint: "learning step by step" },
-  { id: "attention", label: "Who listens to whom", hint: "attention" },
-];
 
 function stepWords(value: number): string {
   return `a ${STEP_WORDS[Math.min(STEP_WORDS.length - 1, Math.floor(value * STEP_WORDS.length))]} step`;
@@ -54,7 +48,6 @@ export function PrimitiveDemos() {
   const [shape, setShape] = useState<(typeof SHAPES)[number]["value"]>("round");
   const [touched, setTouched] = useState(false);
   const [missionDone, setMissionDone] = useState(false);
-  const [jumpedTo, setJumpedTo] = useState<string | null>(null);
 
   return (
     <>
@@ -146,12 +139,9 @@ export function PrimitiveDemos() {
 
       <Section
         title="CommandPalette"
-        note="Press Ctrl K (⌘ K on a Mac) anywhere, or use the button."
+        note="It lives on every page, fed by the catalog: press Ctrl K (⌘ K on a Mac) or use the button in the corner, then type an everyday name or a real term."
       >
-        <div className="flex flex-wrap items-center gap-4">
-          <CommandPalette items={PALETTE_ITEMS} onSelect={setJumpedTo} />
-          {jumpedTo && <p className="text-sm text-ink-soft">You picked “{jumpedTo}”.</p>}
-        </div>
+        <p className="text-sm text-ink-soft">Try “downhill” or “attention”.</p>
       </Section>
 
       <Section

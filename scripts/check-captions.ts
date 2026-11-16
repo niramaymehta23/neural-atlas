@@ -3,16 +3,36 @@
  * learner-facing string, and fails on any "no".
  *
  * Usage: pnpm check-captions [--file path/to/strings.ts ...]
- * Without --file it checks every module's captions.ts and missions.ts, and the catalog.
+ * Without --file it checks every module's captions.ts, missions.ts and predictions.ts, the
+ * catalog, and the ui and platform captions.
  * Without GEMINI_API_KEY it warns and passes locally, but fails in CI (where CI is set).
  */
 import { glob } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const SOURCES = ["src/modules/*/*/captions.ts", "src/modules/*/*/missions.ts", "src/catalog/*.ts"];
-/** Values under these keys are identifiers or deliberate real terms, not plain-language copy. */
-const NOT_FOR_LEARNERS = new Set(["id", "realTerm", "term", "prerequisites", "world"]);
+const SOURCES = [
+  "src/modules/*/*/captions.ts",
+  "src/modules/*/*/missions.ts",
+  "src/modules/*/*/predictions.ts",
+  "src/catalog/*.ts",
+  "src/ui/captions.ts",
+  "src/platform/captions.ts",
+];
+/**
+ * Values under these keys are identifiers, deliberate real terms or code (lazy loaders, mission
+ * and prediction checks), not plain-language copy.
+ */
+const NOT_FOR_LEARNERS = new Set([
+  "id",
+  "realTerm",
+  "term",
+  "prerequisites",
+  "world",
+  "load",
+  "when",
+  "answer",
+]);
 const BATCH_SIZE = 40;
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
@@ -40,7 +60,7 @@ async function stringsFrom(files: string[]): Promise<string[]> {
   return [...new Set(modules.flatMap((exports: unknown) => collectStrings(exports)))];
 }
 
-async function defaultFiles(): Promise<string[]> {
+export async function defaultFiles(): Promise<string[]> {
   const found: string[] = [];
   for (const pattern of SOURCES) for await (const file of glob(pattern)) found.push(file);
   return found.filter((file) => !file.endsWith(".test.ts")).sort();

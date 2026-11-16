@@ -1,0 +1,74 @@
+import { Timeline } from "@/engine/timeline/timeline";
+import type { Mission, TimelineFrame } from "../contract";
+import { advanceReplay, createMissionWatcher, replayWindow, startReplay } from "./missions";
+
+type State = { step: number };
+const flyOff: Mission<State> = {
+  id: "fly-off",
+  goal: "Take steps so big the ball flies off",
+  success: "Each step jumped right over the valley.",
+  replay: { before: 10, after: 5 },
+  when: ({ step }) => step > 0.8,
+};
+
+describe("missions", () => {
+  it("fires a mission once, however long its predicate holds", () => {
+    const check = createMissionWatcher([flyOff]);
+    expect(check({ step: 0.2 }, undefined)).toEqual([]);
+    expect(check({ step: 0.9 }, undefined)).toEqual([flyOff]);
+    expect(check({ step: 0.95 }, undefined)).toEqual([]);
+    expect(check({ step: 0.1 }, undefined)).toEqual([]);
+    expect(check({ step: 0.9 }, undefined)).toEqual([]);
+  });
+
+  it("does not fire a mission finished in an earlier visit", () => {
+    const check = createMissionWatcher([flyOff]);
+    expect(check({ step: 0.9 }, undefined, new Set(["fly-off"]))).toEqual([]);
+  });
+
+  it("hands the newest moment to the predicate", () => {
+    const when = vi.fn(() => false);
+    createMissionWatcher([{ ...flyOff, when }])({ step: 0 }, { epoch: 3, loss: 9 });
+    expect(when).toHaveBeenCalledWith({ step: 0 }, { epoch: 3, loss: 9 });
+  });
+
+  it("replays exactly the window around the moment it fired", () => {
+    const timeline = new Timeline<TimelineFrame>({ framesPerSecond: 10 });
+    for (let epoch = 0; epoch < 50; epoch += 1) timeline.record({ epoch: epoch * 2, loss: 1 });
+    const window = replayWindow(timeline, 30, flyOff.replay);
+    expect(window).toEqual({ fromEpoch: 40, atEpoch: 60, after: 5 });
+
+    expect(startReplay(timeline, window!)).toBe(true);
+    const seen = [timeline.getState().cursor];
+    while (advanceReplay(timeline, window!, 0.1)) seen.push(timeline.getState().cursor);
+    seen.push(timeline.getState().cursor);
+    expect(seen[0]).toBe(20);
+    expect(seen.at(-1)).toBe(35);
+    expect(new Set(seen)).toEqual(new Set(Array.from({ length: 16 }, (_, i) => 20 + i)));
+    expect(timeline.getState()).toMatchObject({ cursor: 35, playing: false, live: false });
+  });
+
+  it("keeps its window when the timeline drops old frames", () => {
+    const timeline = new Timeline<TimelineFrame>({ capacity: 5 });
+    for (let epoch = 0; epoch < 5; epoch += 1) timeline.record({ epoch, loss: 1 });
+    const window = replayWindow(timeline, 4, { before: 2, after: 0 })!;
+    for (let epoch = 5; epoch < 8; epoch += 1) timeline.record({ epoch, loss: 1 });
+    expect(startReplay(timeline, window)).toBe(true);
+    const epochs = [timeline.current()?.epoch];
+    while (advanceReplay(timeline, window, 1)) epochs.push(timeline.current()?.epoch);
+    epochs.push(timeline.current()?.epoch);
+    expect(epochs[0]).toBe(3); // epoch 2 has dropped off; the oldest kept frame stands in
+    expect(epochs.at(-1)).toBe(4);
+  });
+
+  it("clamps the window to what is recorded", () => {
+    const timeline = new Timeline<TimelineFrame>();
+    for (let epoch = 0; epoch < 4; epoch += 1) timeline.record({ epoch, loss: 1 });
+    const window = replayWindow(timeline, 1, flyOff.replay)!;
+    expect(window).toEqual({ fromEpoch: 0, atEpoch: 1, after: 5 });
+    expect(startReplay(timeline, window)).toBe(true);
+    while (advanceReplay(timeline, window, 1));
+    expect(timeline.getState().cursor).toBe(3);
+    expect(replayWindow(new Timeline<TimelineFrame>(), -1, flyOff.replay)).toBeNull();
+  });
+});
