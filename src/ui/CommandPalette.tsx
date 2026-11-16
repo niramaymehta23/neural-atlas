@@ -5,6 +5,7 @@ import { Command } from "cmdk";
 import { motion } from "motion/react";
 import { Dialog } from "radix-ui";
 import { useReducedMotion, useSpring } from "@/design/motion";
+import { uiCaptions } from "./captions";
 
 export type PaletteItem = { id: string; label: string; hint?: string };
 
@@ -13,7 +14,7 @@ type CommandPaletteProps = {
   onSelect: (id: string) => void;
 };
 
-const TITLE = "Find an idea";
+const TITLE = uiCaptions.palette.title;
 const ignore = () => () => undefined;
 const isApple = () => /Mac|iPhone|iPad/.test(navigator.userAgent);
 
@@ -60,12 +61,12 @@ export function CommandPalette({ items, onSelect }: CommandPaletteProps) {
             <Dialog.Title className="sr-only">{TITLE}</Dialog.Title>
             <Command label={TITLE}>
               <Command.Input
-                placeholder="Type an idea, like “sorting fruit”"
+                placeholder={uiCaptions.palette.placeholder}
                 className="w-full border-b border-hairline bg-transparent px-5 py-4 text-base outline-none placeholder:text-ink-soft"
               />
               <Command.List className="max-h-80 overflow-y-auto p-2">
                 <Command.Empty className="px-3 py-6 text-center text-sm text-ink-soft">
-                  Nothing by that name yet.
+                  {uiCaptions.palette.empty}
                 </Command.Empty>
                 {items.map((item) => (
                   <Command.Item

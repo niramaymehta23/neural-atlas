@@ -98,17 +98,17 @@ test("primitives work from the keyboard", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(page.getByText("Each step, the ball checks")).toBeVisible();
 
-  await page.keyboard.press("ControlOrMeta+k");
-  const search = page.getByRole("dialog", { name: "Find an idea" }).getByRole("combobox");
-  await expect(search).toBeFocused();
-  await search.fill("downhill");
-  await page.keyboard.press("Enter");
-  await expect(page.getByText("You picked “downhill”.")).toBeVisible();
-
   const divider = page.getByRole("separator", { name: "Compare a small step with a big step" });
   await divider.focus();
   await page.keyboard.press("ArrowLeft");
   await expect(divider).toHaveAttribute("aria-valuenow", "45");
+
+  await page.keyboard.press("ControlOrMeta+k");
+  const search = page.getByRole("dialog", { name: "Find an idea" }).getByRole("combobox");
+  await expect(search).toBeFocused();
+  await search.fill("gradient descent");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/learn\/rolling-downhill$/);
 });
 
 test("nothing glows: every shadow is a neutral grey, never a colour", async ({ page }) => {

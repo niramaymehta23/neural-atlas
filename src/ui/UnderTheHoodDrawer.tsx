@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Collapsible } from "radix-ui";
 import { useReducedMotion, useSpring } from "@/design/motion";
+import { uiCaptions } from "./captions";
 
 type UnderTheHoodDrawerProps = {
   children: ReactNode;
@@ -13,7 +14,7 @@ type UnderTheHoodDrawerProps = {
 /** The "peek under the hood" drawer for the curious. Always starts closed. */
 export function UnderTheHoodDrawer({
   children,
-  label = "Peek under the hood",
+  label = uiCaptions.drawer,
 }: UnderTheHoodDrawerProps) {
   const [open, setOpen] = useState(false);
   const reduced = useReducedMotion();

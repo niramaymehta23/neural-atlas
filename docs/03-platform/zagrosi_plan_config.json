@@ -1,0 +1,10 @@
+{
+  "compatibility_policy": "declared",
+  "created_at": "2026-11-16T15:17:36+00:00",
+  "depth_mode": "lean",
+  "initial_file": "/Users/niramay/Desktop/projects/neural-atlas/.claude/worktrees/admiring-chatterjee-9911ec/docs/03-platform/spec.md",
+  "planning_dir": "/Users/niramay/Desktop/projects/neural-atlas/.claude/worktrees/admiring-chatterjee-9911ec/docs/03-platform",
+  "plugin_root": "/Users/niramay/.claude/plugins/cache/zagrosi/zagrosi-forge/0.5.5",
+  "review_mode": "agent_review",
+  "workflow": "zagrosi-plan"
+}
