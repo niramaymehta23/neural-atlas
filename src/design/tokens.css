@@ -1,0 +1,129 @@
+/*
+ * Neural Atlas design tokens. The only place colours, radii, shadows and CSS easings are defined;
+ * ESLint bans colour, font and easing literals everywhere else.
+ * Ivory is the default theme; [data-theme="night"] swaps the semantic colours to charcoal.
+ */
+
+@custom-variant night (&:where([data-theme="night"], [data-theme="night"] *));
+
+:root {
+  /* Palette */
+  --ivory: #faf9f5;
+  --charcoal: #1f1e1d;
+  --ink-black: #141413;
+  --warm-grey: #87867f;
+  --clay: #d97757;
+  --sage: #7a9e7e;
+  --rose: #c4646b;
+  --sky: #6a9bcc;
+  --sand: #e3dacc;
+
+  /* Semantic colours (ivory) */
+  --paper: var(--ivory);
+  --card: color-mix(in oklab, var(--sand) 22%, var(--ivory));
+  --inset: var(--sand);
+  --hairline: #e8e6dc;
+  --ink: var(--ink-black);
+  --ink-soft: var(--warm-grey);
+  --scrim: color-mix(in oklab, var(--ink-black) 28%, transparent);
+  --shadow-tint: color-mix(in oklab, var(--ink-black) 16%, transparent);
+
+  color-scheme: light;
+}
+
+[data-theme="night"] {
+  --paper: var(--charcoal);
+  --card: color-mix(in oklab, var(--ivory) 5%, var(--charcoal));
+  --inset: color-mix(in oklab, var(--sand) 14%, var(--charcoal));
+  --hairline: color-mix(in oklab, var(--ivory) 13%, var(--charcoal));
+  --ink: var(--ivory);
+  --ink-soft: color-mix(in oklab, var(--warm-grey) 70%, var(--ivory));
+  --scrim: color-mix(in oklab, black 45%, transparent);
+  --shadow-tint: color-mix(in oklab, black 40%, transparent);
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-inset: var(--inset);
+  --color-hairline: var(--hairline);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-accent: var(--clay);
+  --color-good: var(--sage);
+  --color-bad: var(--rose);
+  --color-flow: var(--sky);
+  --color-sand: var(--sand);
+  --color-scrim: var(--scrim);
+  --color-knob: var(--ivory);
+  --color-transparent: transparent;
+
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --radius-inner: 7px;
+  --radius-pill: 999px;
+
+  /* The only shadow: a soft, low, ink-tinted lift for things being dragged. Never a glow. */
+  --shadow-*: initial;
+  --shadow-lifted: 0 10px 24px -12px var(--shadow-tint), 0 2px 6px -2px var(--shadow-tint);
+
+  /* CSS easing for colour changes only; movement uses the springs in motion.ts. */
+  --ease-*: initial;
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--paper);
+    min-height: 100dvh;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    font-variation-settings: "SOFT" 50;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--clay);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--clay) 30%, transparent);
+  }
+}
+
+/* Numbers are rare; when shown they use Fraunces' softest, roundest cut. */
+@utility numeral {
+  font-family: var(--font-serif);
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 0;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
