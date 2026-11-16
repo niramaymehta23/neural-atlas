@@ -17,7 +17,7 @@ export const springs = {
 export type SpringName = keyof typeof springs;
 
 /** GSAP timing for 3D camera glides (the home map, landscapes, idea-space flights). */
-export const cameraGlide = { duration: 1.4, ease: "power2.inOut" } as const;
+export const cameraGlide = { duration: 1.1, ease: "power2.inOut" } as const;
 
 const instant: Transition = { duration: 0 };
 const REDUCE_QUERY = "(prefers-reduced-motion: reduce)";

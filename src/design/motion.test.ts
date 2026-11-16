@@ -1,5 +1,5 @@
 import { renderHook } from "@testing-library/react";
-import { springs, useSpring } from "./motion";
+import { cameraGlide, springs, useSpring } from "./motion";
 import { mockReducedMotion } from "./reduced-motion.mock";
 
 describe("useSpring", () => {
@@ -21,5 +21,11 @@ describe("springs", () => {
       expect(seconds).toBeGreaterThanOrEqual(0.2);
       expect(seconds).toBeLessThanOrEqual(0.4);
     }
+  });
+});
+
+describe("cameraGlide", () => {
+  it("lands a home-map flight within 1.2 s", () => {
+    expect(cameraGlide.duration).toBeLessThanOrEqual(1.2);
   });
 });

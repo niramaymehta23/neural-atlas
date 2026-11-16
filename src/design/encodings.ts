@@ -59,6 +59,31 @@ export function regionTone(group: number, sureness: number): string {
   return `color-mix(in oklab, ${classTone(group)} ${percent}%, var(--color-paper))`;
 }
 
+/**
+ * The six worlds of the home map, each a soft warm tint (the base softened with sand). Clay is
+ * not among them: on the map it means "learned".
+ */
+const WORLD_BASES = [
+  "var(--color-flow)",
+  "var(--color-good)",
+  "var(--color-ink-soft)",
+  "var(--color-bad)",
+  "color-mix(in oklab, var(--color-flow), var(--color-good))",
+  "color-mix(in oklab, var(--color-bad), var(--color-ink-soft))",
+];
+
+/** Tint for world 1…6. */
+export function worldTone(world: number): string {
+  const base = WORLD_BASES[world - 1];
+  return `color-mix(in oklab, ${base ?? "var(--color-ink-soft)"} 60%, var(--color-sand))`;
+}
+
+/** An idea the learner has mastered fills with clay. */
+export const learnedTone = "var(--color-accent)";
+
+/** The thin warm line from an idea to the one it builds on. */
+export const linkTone = "color-mix(in oklab, var(--color-ink-soft) 55%, var(--color-sand))";
+
 export type TileKind = "floor" | "wall" | "goal" | "trap";
 const TILE_TONES: Record<TileKind, string> = {
   floor: "var(--color-card)",
