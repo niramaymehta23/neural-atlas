@@ -21,6 +21,8 @@
   "dependencies": {
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
+    "@tensorflow/tfjs": "4.22.0",
+    "@tensorflow/tfjs-backend-webgpu": "4.22.0",
     "cmdk": "^1.1.1",
     "d3": "^7.9.2",
     "gsap": "^3.15.1",

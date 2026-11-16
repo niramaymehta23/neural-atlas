@@ -1,0 +1,10 @@
+{
+  "compatibility_policy": "declared",
+  "created_at": "2026-11-16T14:41:25+00:00",
+  "depth_mode": "lean",
+  "initial_file": "/Users/niramay/Desktop/projects/neural-atlas/.claude/worktrees/stage-02-engines-d43d34/docs/02-engines/spec.md",
+  "planning_dir": "/Users/niramay/Desktop/projects/neural-atlas/.claude/worktrees/stage-02-engines-d43d34/docs/02-engines",
+  "plugin_root": "/Users/niramay/.claude/plugins/cache/zagrosi/zagrosi-forge/0.5.5",
+  "review_mode": "agent_review",
+  "workflow": "zagrosi-plan"
+}

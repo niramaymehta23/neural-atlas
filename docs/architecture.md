@@ -130,10 +130,50 @@ fetched cross-origin at runtime.
 - pnpm 12, Node 24, Next 16, TypeScript 6 (typescript-eslint lacks TS 7), ESLint 10, Tailwind 4, Vitest 5,
   Playwright 1.65. jsdom pinned to 29 (30+ needs Node 24.15).
 - `pnpm e2e` serves the static `out/` export through `scripts/serve-static.ts` with `public/_headers`; build first.
-  `next dev` does not send COOP/COEP.
+- `public/_headers` is the one source of COOP/COEP. `scripts/headers.ts` parses it for the e2e server and for
+  `next dev` (`next.config.ts` returns it as `headers()` in the dev phase only), so `crossOriginIsolated` and
+  `SharedArrayBuffer` work in dev too. Dev prints a harmless "headers will not automatically work with output:
+  export" warning. `agentRules: false` stops `next dev` writing an `AGENTS.md`.
+- `pnpm add` of a package with a postinstall needs an `allowBuilds` entry in `pnpm-workspace.yaml`
+  (`core-js: false` came with TensorFlow.js 4.22).
 - A new `src/<layer>` folder must be added to `LAYERS` in `eslint.config.mjs`.
 - Colour, font, easing and spring literals are lint-banned outside `src/design`; use token classes
   (`bg-paper`, `text-ink`, `bg-accent`) or `var(--…)`. Motion via `useSpring` / `useReducedMotion` from
   `src/design/motion.ts`; tests mock with `mockReducedMotion`.
 - `check-captions` reads module `captions.ts` / `missions.ts` and `src/catalog/*.ts`, skipping keys `id`,
   `realTerm`, `term`, `prerequisites`, `world`. CI needs the `GEMINI_API_KEY` secret once real captions exist.
+
+## Engines hand-over (from stage 02)
+
+- **Autodiff** (`engine/autodiff`): `Value`, `Neuron`/`Layer`/`MLP` (`call` builds a graph, `predict` is the fast
+  no-learning pass), losses take raw scores (`binaryCrossEntropy` from a logit, `softmaxCrossEntropy`, `meanSquared`),
+  `createOptimiser({ kind: "sgd" | "momentum" | "adam", learningRate })` steps any `{ data, grad }`, so a ball on
+  a landscape can use it too. Activations: relu, leakyRelu, tanh, sigmoid, plus `"identity"` (the word "linear"
+  is lint-banned as an easing name). Parameter order everywhere: layer, neuron, weights then bias.
+- **ModelEngine** (`engine/model`): `new ModelEngine({ backend, model, data, train, onSnapshot })`, then `run`,
+  `pause`, `step(n)`, `configure`, `setData`, `restore(snapshot)`, `predict(inputs)`, `readLive()`. Snapshots
+  arrive every `train.snapshotEvery` epochs and on pause; `readLive()` reads the newest parameters from a
+  `SharedArrayBuffer` (seqlock) each frame without messages. All logic is in `trainer.ts`, testable in-process
+  (see `trainer.test.ts` for wiring a fake `WorkerPort`). Restoring does not restore optimiser memory.
+- **TF.js backend**: same `ModelSpec`, loaded on demand; picks WebGPU, then WebGL, then CPU and reports which
+  (`ready` → `"tfjs-webgl"` in headless Chromium, `"tfjs-cpu"` in Vitest). Parameters are converted to the autodiff
+  order, so visuals read both backends alike.
+- **Timeline** (`engine/timeline`): `record`, `scrub(epoch)`, `seek(index)`, `stepForward/Back`, `play/pause`,
+  `tick(seconds)` from the caller's frame loop, `goLive`, `newRun` (current run becomes the ghost),
+  `ghostAt(epoch)`; `subscribe`/`getState` suit `useSyncExternalStore`. `ui/TimelineScrubber` takes plain props;
+  binding it to a Timeline is the platform's job (stage 03), as `src/app/styleguide/engines/TrainingLab.tsx` shows.
+- **Colours on canvas/WebGL**: encodings return CSS strings; `design/paint.ts` (`resolveColours`, `colourTable`,
+  `useResolvedColours`, `useColourTable`) turns them into RGB per theme. New encodings: `weightTone` (sage up,
+  rose down), `fullness`, `classTone`/`regionTone` (groups are sky, sage, warm grey; clay and rose stay reserved),
+  `tileTone`, `linePath`/`extent`. GSAP camera timing is `cameraGlide` in `design/motion.ts`.
+- **Data**: `makeDataset(name, { count, noise, seed, classes })` in −1…1, `toSamples`, `gridInputs(128)` for
+  `DecisionField` (which marks each redraw as the `decision-field-paint` performance measure).
+- **3D**: `LossLandscape` and `IdeaSpace` each own a `SoftStage` canvas (demand frame loop, ambient + one
+  directional light, rough materials); `CameraRig` glides between framings, so nothing needs rotating.
+- **Determinism**: same seed, same engine → bit-identical runs. Node and Chrome can differ in the last digit of
+  `Math.sin`/`cos`, so anything server-rendered from seeded maths must round what it puts in the DOM (Edge and
+  PaintCanvas do) or hydration fails.
+- **Evidence page**: `/styleguide/engines`; `e2e/engines.spec.ts` measures 60 fps while training and with 200
+  wiggling edges, saves a Chrome trace to `test-results/engines-training-trace.json`, and checks field redraws
+  stay under 16 ms.
+
