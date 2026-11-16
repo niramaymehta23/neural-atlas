@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { applyTheme, readTheme, subscribeToTheme, type Theme } from "@/design/theme";
+import { applyTheme, type Theme } from "@/design/theme";
+import { useTheme } from "@/design/use-theme";
 import { SegmentedControl } from "./SegmentedControl";
 
 const OPTIONS = [
@@ -11,8 +11,7 @@ const OPTIONS = [
 
 /** Day (ivory) or night (charcoal) paper, remembered for next time. */
 export function ThemeSwitch() {
-  // The static HTML always renders ivory; the saved theme takes over once hydrated.
-  const theme = useSyncExternalStore(subscribeToTheme, readTheme, () => "ivory" as const);
+  const theme = useTheme();
   return (
     <SegmentedControl label="Page colour" options={OPTIONS} value={theme} onChange={applyTheme} />
   );

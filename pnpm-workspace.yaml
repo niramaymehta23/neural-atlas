@@ -1,2 +1,4 @@
 allowBuilds:
   esbuild: true
+  # core-js only prints a funding banner on install.
+  core-js: false

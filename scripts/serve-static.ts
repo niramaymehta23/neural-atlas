@@ -6,6 +6,7 @@
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
+import { parseHeaders } from "./headers";
 
 const ROOT = join(process.cwd(), "out");
 const PORT = Number(process.argv[2] ?? 4173);
@@ -21,27 +22,6 @@ const TYPES: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
-type HeaderRule = { pattern: RegExp; headers: [string, string][] };
-
-/** Parses the Cloudflare/Netlify `_headers` format: a path line, then indented `Name: value` lines. */
-function parseHeaders(text: string): HeaderRule[] {
-  const rules: HeaderRule[] = [];
-  for (const line of text.split("\n")) {
-    if (!line.trim() || line.trim().startsWith("#")) continue;
-    if (!/^\s/.test(line)) {
-      const glob = line
-        .trim()
-        .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-        .replace(/\*/g, ".*");
-      rules.push({ pattern: new RegExp(`^${glob}$`), headers: [] });
-      continue;
-    }
-    const [name = "", ...value] = line.trim().split(":");
-    rules.at(-1)?.headers.push([name.trim(), value.join(":").trim()]);
-  }
-  return rules;
-}
-
 async function firstFile(paths: string[]): Promise<{ path: string; body: Buffer } | null> {
   for (const path of paths) {
     try {
@@ -53,7 +33,13 @@ async function firstFile(paths: string[]): Promise<{ path: string; body: Buffer 
   return null;
 }
 
-const rules = parseHeaders(await readFile(join(ROOT, "_headers"), "utf8"));
+/** A `_headers` path glob ("/*") as a pattern over request paths. */
+const toPattern = (glob: string) =>
+  new RegExp(`^${glob.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`);
+const rules = parseHeaders(await readFile(join(ROOT, "_headers"), "utf8")).map((rule) => ({
+  pattern: toPattern(rule.path),
+  headers: rule.headers,
+}));
 
 createServer(async (request, response) => {
   let urlPath: string;

@@ -14,7 +14,15 @@ export default function StyleguidePage() {
     <main className="mx-auto max-w-5xl px-6 pb-24">
       <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-hairline bg-paper py-4">
         <p className="font-serif text-lg">Neural Atlas · style guide</p>
-        <ThemeSwitch />
+        <div className="flex items-center gap-4">
+          <a
+            href="/styleguide/engines"
+            className="text-sm text-accent underline-offset-4 hover:underline"
+          >
+            Engines
+          </a>
+          <ThemeSwitch />
+        </div>
       </header>
 
       <div className="flex flex-col items-start gap-6 py-14 sm:flex-row sm:items-center">
