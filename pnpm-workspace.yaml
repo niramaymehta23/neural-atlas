@@ -2,3 +2,7 @@ allowBuilds:
   esbuild: true
   # core-js only prints a funding banner on install.
   core-js: false
+  # Transformers.js runs in the browser; its Node runtime binaries and protobufjs's
+  # install script are never needed.
+  onnxruntime-node: false
+  protobufjs: false

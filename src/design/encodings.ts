@@ -84,17 +84,29 @@ export const learnedTone = "var(--color-accent)";
 /** The thin warm line from an idea to the one it builds on. */
 export const linkTone = "color-mix(in oklab, var(--color-ink-soft) 55%, var(--color-sand))";
 
-export type TileKind = "floor" | "wall" | "goal" | "trap";
+export type TileKind = "floor" | "wall" | "goal" | "trap" | "coin";
 const TILE_TONES: Record<TileKind, string> = {
   floor: "var(--color-card)",
   wall: "var(--color-ink-soft)",
   goal: "var(--color-good)",
   trap: "var(--color-bad)",
+  coin: "color-mix(in oklab, var(--color-good) 40%, var(--color-card))",
 };
 
-/** Board squares: the goal is good, a trap is bad, walls are plain ink. */
+/** Board squares: the goal is good, a coin a little good, a trap is bad, walls are plain ink. */
 export function tileTone(kind: TileKind): string {
   return TILE_TONES[kind];
+}
+
+/** Strongest tint a square's value reaches, so the board stays calm. */
+const VALUE_MAX_PERCENT = 55;
+
+/** How good a square is to stand on, from −1 (bad, rose) through 0 (plain) to 1 (good, sage). */
+export function valueTone(value: number): string {
+  const clamped = Number.isFinite(value) ? Math.min(1, Math.max(-1, value)) : 0;
+  const percent = Math.round(Math.abs(clamped) * VALUE_MAX_PERCENT);
+  const tone = clamped < 0 ? "var(--color-bad)" : "var(--color-good)";
+  return `color-mix(in oklab, ${tone} ${percent}%, var(--color-card))`;
 }
 
 /**

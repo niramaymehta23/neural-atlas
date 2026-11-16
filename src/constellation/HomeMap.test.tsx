@@ -25,11 +25,11 @@ describe("HomeMap", () => {
     scene.props = null;
   });
 
-  it("shows all 74 ideas and suggests the first lesson to a new learner", async () => {
+  it("shows all 74 ideas and suggests the first built lesson to a new learner", async () => {
     render(<HomeMap />);
     await screen.findByText("choose");
     expect(scene.props?.stars).toHaveLength(74);
-    expect(scene.props?.suggested).toBe("teach-by-showing");
+    expect(scene.props?.suggested).toBe("rolling-downhill");
     expect(scene.props?.learned.size).toBe(0);
   });
 

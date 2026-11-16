@@ -25,8 +25,12 @@ export const world5: WorldEntry = {
       title: "Who is looking at whom",
       realTerm: "Attention",
       idea: "Each word checks which other words matter to it",
-      playWith: "Glowing threads between words",
+      playWith: "Soft threads between words",
       prerequisites: ["words-as-places"],
+      load: () =>
+        import("@/modules/w5-transformers/who-is-looking-at-whom").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "many-readers-at-once",

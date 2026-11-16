@@ -110,6 +110,7 @@ const config = [
       "next-env.d.ts",
       "playwright-report/**",
       "test-results/**",
+      "public/models/**",
     ],
   },
   ...nextVitals,

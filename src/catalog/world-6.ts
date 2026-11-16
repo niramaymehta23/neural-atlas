@@ -51,6 +51,10 @@ export const world6: WorldEntry = {
       idea: "Learn how good each move is from each spot",
       playWith: "Arrows on each tile grow as it learns",
       prerequisites: ["good-places-to-be", "new-or-favourite"],
+      load: () =>
+        import("@/modules/w6-reinforcement/scoring-every-move").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "a-brain-for-the-game",
