@@ -225,3 +225,17 @@ fetched cross-origin at runtime.
 - **Evidence page**: `/styleguide/platform` runs the fixture lesson (`platform/fixture/`) in the real shell;
   `e2e/platform.spec.ts` covers layout, phone stacking, scrubbing, mission + star after reload, snapshot restore,
   companion persistence, locked page, palette and puzzle.
+
+## Home map hand-over (from stage 04)
+
+- **Home** (`/`) is `constellation/HomeMap`: heading, world filter bar and the 3D map, which loads after first paint
+  through `next/dynamic` (`ssr: false`). `layoutConstellation(lessons)` places every catalog lesson, so a new or
+  re-ordered lesson needs no home change; links come from `prerequisites`.
+- **Progress shows itself**: mastered lessons (`isMastered`) fill clay, `nextSuggested` wears a slowly breathing clay
+  ring. World tints are `worldTone(world)`; `learnedTone` and `linkTone` live beside them in `design/encodings.ts`.
+- **Stars are real links** (`a[data-star=<id>]` with the everyday title as name), laid over the canvas through drei
+  `Html` into a sibling `nav`, because `SoftStage` is `role="img"`. Hover or focus shows the paper label and
+  prefetches the lesson. They float, so Playwright pointer actions on them need `{ force: true }`.
+- **Flights**: `cameraGlide` is now 1.1 s (was 1.4 s) for every `CameraRig`. The idle float loop stops when a flight
+  starts; software WebGL otherwise starves the route change. Reduced motion keeps the camera still and fades `main`.
+- Achievement stars (stage 11) should add to this scene rather than mount a second canvas.

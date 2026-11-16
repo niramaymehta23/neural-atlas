@@ -1,5 +1,7 @@
 import {
   classTone,
+  learnedTone,
+  worldTone,
   extent,
   fullness,
   linePath,
@@ -37,5 +39,16 @@ describe("encodings added for the engines", () => {
     expect(linePath([1, 1], 10, 4, { min: 0, max: 2 })).toBe("M0.00 2.00 L10.00 2.00");
     expect(linePath([], 10, 4)).toBe("");
     expect(extent([3, Number.NaN, -1])).toEqual({ min: -1, max: 3 });
+  });
+});
+
+describe("home map tones", () => {
+  it("gives six distinct warm tints, none of them the learned clay", () => {
+    const tones = [1, 2, 3, 4, 5, 6].map(worldTone);
+    expect(new Set(tones).size).toBe(6);
+    for (const tone of tones) {
+      expect(tone).toContain("var(--color-sand)");
+      expect(tone).not.toContain(learnedTone);
+    }
   });
 });
