@@ -1,6 +1,6 @@
 # 11 — Experiences
 
-Source: requirements.md ("Exploration, motivation and sharing"); [architecture.md](../architecture.md).
+Source: requirements.md ("Exploration, motivation and sharing"); docs/architecture.md.
 Owned: REQ-EXP-01..06.
 
 ```text

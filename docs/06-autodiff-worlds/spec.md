@@ -1,6 +1,6 @@
 # 06 — Worlds 1 and 3
 
-Source: requirements.md (World 1, World 3, "Building and training"); [architecture.md](../architecture.md) (DoD).
+Source: requirements.md (World 1, World 3, "Building and training"); docs/architecture.md (DoD).
 Owned: REQ-W13-01..03.
 
 ```text

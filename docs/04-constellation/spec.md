@@ -1,6 +1,6 @@
 # 04 — Home map
 
-Source: requirements.md (Navigation, prompt 2); [architecture.md](../architecture.md).
+Source: requirements.md (Navigation, prompt 2); docs/architecture.md.
 Owned: REQ-CON-01..04.
 
 ```text

@@ -1,6 +1,6 @@
 # 01 — Foundation
 
-Source: requirements.md (Design language, prompt 1); [architecture.md](../architecture.md).
+Source: requirements.md (Design language, prompt 1); docs/architecture.md.
 Owned: REQ-FND-01..05.
 
 ```text

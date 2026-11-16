@@ -1,6 +1,6 @@
 # 09 — World 5: transformers and LLMs
 
-Source: requirements.md (World 5, "Language models"); [architecture.md](../architecture.md) (DoD).
+Source: requirements.md (World 5, "Language models"); docs/architecture.md (DoD).
 Owned: REQ-W5-01..04.
 
 ```text

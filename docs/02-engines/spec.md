@@ -1,6 +1,6 @@
 # 02 — Shared engines
 
-Source: requirements.md (Shared engines, prompt 3); [architecture.md](../architecture.md).
+Source: requirements.md (Shared engines, prompt 3); docs/architecture.md.
 Owned: REQ-ENG-01..05.
 
 ```text

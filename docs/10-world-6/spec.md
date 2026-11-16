@@ -1,6 +1,6 @@
 # 10 — World 6: reinforcement learning
 
-Source: requirements.md (World 6, "Reinforcement learning"); [architecture.md](../architecture.md) (DoD).
+Source: requirements.md (World 6, "Reinforcement learning"); docs/architecture.md (DoD).
 Owned: REQ-W6-01..03.
 
 ```text

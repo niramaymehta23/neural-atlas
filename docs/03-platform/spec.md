@@ -1,6 +1,6 @@
 # 03 — Module platform
 
-Source: requirements.md (Interaction system, Architecture, prompts 4 and 8); [architecture.md](../architecture.md).
+Source: requirements.md (Interaction system, Architecture, prompts 4 and 8); docs/architecture.md.
 Owned: REQ-PLT-01..08.
 
 ```text
@@ -25,7 +25,7 @@ Boundary: platform, catalog
 
 ## Testing
 
-Unit tests on catalog graph, suggestion rule, snapshot round-trip and puzzle seed with a fixture module; catalog passes `check-captions`.
+Unit tests on catalog graph, suggestion rule, snapshot round-trip and puzzle seed; `check-captions` also covers learner-facing strings in `src/ui/` and the catalog.
 
 ## Risks
 

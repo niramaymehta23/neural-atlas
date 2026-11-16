@@ -124,3 +124,16 @@ Every curriculum module (split specs refer to this as **DoD**) must:
 `SharedArrayBuffer` needs cross-origin isolation (COOP `same-origin`, COEP `require-corp`). Therefore
 fonts are self-hosted via `next/font`, and all model weights are served from `public/models/` — never
 fetched cross-origin at runtime.
+
+## Toolchain facts (from stage 01)
+
+- pnpm 12, Node 24, Next 16, TypeScript 6 (typescript-eslint lacks TS 7), ESLint 10, Tailwind 4, Vitest 5,
+  Playwright 1.65. jsdom pinned to 29 (30+ needs Node 24.15).
+- `pnpm e2e` serves the static `out/` export through `scripts/serve-static.ts` with `public/_headers`; build first.
+  `next dev` does not send COOP/COEP.
+- A new `src/<layer>` folder must be added to `LAYERS` in `eslint.config.mjs`.
+- Colour, font, easing and spring literals are lint-banned outside `src/design`; use token classes
+  (`bg-paper`, `text-ink`, `bg-accent`) or `var(--…)`. Motion via `useSpring` / `useReducedMotion` from
+  `src/design/motion.ts`; tests mock with `mockReducedMotion`.
+- `check-captions` reads module `captions.ts` / `missions.ts` and `src/catalog/*.ts`, skipping keys `id`,
+  `realTerm`, `term`, `prerequisites`, `world`. CI needs the `GEMINI_API_KEY` secret once real captions exist.

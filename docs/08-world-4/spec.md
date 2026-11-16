@@ -1,6 +1,6 @@
 # 08 — World 4: deep architectures
 
-Source: requirements.md (World 4, "Seeing inside", "Generative"); [architecture.md](../architecture.md) (DoD).
+Source: requirements.md (World 4, "Seeing inside", "Generative"); docs/architecture.md (DoD).
 Owned: REQ-W4-01..04.
 
 ```text

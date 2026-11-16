@@ -1,6 +1,6 @@
 # 05 — Headline modules
 
-Source: requirements.md (Headline features, prompts 4–7); [architecture.md](../architecture.md) (DoD).
+Source: requirements.md (Headline features, prompts 4–7); docs/architecture.md (DoD).
 Owned: REQ-HDL-01..04.
 
 ```text

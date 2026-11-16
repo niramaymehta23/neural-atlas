@@ -1,6 +1,6 @@
 # 07 — World 2: classic ML
 
-Source: requirements.md (World 2, "Classic ML"); [architecture.md](../architecture.md) (DoD).
+Source: requirements.md (World 2, "Classic ML"); docs/architecture.md (DoD).
 Owned: REQ-W2-01..02.
 
 ```text

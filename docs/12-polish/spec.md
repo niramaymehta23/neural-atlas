@@ -1,6 +1,6 @@
 # 12 — Phone and accessibility pass
 
-Source: requirements.md (Responsiveness, sequence step 12); [architecture.md](../architecture.md).
+Source: requirements.md (Responsiveness, sequence step 12); docs/architecture.md.
 Owned: REQ-PA-01..03.
 
 ```text
