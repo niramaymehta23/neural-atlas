@@ -317,19 +317,37 @@ for (const size of [
 test("every star's label stays inside a 375px screen", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 740 });
   await openHome(page);
-  for (const id of await page
-    .locator("[data-star]")
-    .evaluateAll((stars) => stars.map((star) => (star as HTMLElement).dataset.star ?? ""))) {
-    await page.locator(`[data-star="${id}"]`).focus();
-    const label = page.getByRole("tooltip");
-    await expect(label).toBeVisible();
-    await expect
-      .poll(async () => {
-        const box = await label.boundingBox();
-        return box !== null && box.x >= 0 && box.y >= 0 && box.x + box.width <= 375;
-      })
-      .toBe(true);
-  }
+  // One loop inside the page, so 74 stars cost 74 label renders, not hundreds of round trips
+  // (a software-drawn map on CI made the per-star version outrun the test's time).
+  // Each star: focus it, then wait (up to 5 s) for a visible label lying inside the screen.
+  const outside = await page.evaluate(async () => {
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+    const failed: string[] = [];
+    for (const star of document.querySelectorAll<HTMLElement>("[data-star]")) {
+      star.focus();
+      const until = performance.now() + 5000;
+      let box: DOMRect | undefined;
+      let inside = false;
+      while (!inside && performance.now() < until) {
+        await frame();
+        // Only this star's label counts, not the last one on its way out.
+        const labels = [...document.querySelectorAll('[role="tooltip"]')];
+        const title = labels.length === 1 ? labels[0]?.querySelector("p")?.textContent : null;
+        const mine = title && star.getAttribute("aria-label")?.startsWith(title);
+        box = mine ? labels[0]?.getBoundingClientRect() : undefined;
+        inside =
+          box !== undefined &&
+          box.width > 0 &&
+          box.height > 0 &&
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= 375;
+      }
+      if (!inside) failed.push(`${star.dataset.star}: ${box ? JSON.stringify(box) : "no label"}`);
+    }
+    return failed;
+  });
+  expect(outside).toEqual([]);
 });
 
 test.describe("on a touch screen", () => {

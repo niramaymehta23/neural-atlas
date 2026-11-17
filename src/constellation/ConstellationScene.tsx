@@ -2,7 +2,15 @@
 
 import { ContactShadows } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Color, SRGBColorSpace, type Group } from "three";
 import { learnedTone, linkTone, worldTone } from "@/design/encodings";
 import { useReducedMotion } from "@/design/motion";
@@ -142,10 +150,17 @@ export function ConstellationScene({
     return () => observer.disconnect();
   }, [overlay]);
   const [shown, setShown] = useState<string | null>(null);
-  const show = (id: string | null) => {
+  // Stable handlers, so pointing at one star re-renders that star and the last one, not all 74
+  // (each re-render redraws an Html overlay, which is slow on a software-drawn map).
+  const latest = useRef({ onPoint, onChoose });
+  useLayoutEffect(() => {
+    latest.current = { onPoint, onChoose };
+  });
+  const show = useCallback((id: string | null) => {
     setShown(id);
-    if (id) onPoint(id);
-  };
+    if (id) latest.current.onPoint(id);
+  }, []);
+  const choose = useCallback((id: string) => latest.current.onChoose(id), []);
   const tones = useResolvedColours([INK, linkTone, learnedTone, ...WORLDS.map(worldTone)]);
   const [ink, link, clay, ...tints] = useMemo(
     () => tones.map(([r, g, b]) => new Color().setRGB(r / 255, g / 255, b / 255, SRGBColorSpace)),
@@ -183,7 +198,7 @@ export function ConstellationScene({
                       still={still}
                       overlay={portal}
                       onShow={show}
-                      onChoose={onChoose}
+                      onChoose={choose}
                     />
                   ))}
               </Drift>
