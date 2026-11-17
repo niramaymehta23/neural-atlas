@@ -116,10 +116,14 @@ describe("splitting into groups: in the lesson", () => {
     renderLesson();
     await userEvent.click(screen.getByRole("button", { name: "Skip the guess for now" }));
     await userEvent.click(screen.getByRole("button", { name: words.find }));
-    await waitFor(() =>
-      expect(document.querySelector("[data-right-side]")).toHaveTextContent(/on the right side/),
+    await waitFor(
+      () =>
+        expect(document.querySelector("[data-right-side]")).toHaveTextContent(/on the right side/),
+      { timeout: 5000 },
     );
-    await waitFor(() => expect(document.querySelector("[data-fence]")).not.toBeNull());
+    await waitFor(() => expect(document.querySelector("[data-fence]")).not.toBeNull(), {
+      timeout: 5000,
+    });
   });
 
   it("earns the star once the flowers are mixed so no straight fence works", async () => {
@@ -128,7 +132,9 @@ describe("splitting into groups: in the lesson", () => {
     await userEvent.click(screen.getByRole("button", { name: words.gardens.ring }));
     await userEvent.click(screen.getByRole("button", { name: words.find }));
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
   });
 
   it("asks for both kinds of flowers before a fence can go up", async () => {

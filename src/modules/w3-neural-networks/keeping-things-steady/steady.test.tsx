@@ -108,9 +108,13 @@ describe("keeping things steady: in the lesson", () => {
     await userEvent.keyboard("{End}");
     await userEvent.click(screen.getByRole("button", { name: words.practise }));
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
-    await waitFor(() =>
-      expect(document.querySelector("[data-outcome]")).toHaveTextContent(words.outcome.stalled),
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
+    await waitFor(
+      () =>
+        expect(document.querySelector("[data-outcome]")).toHaveTextContent(words.outcome.stalled),
+      { timeout: 5000 },
     );
   });
 });

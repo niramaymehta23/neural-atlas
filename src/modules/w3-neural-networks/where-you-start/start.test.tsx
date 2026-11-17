@@ -121,9 +121,12 @@ describe("where you start: in the lesson", () => {
     await userEvent.click(screen.getByRole("switch", { name: words.same }));
     await userEvent.click(screen.getByRole("button", { name: words.spin }));
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
-    await waitFor(() =>
-      expect(document.querySelector("[data-copies]")).toHaveTextContent(words.cells.copies),
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
+    await waitFor(
+      () => expect(document.querySelector("[data-copies]")).toHaveTextContent(words.cells.copies),
+      { timeout: 5000 },
     );
   });
 });

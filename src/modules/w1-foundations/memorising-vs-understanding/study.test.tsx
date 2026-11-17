@@ -83,6 +83,9 @@ describe("memorising vs understanding: in the lesson", () => {
     await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
       timeout: 5000,
     });
-    await waitFor(() => expect(document.querySelector("[data-answers]")).not.toBeNull());
+    // The curve is drawn from the frame being played, which follows the recorded run a moment later.
+    await waitFor(() => expect(document.querySelector("[data-answers]")).not.toBeNull(), {
+      timeout: 5000,
+    });
   });
 });

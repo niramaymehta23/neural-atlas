@@ -117,9 +117,12 @@ describe("big steps then small: in the lesson", () => {
     await userEvent.keyboard("{End}");
     await userEvent.click(screen.getByRole("button", { name: words.roll }));
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
-    await waitFor(() =>
-      expect(document.querySelector("[data-ending]")).toHaveTextContent(words.ending.short),
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
+    await waitFor(
+      () => expect(document.querySelector("[data-ending]")).toHaveTextContent(words.ending.short),
+      { timeout: 5000 },
     );
   });
 

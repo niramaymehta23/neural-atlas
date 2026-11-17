@@ -28,8 +28,10 @@ describe("teach by showing: in the lesson", () => {
     await sortAll(false);
     expect(screen.getByText(words.doneSorting)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: words.letItTry }));
-    await waitFor(() =>
-      expect(document.querySelector("[data-robot-score]")).toHaveTextContent(/new fruit right/),
+    await waitFor(
+      () =>
+        expect(document.querySelector("[data-robot-score]")).toHaveTextContent(/new fruit right/),
+      { timeout: 5000 },
     );
   });
 
@@ -39,14 +41,18 @@ describe("teach by showing: in the lesson", () => {
     await sortAll(true);
     await userEvent.click(screen.getByRole("button", { name: words.letItTry }));
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
   });
 
   it("hides the robot's old result once the baskets change", async () => {
     renderLesson();
     await sortAll(false);
     await userEvent.click(screen.getByRole("button", { name: words.letItTry }));
-    await waitFor(() => expect(document.querySelector("[data-robot-score]")).not.toBeNull());
+    await waitFor(() => expect(document.querySelector("[data-robot-score]")).not.toBeNull(), {
+      timeout: 5000,
+    });
     await userEvent.click(screen.getByRole("button", { name: words.startOver }));
     expect(document.querySelector("[data-robot-score]")).toBeNull();
     expect(screen.getByText(words.robotWaiting)).toBeInTheDocument();

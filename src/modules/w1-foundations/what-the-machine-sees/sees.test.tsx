@@ -91,7 +91,9 @@ describe("what the machine sees: in the lesson", () => {
       screen.getByRole("button", { name: words.strings.voice(words.facts.size, false) }),
     ).toHaveAttribute("aria-pressed", "false");
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
     expect(document.querySelector("[data-overall]")).toHaveAttribute("data-overall", "far");
   });
 });

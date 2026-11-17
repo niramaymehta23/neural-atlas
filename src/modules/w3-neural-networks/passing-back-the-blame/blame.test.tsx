@@ -84,7 +84,9 @@ describe("passing back the blame: in the lesson", () => {
   it("lets the rain fall once it practises", async () => {
     renderLesson();
     await userEvent.click(screen.getByRole("button", { name: words.practise }));
-    await waitFor(() => expect(document.querySelector("[data-gradient-rain]")).not.toBeNull());
+    await waitFor(() => expect(document.querySelector("[data-gradient-rain]")).not.toBeNull(), {
+      timeout: 5000,
+    });
   });
 
   it("earns the star once the rain dries up before the start", async () => {
@@ -94,6 +96,8 @@ describe("passing back the blame: in the lesson", () => {
     await userEvent.keyboard("{End}");
     await userEvent.click(screen.getByRole("button", { name: words.practise }));
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
   });
 });

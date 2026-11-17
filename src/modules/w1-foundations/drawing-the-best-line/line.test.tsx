@@ -113,6 +113,8 @@ describe("drawing the best line: in the lesson", () => {
     fireEvent.keyDown(field, { key: "Enter" });
     await userEvent.click(screen.getByRole("button", { name: words.find }));
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
   });
 });

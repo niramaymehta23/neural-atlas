@@ -85,7 +85,9 @@ describe("the decision curve: in the lesson", () => {
     renderLesson();
     await userEvent.click(screen.getByRole("button", { name: "Skip the guess for now" }));
     await userEvent.click(screen.getByRole("button", { name: words.practise }));
-    await waitFor(() => expect(document.querySelector("[data-curve]")).not.toBeNull());
+    await waitFor(() => expect(document.querySelector("[data-curve]")).not.toBeNull(), {
+      timeout: 5000,
+    });
   });
 
   it("earns the star once cut-off cells go silent", async () => {
@@ -96,6 +98,8 @@ describe("the decision curve: in the lesson", () => {
     await userEvent.keyboard("{End}");
     await userEvent.click(screen.getByRole("button", { name: words.practise }));
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
   });
 });

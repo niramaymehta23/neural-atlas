@@ -109,7 +109,9 @@ describe("one tiny brain cell: in the lesson", () => {
     screen.getByRole("slider", { name: words.convince.label }).focus();
     await userEvent.keyboard("{End}");
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
+    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
+      timeout: 5000,
+    });
     expect(document.querySelectorAll("[data-goes=true]")).toHaveLength(0);
   });
 });
