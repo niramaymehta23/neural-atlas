@@ -72,7 +72,9 @@ export const world2: WorldEntry = {
       playWith: "Magnets pull dots into groups",
       prerequisites: ["what-the-machine-sees"],
       load: () =>
-        import("@/modules/w2-classic-ml/finding-natural-groups").then(({ definition }) => definition),
+        import("@/modules/w2-classic-ml/finding-natural-groups").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "the-best-shadow",
@@ -102,7 +104,9 @@ export const world2: WorldEntry = {
       playWith: "A sorting machine drops guesses into right and wrong boxes",
       prerequisites: ["the-surprise-test", "how-sure-is-it"],
       load: () =>
-        import("@/modules/w2-classic-ml/is-99-percent-actually-good").then(({ definition }) => definition),
+        import("@/modules/w2-classic-ml/is-99-percent-actually-good").then(
+          ({ definition }) => definition,
+        ),
     },
   ],
 };
