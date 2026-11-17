@@ -133,9 +133,7 @@ export async function createTfjsBackend(
           weights[input * columns + neuron] = values[at++] ?? 0;
         biases[neuron] = values[at++] ?? 0;
       }
-      tf.tidy(() =>
-        layer.setWeights([tf.tensor2d(weights, [rows, columns]), tf.tensor1d(biases)]),
-      );
+      tf.tidy(() => layer.setWeights([tf.tensor2d(weights, [rows, columns]), tf.tensor1d(biases)]));
     }
     kept = values.slice();
   };
@@ -158,7 +156,10 @@ export async function createTfjsBackend(
 
   const lossOf = (scores: tf.Tensor, targets: tf.Tensor) =>
     loss === "softmaxCrossEntropy"
-      ? tf.losses.softmaxCrossEntropy(tf.oneHot(tf.cast(targets, "int32") as tf.Tensor1D, outputWidth), scores)
+      ? tf.losses.softmaxCrossEntropy(
+          tf.oneHot(tf.cast(targets, "int32") as tf.Tensor1D, outputWidth),
+          scores,
+        )
       : loss === "binaryCrossEntropy"
         ? tf.losses.sigmoidCrossEntropy(targets, scores)
         : tf.losses.meanSquaredError(targets, scores);

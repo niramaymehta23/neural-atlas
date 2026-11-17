@@ -35,12 +35,14 @@ export function createFieldReader(model: ModelSpec): FieldReader {
   const outputs = sizes.at(-1) ?? 1;
   const bends = sizes
     .slice(1)
-    .map((_, index) =>
-      BENDS[index === layers - 1 ? "identity" : hiddenActivation(model.activation, index)],
+    .map(
+      (_, index) =>
+        BENDS[index === layers - 1 ? "identity" : hiddenActivation(model.activation, index)],
     );
   const widest = Math.max(...sizes);
-  const values = new Float64Array(widest);
-  const next = new Float64Array(widest);
+  // Two buffers taking turns as a layer's inputs and outputs: nothing is allocated per spot.
+  const buffers = [new Float64Array(widest), new Float64Array(widest)] as const;
+  let answer = buffers[0];
 
   /** Runs one input through, calling `visit(layer, cell, value)` for every hidden cell. */
   const forward = (
@@ -49,6 +51,8 @@ export function createFieldReader(model: ModelSpec): FieldReader {
     row: number,
     visit?: (layer: number, cell: number, value: number) => void,
   ) => {
+    let values = buffers[0];
+    let next = buffers[1];
     for (let column = 0; column < width; column += 1)
       values[column] = inputs[row * width + column] ?? 0;
     let at = 0;
@@ -56,18 +60,20 @@ export function createFieldReader(model: ModelSpec): FieldReader {
       const fanIn = sizes[layer] ?? 0;
       const size = sizes[layer + 1] ?? 0;
       const bend = bends[layer] ?? BENDS.identity;
+      const hidden = visit && layer < layers - 1;
       for (let cell = 0; cell < size; cell += 1) {
         let sum = 0;
         for (let input = 0; input < fanIn; input += 1)
           sum += (params[at + input] ?? 0) * (values[input] ?? 0);
         at += fanIn;
-        sum += params[at] ?? 0;
+        const value = bend(sum + (params[at] ?? 0));
         at += 1;
-        next[cell] = bend(sum);
-        if (visit && layer < layers - 1) visit(layer, cell, next[cell] ?? 0);
+        next[cell] = value;
+        if (hidden) visit(layer, cell, value);
       }
-      values.set(next.subarray(0, size));
+      [values, next] = [next, values];
     }
+    answer = values;
   };
 
   const read = (params: ArrayLike<number>, inputs: Float32Array) => {
@@ -75,7 +81,7 @@ export function createFieldReader(model: ModelSpec): FieldReader {
     const scores = new Float32Array(count * outputs);
     for (let row = 0; row < count; row += 1) {
       forward(params, inputs, row);
-      for (let out = 0; out < outputs; out += 1) scores[row * outputs + out] = values[out] ?? 0;
+      for (let out = 0; out < outputs; out += 1) scores[row * outputs + out] = answer[out] ?? 0;
     }
     return scoresToOutputs(scores, model);
   };
