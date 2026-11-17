@@ -1,18 +1,24 @@
 "use client";
 
-import { count } from "@/design/copy";
+import { useSyncExternalStore } from "react";
 import type { ModuleViewProps } from "@/platform/contract";
 import { Dial } from "@/ui/Dial";
 import { words } from "./captions";
 import { DEPTHS, READERS, type LookingFrame, type LookingState } from "./model";
+import { nameReader } from "./readers";
 
 const describeDepth = (depth: number) =>
   depth <= 1 ? words.depth.first : depth <= 3 ? words.depth.closer : words.depth.deep;
 
-const describeReader = (reader: number) =>
-  reader === 0 ? words.reader.all : words.reader.one(count(reader));
+const BUTTON = "rounded-pill border border-hairline bg-paper px-4 py-2 text-sm";
 
-export function LookingControls({ state, update }: ModuleViewProps<LookingState, LookingFrame>) {
+export function LookingControls({
+  state,
+  update,
+  timeline,
+}: ModuleViewProps<LookingState, LookingFrame>) {
+  const { length } = useSyncExternalStore(timeline.subscribe, timeline.getState, timeline.getState);
+  const frame = timeline.at(length - 1);
   return (
     <>
       <Dial
@@ -30,18 +36,24 @@ export function LookingControls({ state, update }: ModuleViewProps<LookingState,
         min={0}
         max={READERS}
         step={1}
-        onChange={(reader) => update({ reader })}
-        describe={describeReader}
+        onChange={(reader) => update({ reader, gallery: false })}
+        describe={(reader) => nameReader(reader, frame?.habits, frame?.threads.words ?? [])}
       />
-      {state.focus >= 0 && (
+      <div className="flex flex-wrap justify-center gap-2">
         <button
           type="button"
-          onClick={() => update({ focus: -1 })}
-          className="rounded-pill border border-hairline bg-paper px-4 py-2 text-sm"
+          aria-pressed={state.gallery}
+          onClick={() => update(({ gallery }) => ({ gallery: !gallery }))}
+          className={`${BUTTON} aria-pressed:border-accent aria-pressed:text-accent-ink`}
         >
-          {words.everyone}
+          {words.gallery.open}
         </button>
-      )}
+        {state.focus >= 0 && !state.gallery && (
+          <button type="button" onClick={() => update({ focus: -1 })} className={BUTTON}>
+            {words.everyone}
+          </button>
+        )}
+      </div>
     </>
   );
 }
