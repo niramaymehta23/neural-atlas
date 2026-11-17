@@ -597,3 +597,8 @@ Plan: `docs/06-autodiff-worlds/plan.md`. Nineteen lessons, each shaped like the 
   fits a phone) and an `e2e/w4-<id>.spec.ts` per lesson: mission, guess, exact link replay and a plain failure
   message for each. The camera specs run Chromium's fake camera (`e2e/camera.ts`), a refused camera, and a
   `@perf` check that camera maps update 15 times a second (the reference profile's budget).
+- **Test load**: headless Chromium draws WebGL in software, so a picture-reading page costs about four cores while
+  it reads. Specs that open one (`PICTURE_LESSONS` in `e2e/gpu.ts`) are tagged `@gpu` and run in their own
+  Playwright project, one at a time, after `functional` and before `perf`. The live camera loop asks for at most
+  `LIVE_RATE` (20) reads a second, with one read in flight. Together these took the full e2e run from 24 minutes
+  with eight load failures to under five minutes.

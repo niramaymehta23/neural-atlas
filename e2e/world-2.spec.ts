@@ -204,7 +204,11 @@ test("a map of a thousand things settles in its worker while the page keeps answ
   await turn(page, "How many things", "End");
   const map = page.getByTestId("a-map-of-everything");
   await dock(page).getByRole("button", { name: "Let it settle" }).click();
-  await expect.poll(async () => Number(await map.getAttribute("data-step"))).toBeGreaterThan(20);
+  // Laying out a thousand things takes about 1.4 s before the first step on an idle machine (then
+  // about 12 ms a step), so the wait covers a machine running other test browsers too.
+  await expect
+    .poll(async () => Number(await map.getAttribute("data-step")), { timeout: 15_000 })
+    .toBeGreaterThan(20);
   // The page answers a tap at once while the map is still settling.
   await dock(page).getByRole("button", { name: "Pause" }).click();
   await expect(dock(page).getByRole("button", { name: "Let it settle" })).toBeVisible({
