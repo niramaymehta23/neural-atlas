@@ -16,14 +16,24 @@ describe("companion model", () => {
     expect(createCompanionStore(storage).getState()).toEqual(freshCompanion);
   });
 
-  it("starts fresh from unrecognised saved data", async () => {
+  it("replaces only the unrecognised fields with fresh ones", async () => {
     for (const saved of [
       { hidden: [0], activation: "tanh", convolution: false },
       { hidden: [4], activation: "swish", convolution: false },
+      "not a model",
     ]) {
       const store = createCompanionStore(memoryStorage(new Map([["companion-v1", saved]])));
       await store.ready;
       expect(store.getState()).toEqual(freshCompanion);
     }
+  });
+});
+
+describe("companion salvage (PLT-01)", () => {
+  it("keeps the fields it recognises and fills a missing one", async () => {
+    const saved = { hidden: [4, 4], activation: "relu" };
+    const store = createCompanionStore(memoryStorage(new Map([["companion-v1", saved]])));
+    await store.ready;
+    expect(store.getState()).toEqual({ hidden: [4, 4], activation: "relu", convolution: false });
   });
 });

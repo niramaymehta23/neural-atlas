@@ -37,18 +37,30 @@ export function nextSuggested(
   return (ready.find(({ load }) => load) ?? ready[0])?.id ?? null;
 }
 
+/** One lesson's record, coerced field by field so one bad value never loses the rest. */
+function salvageLesson(entry: unknown): LessonProgress {
+  const { visited, missions, predicted } = (
+    typeof entry === "object" && entry !== null ? entry : {}
+  ) as Partial<Record<keyof LessonProgress, unknown>>;
+  return {
+    visited: Boolean(visited),
+    missions: Array.isArray(missions)
+      ? missions.filter((mission): mission is string => typeof mission === "string")
+      : [],
+    predicted: Boolean(predicted),
+  };
+}
+
+/** Keeps every lesson it can; null only when the saved value is not progress at all. */
 function parseProgress(saved: unknown): Progress | null {
   if (typeof saved !== "object" || saved === null || !("lessons" in saved)) return null;
   const { lessons } = saved;
-  if (typeof lessons !== "object" || lessons === null) return null;
-  const valid = Object.values(lessons).every(
-    (entry: Partial<LessonProgress>) =>
-      typeof entry?.visited === "boolean" &&
-      typeof entry.predicted === "boolean" &&
-      Array.isArray(entry.missions) &&
-      entry.missions.every((mission) => typeof mission === "string"),
-  );
-  return valid ? (saved as Progress) : null;
+  if (typeof lessons !== "object" || lessons === null || Array.isArray(lessons)) return null;
+  return {
+    lessons: Object.fromEntries(
+      Object.entries(lessons).map(([id, entry]) => [id, salvageLesson(entry)]),
+    ),
+  };
 }
 
 export function createProgressStore(storage: KeyValueStorage) {
