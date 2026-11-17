@@ -116,6 +116,7 @@ describe("design owns colours, fonts and easings", () => {
     expect(cssFiles.sort()).toEqual(["src/app/globals.css", "src/design/tokens.css"]);
     const globals = readFileSync(join(root, "src/app/globals.css"), "utf8");
     const lines = globals.split("\n").filter((line) => line.trim());
-    for (const line of lines) expect(line).toMatch(/^@import "[^"]+";$/);
+    // An import may name its source folder: Tailwind's scan is limited to src/ (tailwind-sources.test.ts).
+    for (const line of lines) expect(line).toMatch(/^@import "[^"]+"( source\("[^"]+"\))?;$/);
   });
 });
