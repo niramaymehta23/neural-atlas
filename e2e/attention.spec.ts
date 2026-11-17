@@ -57,6 +57,22 @@ async function overlapping(chips: Locator) {
   );
 }
 
+test("the model and runtime are served with their sizes, as the host serves them", async ({
+  request,
+}) => {
+  // Without a size, a large file is sent in chunks, which Chrome sometimes rejects mid-download
+  // when the machine is busy: the reader then fails to wake up.
+  for (const file of [
+    "/models/attention-minilm-v1/onnx/model_quantized.onnx",
+    "/models/attention-minilm-v1/tokenizer.json",
+  ]) {
+    const response = await request.get(file);
+    expect(response.ok()).toBe(true);
+    expect(response.headers()["transfer-encoding"]).toBeUndefined();
+    expect(Number(response.headers()["content-length"])).toBe((await response.body()).length);
+  }
+});
+
 test("the first load shows its progress and then the threads (ATT-03)", async ({
   page,
   context,

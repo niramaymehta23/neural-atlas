@@ -78,6 +78,9 @@ createServer(async (request, response) => {
   const notFound = file.path.endsWith("404.html") && !urlPath.endsWith("404.html");
   response.writeHead(notFound ? 404 : 200, {
     "Content-Type": TYPES[extname(file.path)] ?? "application/octet-stream",
+    // Like the host, every file says its size. Without it Node streams large files chunked, which
+    // Chrome sometimes rejects mid-download under load, and loading bars cannot measure progress.
+    "Content-Length": file.body.length,
   });
   response.end(file.body);
 }).listen(PORT, () => console.log(`Serving out/ on http://localhost:${PORT}`));
