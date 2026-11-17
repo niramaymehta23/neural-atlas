@@ -32,7 +32,7 @@ export const world4: WorldEntry = {
       id: "standing-on-giants",
       title: "Standing on giants",
       realTerm: "Transfer learning",
-      idea: "Reuse a big model's know-how for your own task",
+      idea: "Reuse a big AI's know-how for your own task",
       playWith: "Teach it your own objects with the webcam in seconds",
       prerequisites: ["how-machines-see"],
     },

@@ -125,7 +125,7 @@ export const world5: WorldEntry = {
       title: "AI that takes actions",
       realTerm: "Agents",
       idea: "Think, use a tool, check, repeat",
-      playWith: "A little stage play of an agent at work",
+      playWith: "A little stage play of an AI helper at work",
       prerequisites: ["looking-things-up"],
     },
     {

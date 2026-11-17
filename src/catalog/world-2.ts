@@ -9,7 +9,7 @@ export const world2: WorldEntry = {
       title: "Ask the neighbours",
       realTerm: "k-nearest neighbours",
       idea: "You're probably like the people near you",
-      playWith: "Click a dot; ripples reach the neighbours who vote",
+      playWith: "Tap a dot; ripples reach the neighbours who vote",
       prerequisites: ["splitting-into-groups"],
     },
     {

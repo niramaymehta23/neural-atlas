@@ -101,7 +101,7 @@ export const world6: WorldEntry = {
       title: "Practising against yourself",
       realTerm: "Self-play",
       idea: "Improve by playing a copy of yourself",
-      playWith: "Two agents trading wins",
+      playWith: "Two players trading wins",
       prerequisites: ["thinking-ahead"],
     },
     {

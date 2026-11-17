@@ -7,7 +7,7 @@ export const captions = {
   compare: {
     label: "Compare one reader with all the readers together",
     leftLabel: "Your pick",
-    rightLabel: "Swapped round",
+    rightLabel: "The other way round",
   },
 };
 
