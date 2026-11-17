@@ -15,7 +15,8 @@ async function openHome(page: Page, path = "/"): Promise<string[]> {
 
 /**
  * Waits until a star has stopped gliding (after a filter the camera moves for a moment, longer
- * on a busy machine), so a click lands on it. Its gentle float moves far less than this.
+ * on a busy machine), so a click at its middle lands on it. Its slow float still moves it a
+ * little, so "stopped" means it moves less than a quarter of its own width between looks.
  */
 async function settled(star: Locator) {
   let last = await star.boundingBox();
@@ -24,7 +25,7 @@ async function settled(star: Locator) {
     const now = await star.boundingBox();
     const moved = last && now ? Math.hypot(now.x - last.x, now.y - last.y) : Infinity;
     last = now;
-    expect(moved).toBeLessThan(2);
+    expect(moved).toBeLessThan((now?.width ?? 0) / 4);
   }).toPass({ timeout: 10_000 });
 }
 
