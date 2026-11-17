@@ -73,10 +73,10 @@ function dense(
     if (value === 0) continue;
     const start = row * outputs;
     for (let column = 0; column < outputs; column += 1) {
-      out[column]! += value * weight[start + column]!;
+      out[column] = (out[column] ?? 0) + value * (weight[start + column] ?? 0);
     }
   }
-  if (bend) for (let index = 0; index < outputs; index += 1) out[index] = bend(out[index]!);
+  if (bend) for (let index = 0; index < outputs; index += 1) out[index] = bend(out[index] ?? 0);
   return out;
 }
 
@@ -115,7 +115,8 @@ export function timeFeatures(step: number, size: number): Float64Array {
 }
 
 function addInto(target: Float64Array, extra: Float64Array) {
-  for (let index = 0; index < target.length; index += 1) target[index]! += extra[index]!;
+  for (let index = 0; index < target.length; index += 1)
+    target[index] = (target[index] ?? 0) + (extra[index] ?? 0);
 }
 
 /** The fog cleaner's guess of the clear picture (−1 paper … 1 ink) under `foggy` at `step`. */
@@ -167,7 +168,7 @@ export function* clearFog(
     steps === 1 ? last : Math.round(last - (index * last) / (steps - 1)),
   );
   const keptAt = (step: number) => manifest.kept[step] ?? 1;
-  let current = Float64Array.from({ length: PIXELS }, () => random.normal());
+  let current: Float64Array = Float64Array.from({ length: PIXELS }, () => random.normal());
   const pin = (picture: Float64Array, step: number, kept: number) => {
     for (const [pixel, ink] of steer) {
       const clear = ink * 2 - 1;
@@ -179,8 +180,7 @@ export function* clearFog(
   const show = (picture: Float64Array) =>
     Float32Array.from(picture, (value) => Math.max(0, Math.min(1, (value + 1) / 2)));
   yield { fog: 1, picture: show(current) };
-  for (let index = 0; index < sequence.length; index += 1) {
-    const step = sequence[index]!;
+  for (const [index, step] of sequence.entries()) {
     const kept = keptAt(step);
     const clear = guessClear(weights, manifest, current, step);
     const nextStep = sequence[index + 1];
@@ -194,8 +194,9 @@ export function* clearFog(
     const nextKept = keptAt(nextStep);
     const next = new Float64Array(PIXELS);
     for (let pixel = 0; pixel < PIXELS; pixel += 1) {
-      const fog = (current[pixel]! - Math.sqrt(kept) * clear[pixel]!) / Math.sqrt(1 - kept);
-      next[pixel] = Math.sqrt(nextKept) * clear[pixel]! + Math.sqrt(1 - nextKept) * fog;
+      const guess = clear[pixel] ?? 0;
+      const fog = ((current[pixel] ?? 0) - Math.sqrt(kept) * guess) / Math.sqrt(1 - kept);
+      next[pixel] = Math.sqrt(nextKept) * guess + Math.sqrt(1 - nextKept) * fog;
     }
     pin(next, nextStep, nextKept);
     current = next;
@@ -215,7 +216,7 @@ export function nearestGap(picture: ArrayLike<number>, faces: Uint8Array, among 
     let gap = 0;
     const start = face * PIXELS;
     for (let pixel = 0; pixel < PIXELS && gap < best * PIXELS; pixel += 1) {
-      const difference = (picture[pixel] ?? 0) - faces[start + pixel]! / 255;
+      const difference = (picture[pixel] ?? 0) - (faces[start + pixel] ?? 0) / 255;
       gap += difference * difference;
     }
     best = Math.min(best, gap / PIXELS);

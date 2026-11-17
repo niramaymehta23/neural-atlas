@@ -197,3 +197,11 @@ export function extent(values: readonly number[]): { min: number; max: number } 
     ? { min: 0, max: 1 }
     : { min: Math.min(...finite), max: Math.max(...finite) };
 }
+
+/**
+ * A grey picture's pixel (or how strongly a pattern was found there): 0 is bare paper, 1 is full
+ * ink. Follows the theme, so pictures read as ink on paper by day and light on charcoal at night.
+ */
+export function inkTone(amount: number): string {
+  return `color-mix(in oklab, var(--color-ink) ${Math.round(clamp01(amount) * 100)}%, var(--color-paper))`;
+}

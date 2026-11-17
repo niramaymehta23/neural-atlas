@@ -72,7 +72,8 @@ const things: string[] = [];
 // Long entries run over two lines; the first name is always in the first quoted piece.
 for (const [, index, names] of classes.matchAll(/^\s*(\d+):\s*'((?:[^'\\]|\\.)*)'/gm)) {
   // The first of each thing's names, which is the everyday one ("tabby, tabby cat" → "tabby").
-  things[Number(index)] = (names ?? "").split(",")[0]!.replace(/\\'/g, "'").trim();
+  const [first = ""] = (names ?? "").split(",");
+  things[Number(index)] = first.replace(/\\'/g, "'").trim();
 }
 if (things.length !== 1000 || Array.from(things).some((name) => !name)) {
   throw new Error(`expected 1,000 names, found ${things.filter(Boolean).length}`);

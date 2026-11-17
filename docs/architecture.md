@@ -540,3 +540,60 @@ Plan: `docs/06-autodiff-worlds/plan.md`. Nineteen lessons, each shaped like the 
 - **Checks**: a unit test per lesson (missions, guesses, link clamping, `describe`, and the timeline for the
   lessons that train), engine tests per algorithm, and `e2e/world-2.spec.ts` (every lesson opens on its story with
   the real name held back and no errors or outside requests, every mission can be earned from the keyboard or a tap, and a thousand-point map pauses at once while it settles).
+
+## World 4 hand-over (stage 08)
+
+- **The twelve lessons** live in `src/modules/w4-deep-architectures/<id>/`, with the same file shape as World 3
+  (model, captions, missions, predictions, scene, controls, drawer, index, one unit test), and are wired in
+  `src/catalog/world-4.ts`. Vision: the-pattern-torch (convolution), how-machines-see (CNN), zooming-out
+  (pooling), standing-on-giants (transfer learning). Sequence: reading-one-word-at-a-time (RNN),
+  choosing-what-to-remember (LSTM / GRU). Generative: meaning-as-places (embeddings), squeeze-and-rebuild
+  (autoencoder), smooth-imagination (VAE), forger-vs-detective (GAN), painting-from-fog (diffusion). Graphs:
+  learning-from-friends (message passing).
+- **Models** (each in a versioned folder with LICENSE, README with source, revision and SHA-256 lines checked by
+  `pnpm check-model`, and a script that rebuilds it; every file is far under the 24 MiB limit `check-build`
+  enforces):
+  - `public/models/mobilenet-v1-025-v1/`: MobileNet v1 0.25/224 from the TensorFlow.js model store (Apache-2.0,
+    tfjs-models commit e80d693), `weights.bin` 1.9 MB, plus `things.json` (the 1,000 everyday names). Rebuilt by
+    `scripts/export-vision-model.ts`, which checks pinned SHA-256s of every download.
+  - `public/models/faces-v1/`: our own small models trained offline on seeded cartoon faces (MIT, the repo's
+    licence): `squeeze.bin` 3.2 MB (ordered autoencoder, nested dropout), `map-0/1/2.bin` 2.4 MB each (2-D map
+    decoders at tidiness 0, 0.1 and 1), `fog.bin` 9.0 MB (denoiser that guesses the clear picture, 200 steps),
+    `faces.bin` 1.0 MB (held-out faces), `manifest.json`. Rebuilt byte for byte by `scripts/train-faces.py`
+    (pinned in `scripts/requirements-train.txt`; CPU only).
+  - `public/models/photos-v1/`: 29 sample photos, 224 × 224 (CC0, one public domain), credited in its README and
+    rebuilt by `scripts/fetch-photos.py` from pinned Wikimedia Commons thumbnails.
+- **Vision kit**: `src/engine/vision/` runs MobileNet in one shared worker (`vision-worker.ts`, WebGL with a CPU
+  fallback through `pickDevice`). `vision-client.ts` is the page's `VisionReader` (load and read timeouts, idle
+  shutdown after a minute, restart after a failure; `setVisionReader` swaps in a fake). `seeing.ts` reads the top
+  answers, six pattern maps at three depths (edges, shapes, parts) and the 256 deep numbers, and makes the faint
+  smudge (four signed-slope steps within a set number of shades, rounded to bytes, read again). Tests use
+  `testing/node-vision.ts` (the real model on Node's CPU) or `testing/fake-vision.ts`.
+  `src/features/inside/` holds the picture parts two or more lessons share: `use-photo` (sample photos,
+  `setPhotoReader` for tests), `use-camera` (the camera, asked only after the lesson's own plain question; off
+  while the tab is hidden; a centre-square 224 grab), `use-vision` (`useSeen`, `useLiveSeen`, which reads one
+  camera picture at a time as fast as the device answers), `PicturePicker` with `CameraChoice`, `PhotoCanvas` and
+  `ValueMap`.
+- **Camera rules**: every camera lesson finishes with photos alone; the mission and guess never need the camera.
+  Snaps live only in the scene's memory: they never enter links, storage or requests, and standing-on-giants
+  drops them when the camera stops. A refused, missing or failing camera says so in one line and the photos stay.
+- **Measured facts the missions rest on**: a smudge of one shade turns MobileNet's "boxer" into "muzzle"; the
+  picture reader loses track of the dog after the first shrink; from MobileNet's numbers, one photo per group names
+  8 of 9 kept-back photos, while bare grey dots name 4 (5 with five photos). Fork measurements for the generative,
+  sequence and graph lessons are named constants beside each lesson's model (for example `MUSH` and `ONE_FACE`),
+  each with the measurement in its comment.
+- **Other engines**: `src/engine/sequence/recurrent.ts` (plain and gated readers, backprop through time with a
+  capped slope), `src/engine/generative/faces.ts` (weights reader, squeeze, rebuild, map decoders, fog clearing
+  with paint steering, `sharpness`) and `gan.ts`, `src/engine/embedding/word-map.ts` (pull-and-push word map).
+  Shared lesson parts: `src/features/memory/` (the two reader lessons) and `src/features/generative/` (face model
+  loading with Try again, `FacePicture`).
+- **Companion**: sweeping the whole photo once in the-pattern-torch sets `companion.convolution`.
+- **Shared changes** (small and additive): `inkTone` in `src/design/encodings.ts`; the twelve `load` lines in
+  the catalog; `*.bin` and `*.jpg` marked binary in `.gitattributes`; the new folders listed in
+  `public/models/README.md`. Locked-lesson examples in `e2e/home.spec.ts`, `e2e/platform.spec.ts`,
+  `e2e/a11y.spec.ts` and `src/constellation/HomeMap.test.tsx` moved to World 5's "Chopping text into pieces";
+  `e2e/a11y.spec.ts` now sweeps the World 4 lessons too.
+- **Checks**: a unit test per lesson, engine tests, `e2e/world-4.spec.ts` (every lesson opens on its story and
+  fits a phone) and an `e2e/w4-<id>.spec.ts` per lesson: mission, guess, exact link replay and a plain failure
+  message for each. The camera specs run Chromium's fake camera (`e2e/camera.ts`), a refused camera, and a
+  `@perf` check that camera maps update 15 times a second (the reference profile's budget).

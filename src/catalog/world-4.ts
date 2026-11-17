@@ -11,6 +11,10 @@ export const world4: WorldEntry = {
       idea: "Shine a small torch over a picture, looking for one pattern",
       playWith: "Design a torch and sweep it over a photo",
       prerequisites: ["stacking-cells"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/the-pattern-torch").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "how-machines-see",
@@ -19,6 +23,10 @@ export const world4: WorldEntry = {
       idea: "Edges become shapes become objects",
       playWith: "Your webcam, seen layer by layer",
       prerequisites: ["the-pattern-torch"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/how-machines-see").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "zooming-out",
@@ -27,6 +35,8 @@ export const world4: WorldEntry = {
       idea: "Keep the gist, drop the detail",
       playWith: "Shrink a picture tile by tile",
       prerequisites: ["the-pattern-torch"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/zooming-out").then(({ definition }) => definition),
     },
     {
       id: "standing-on-giants",
@@ -35,6 +45,10 @@ export const world4: WorldEntry = {
       idea: "Reuse a big AI's know-how for your own task",
       playWith: "Teach it your own objects with the webcam in seconds",
       prerequisites: ["how-machines-see"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/standing-on-giants").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "reading-one-word-at-a-time",
@@ -43,6 +57,10 @@ export const world4: WorldEntry = {
       idea: "Carry a memory along a sentence",
       playWith: "A memory bead travels along the words",
       prerequisites: ["stacking-cells"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/reading-one-word-at-a-time").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "choosing-what-to-remember",
@@ -51,6 +69,10 @@ export const world4: WorldEntry = {
       idea: "Little gates decide what to keep and forget",
       playWith: "Open and close the memory gates",
       prerequisites: ["reading-one-word-at-a-time"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/choosing-what-to-remember").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "meaning-as-places",
@@ -59,6 +81,10 @@ export const world4: WorldEntry = {
       idea: "Similar things live close together on a map",
       playWith: "Similar words drift together on a map",
       prerequisites: ["stacking-cells", "a-map-of-everything"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/meaning-as-places").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "squeeze-and-rebuild",
@@ -67,6 +93,10 @@ export const world4: WorldEntry = {
       idea: "Shrink a picture to a tiny code, then rebuild it",
       playWith: "Tighten the squeeze; watch the rebuild blur",
       prerequisites: ["stacking-cells", "the-best-shadow"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/squeeze-and-rebuild").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "smooth-imagination",
@@ -75,6 +105,10 @@ export const world4: WorldEntry = {
       idea: "A map where every spot is a believable picture",
       playWith: "Glide across a map of faces as they morph",
       prerequisites: ["squeeze-and-rebuild"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/smooth-imagination").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "forger-vs-detective",
@@ -83,6 +117,10 @@ export const world4: WorldEntry = {
       idea: "One fakes, one catches, both improve",
       playWith: "The duel arena with live scores",
       prerequisites: ["stacking-cells"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/forger-vs-detective").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "painting-from-fog",
@@ -91,6 +129,10 @@ export const world4: WorldEntry = {
       idea: "Start with fuzz and clean it step by step into a picture",
       playWith: "Scrub from fog to image; paint where to steer it",
       prerequisites: ["smooth-imagination"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/painting-from-fog").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "learning-from-friends",
@@ -99,6 +141,10 @@ export const world4: WorldEntry = {
       idea: "Everyone learns a little from their friends",
       playWith: "Pulses spread through a friendship network",
       prerequisites: ["stacking-cells"],
+      load: () =>
+        import("@/modules/w4-deep-architectures/learning-from-friends").then(
+          ({ definition }) => definition,
+        ),
     },
   ],
 };
