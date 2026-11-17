@@ -61,6 +61,8 @@ export const world2: WorldEntry = {
       idea: "Add up clues to judge a message",
       playWith: "Words light up as spam or not-spam clues",
       prerequisites: ["how-sure-is-it"],
+      load: () =>
+        import("@/modules/w2-classic-ml/the-spam-detective").then(({ definition }) => definition),
     },
     {
       id: "finding-natural-groups",
@@ -69,6 +71,8 @@ export const world2: WorldEntry = {
       idea: "Group things that sit close, with no labels",
       playWith: "Magnets pull dots into groups",
       prerequisites: ["what-the-machine-sees"],
+      load: () =>
+        import("@/modules/w2-classic-ml/finding-natural-groups").then(({ definition }) => definition),
     },
     {
       id: "the-best-shadow",
