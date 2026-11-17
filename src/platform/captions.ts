@@ -1,5 +1,23 @@
 /** Every learner-facing word in the platform's own screens, here so check-captions can read them. */
 export const platformCaptions = {
+  site: {
+    name: "Neural Atlas",
+    description: "Build a feel for how AI works by touching it.",
+    pageTitle: (page: string) => `${page} · Neural Atlas`,
+  },
+  notFound: {
+    title: "We couldn’t find that page",
+    note: "The link may be old, or the page has moved. The map has every idea.",
+    pageTitle: "Not found",
+  },
+  pageError: {
+    title: "Something went wrong on this page.",
+    note: "Try again, or head back to the map.",
+  },
+  lessonError: {
+    title: "This lesson could not start.",
+    note: "Try again. If it keeps happening, another lesson may work on this browser.",
+  },
   nav: { label: "Around the atlas", home: "Back to the map", puzzle: "Today’s puzzle" },
   loading: "Setting the scene…",
   loadFailed: "This lesson couldn’t load. Check the connection, then try again.",
@@ -43,6 +61,7 @@ export const platformCaptions = {
     note: "This lesson isn’t ready yet. Come back soon.",
     playWith: "You will get to play with",
     first: "Good to try first",
+    ready: "Ready to explore now",
     home: "Back to the map",
   },
   puzzle: {
@@ -50,5 +69,9 @@ export const platformCaptions = {
     note: "One break-it mission a day, the same for everyone.",
     empty: "The first puzzle arrives with the first lessons.",
     go: "Try it",
+    loading: "Picking today’s puzzle…",
+    failed: "Today’s puzzle couldn’t load. Check the connection, then try again.",
+    solved: "Solved today. A new one arrives tomorrow.",
+    date: (day: string) => `The puzzle for ${day}`,
   },
 };

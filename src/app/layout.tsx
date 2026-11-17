@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { fontVariables } from "@/design/fonts";
 import { themeInitScript } from "@/design/theme";
+import { platformCaptions } from "@/platform/captions";
 import { CatalogPalette } from "./CatalogPalette";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Neural Atlas",
-  description: "Build a feel for how AI works by touching it.",
+  title: platformCaptions.site.name,
+  description: platformCaptions.site.description,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

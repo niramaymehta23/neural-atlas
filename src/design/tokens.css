@@ -60,6 +60,8 @@
   --color-ink-soft: var(--ink-soft);
   --color-accent: var(--clay);
   --color-accent-ink: var(--accent-ink);
+  /* Text on a clay fill: ink-black in both themes (ivory on clay is 2.9:1). */
+  --color-on-accent: var(--ink-black);
   --color-good: var(--sage);
   --color-bad: var(--rose);
   --color-flow: var(--sky);

@@ -1,4 +1,4 @@
-import { dateKey, pickDaily } from "./puzzle";
+import { dateKey, pickDaily, untilNextPuzzle } from "./puzzle";
 
 const lessons = Array.from({ length: 12 }, (_, index) => `lesson-${index}`);
 
@@ -14,7 +14,7 @@ describe("daily puzzle", () => {
   it("rotates across the choices over a month", () => {
     const picks = new Set(
       Array.from({ length: 30 }, (_, day) =>
-        pickDaily(dateKey(new Date(2026, 10, day + 1)), lessons),
+        pickDaily(dateKey(new Date(Date.UTC(2026, 10, day + 1))), lessons),
       ),
     );
     expect(picks.size).toBeGreaterThan(6);
@@ -26,7 +26,15 @@ describe("daily puzzle", () => {
     expect(pickDaily("2026-11-16", [])).toBeUndefined();
   });
 
-  it("uses the learner's calendar date", () => {
-    expect(dateKey(new Date(2026, 0, 5, 23, 59))).toBe("2026-01-05");
+  it("picks the same puzzle in every time zone at one moment (NAV-27)", () => {
+    const moment = Date.parse("2026-01-05T23:59:00Z");
+    expect(dateKey(new Date(moment))).toBe("2026-01-05");
+    // The same instant written with two offsets.
+    expect(dateKey(new Date("2026-01-05T15:59:00-08:00"))).toBe("2026-01-05");
+    expect(dateKey(new Date("2026-01-06T08:59:00+09:00"))).toBe("2026-01-05");
+  });
+
+  it("knows when the next puzzle arrives", () => {
+    expect(untilNextPuzzle(new Date("2026-01-05T23:59:00Z"))).toBe(60_000);
   });
 });

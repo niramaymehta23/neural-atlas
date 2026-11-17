@@ -107,6 +107,13 @@ describe.each(Object.entries(themes))("%s theme contrast", (_theme, vars) => {
   );
 });
 
+describe.each(Object.entries(themes))("%s theme: text on clay", (_theme, vars) => {
+  it("ink-black on a clay fill reaches 4.5:1", () =>
+    expect(
+      contrast(resolve("var(--ink-black)", vars), resolve("var(--clay)", vars)),
+    ).toBeGreaterThanOrEqual(4.5));
+});
+
 describe("the resolver", () => {
   it("reproduces the audited day failure, so it catches A11Y-01", () => {
     const grey = resolve("var(--warm-grey)", day);
