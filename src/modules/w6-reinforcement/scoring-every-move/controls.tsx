@@ -65,7 +65,7 @@ export function ScoringControls({ state, update }: Props) {
         <button
           type="button"
           onClick={() => update(({ playing }) => ({ playing: !playing }))}
-          className={`${BUTTON} text-accent`}
+          className={`${BUTTON} text-accent-ink`}
         >
           {state.playing ? words.pause : words.play}
         </button>

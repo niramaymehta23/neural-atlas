@@ -4,6 +4,7 @@
  */
 import type { ComponentType } from "react";
 import type { Frame, Timeline } from "@/engine/timeline/timeline";
+import type { Companion } from "./companion/companion";
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 /** Declare module state with `type`, not `interface`, so it fits this index signature. */
@@ -11,12 +12,19 @@ export type ModuleState = { [key: string]: Json };
 /** A recorded moment: training modules record engine snapshots, which carry both fields. */
 export type TimelineFrame = Frame & { loss: number };
 
-export type Update<S> = (change: Partial<S> | ((state: S) => Partial<S>)) => void;
+/**
+ * Changes state. Pass `{ touch: false }` for changes the learner did not make (a scene syncing
+ * its engine's progress), so they do not count as the first touch.
+ */
+export type Update<S> = (
+  change: Partial<S> | ((state: S) => Partial<S>),
+  options?: { touch?: boolean },
+) => void;
 
 /** What the shell hands the scene, the controls and the drawer. */
 export type ModuleViewProps<S extends ModuleState, F extends TimelineFrame = TimelineFrame> = {
   state: S;
-  /** Changes state; the first call counts as the learner's first touch. */
+  /** Changes state; the first learner change counts as the first touch (scrubbing does not). */
   update: Update<S>;
   /**
    * Where training is recorded. To restore a snapshot's moment, rebuild recorded frames from
@@ -31,8 +39,8 @@ export type ModuleViewProps<S extends ModuleState, F extends TimelineFrame = Tim
 };
 
 /**
- * The words the shell shows. They live in the module's captions.ts, which check-captions reads
- * whole: put every other learner-facing word there too (dial names, `describe` words, buttons,
+ * The words the shell shows. They live in the module's captions.ts, where every word is reviewed
+ * by hand: put every other learner-facing word there too (dial names, `describe` words, buttons,
  * scene labels, drawer text) as further exports, and import them in the components.
  */
 export type ModuleCaptions = {
@@ -85,6 +93,19 @@ export type ModuleDefinition<S extends ModuleState, F extends TimelineFrame = Ti
   compare?: (state: S) => S;
   /** Shows the timeline; set when anything trains. */
   trains?: boolean;
+  /**
+   * Makes a link's state safe to draw: clamp every number to its dial's range and cap array
+   * lengths. Runs after the link's values are matched by key and kind to `initialState`.
+   * Required for any module with numeric dials or arrays (a hand-made link can say anything).
+   */
+  parseState?: (saved: S, initial: S) => S;
+  /** Starts from the learner's own network (the companion) when no link is being opened. */
+  initialFrom?: (companion: Companion, initial: S) => S;
+  /**
+   * One plain sentence saying what the scene shows now, read out politely to screen readers
+   * when it changes (words from captions.ts). For visuals that have no text of their own.
+   */
+  describe?: (state: S, frame: F | undefined) => string;
 };
 
 /** A module with its state type erased, as the shell and catalog handle it. */
@@ -100,7 +121,7 @@ export function defineModule<S extends ModuleState, F extends TimelineFrame = Ti
 
 export type WorldNumber = 1 | 2 | 3 | 4 | 5 | 6;
 
-/** One lesson's metadata. Field names match the keys check-captions skips or reads. */
+/** One lesson's metadata. Its words are learner-facing, except `realTerm`, shown only as the end tag. */
 export type LessonEntry = {
   /** Everyday-name slug, used in /learn/[id]. */
   id: string;

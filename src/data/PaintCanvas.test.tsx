@@ -48,4 +48,50 @@ describe("PaintCanvas", () => {
     });
     expect(onAdd).toHaveBeenCalledWith({ x: 0.5, y: 0.5, label: 1 });
   });
+
+  it("draws each group in its own shape, outlined in ink", () => {
+    const { container } = render(
+      <PaintCanvas
+        label="Garden"
+        group={0}
+        onAdd={() => undefined}
+        points={[
+          { x: 0, y: 0, label: 0 },
+          { x: 0.5, y: 0.5, label: 1 },
+        ]}
+      />,
+    );
+    const [first, second] = container.querySelectorAll("[data-group]");
+    expect(first).toHaveAttribute("data-shape", "circle");
+    expect(second).toHaveAttribute("data-shape", "triangle");
+    expect(first?.getAttribute("d")).not.toBe(second?.getAttribute("d"));
+    expect(second).toHaveAttribute("stroke", "var(--color-ink)");
+  });
+
+  it("tells keyboard users where the ring is and what they planted", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <PaintCanvas
+        label="Garden"
+        group={0}
+        points={[]}
+        onAdd={() => undefined}
+        words={{
+          instructions: "Arrow keys move the ring; Enter plants.",
+          position: (across, up) => `${across}% across, ${up}% up`,
+          planted: (group, across, up) =>
+            `Planted a ${group === 0 ? "daisy" : "tulip"} at ${across}% across, ${up}% up`,
+        }}
+      />,
+    );
+    const garden = screen.getByRole("application", { name: "Garden" });
+    expect(garden).toHaveAccessibleDescription("Arrow keys move the ring; Enter plants.");
+    await user.tab();
+    const live = container.querySelector("[aria-live=polite]");
+    expect(live).toHaveTextContent("50% across, 50% up");
+    await user.keyboard("{ArrowRight}{ArrowRight}");
+    expect(live).toHaveTextContent("55% across, 50% up");
+    await user.keyboard("{Enter}");
+    expect(live).toHaveTextContent("Planted a daisy at 55% across, 50% up");
+  });
 });

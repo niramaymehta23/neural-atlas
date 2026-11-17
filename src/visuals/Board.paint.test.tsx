@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Board } from "./Board";
 
@@ -25,5 +25,32 @@ describe("Board painting", () => {
     render(<Board columns={2} tiles={["floor", "wall"]} label="A still board" />);
     expect(screen.queryByRole("application")).toBeNull();
     expect(screen.getByRole("img", { name: "A still board" })).toBeInTheDocument();
+  });
+
+  it("starts the cursor on the piece and says which square it is on", async () => {
+    const painted: number[] = [];
+    const { container } = render(
+      <Board
+        columns={3}
+        tiles={["floor", "floor", "floor", "floor", "floor", "trap"]}
+        piece={{ row: 0, column: 1 }}
+        label="A small kitchen"
+        onPaint={(index) => painted.push(index)}
+        words={{
+          instructions: "Arrow keys move; Enter paints.",
+          square: (row, column, kind) => `Row ${row}, square ${column}: ${kind}`,
+        }}
+      />,
+    );
+    const board = screen.getByRole("application", { name: "A small kitchen" });
+    expect(board).toHaveAccessibleDescription("Arrow keys move; Enter paints.");
+    act(() => board.focus());
+    const live = container.querySelector("[aria-live=polite]");
+    expect(live).toHaveTextContent("Row 1, square 2: floor");
+    expect(container.querySelector("[data-cursor] rect")).toHaveAttribute("stroke-width", "3");
+    await userEvent.keyboard("{ArrowRight}{ArrowDown}");
+    expect(live).toHaveTextContent("Row 2, square 3: trap");
+    await userEvent.keyboard("{Enter}");
+    expect(painted).toEqual([5]);
   });
 });

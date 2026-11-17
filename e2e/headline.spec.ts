@@ -56,7 +56,7 @@ test("rolling downhill: huge steps fly off the map and earn the star", async ({ 
   await page.getByRole("slider", { name: "How big a step" }).focus();
   await page.keyboard.press("End");
   await page.getByRole("button", { name: "Let them roll" }).click();
-  await expect(page.getByText("You earned a star.")).toBeVisible();
+  await expect(page.locator("[data-region=dock]").getByText("You earned a star.")).toBeVisible();
   await expect(page.getByText("Gradient descent")).toBeVisible();
   await page.getByRole("button", { name: "Watch why it happened" }).click();
   await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
@@ -162,7 +162,9 @@ test("scoring every move: paint the board mid-practice, then learn too fast to s
 
   await page.getByRole("slider", { name: "How fast it learns" }).focus();
   await page.keyboard.press("End");
-  await expect(page.getByText("You earned a star.")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("[data-region=dock]").getByText("You earned a star.")).toBeVisible({
+    timeout: 30_000,
+  });
   await expect(page.getByText("Q-learning")).toBeVisible();
   expect(errors).toEqual([]);
 });

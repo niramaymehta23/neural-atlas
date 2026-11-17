@@ -31,4 +31,10 @@ describe("Slider", () => {
     await user.keyboard("{End}");
     expect(slider).toHaveAttribute("aria-valuenow", "10");
   });
+
+  it("draws its range and thumb outline in ink, so they stand out at 3:1", () => {
+    const { container } = render(<Harness />);
+    expect(container.querySelector("[data-orientation] > span > span")).toHaveClass("bg-ink");
+    expect(screen.getByRole("slider")).toHaveClass("border-ink");
+  });
 });

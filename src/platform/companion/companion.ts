@@ -19,15 +19,19 @@ export const freshCompanion: Companion = { hidden: [4], activation: "tanh", conv
 const isActivation = (value: unknown): value is Activation =>
   [...ACTIVATIONS, "identity"].includes(value as Activation);
 
+/** Keeps each recognised field and fills the rest from a fresh model; null for a non-object. */
 function parseCompanion(saved: unknown): Companion | null {
-  if (typeof saved !== "object" || saved === null) return null;
-  const { hidden, activation, convolution } = saved as Partial<Companion>;
-  const valid =
+  if (typeof saved !== "object" || saved === null || Array.isArray(saved)) return null;
+  const { hidden, activation, convolution } = saved as Partial<Record<keyof Companion, unknown>>;
+  const validHidden =
     Array.isArray(hidden) &&
-    hidden.every((size) => Number.isInteger(size) && size > 0) &&
-    isActivation(activation) &&
-    typeof convolution === "boolean";
-  return valid ? { hidden, activation, convolution } : null;
+    hidden.length > 0 &&
+    hidden.every((size) => Number.isInteger(size) && size > 0);
+  return {
+    hidden: validHidden ? (hidden as number[]) : freshCompanion.hidden,
+    activation: isActivation(activation) ? activation : freshCompanion.activation,
+    convolution: typeof convolution === "boolean" ? convolution : freshCompanion.convolution,
+  };
 }
 
 export function createCompanionStore(storage: KeyValueStorage) {

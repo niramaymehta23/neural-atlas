@@ -52,9 +52,22 @@ describe("nextSuggested", () => {
     expect(nextSuggested(lessons, progressOf({ a: done, c: done }))).toBe("d");
   });
 
-  it("falls back to curriculum order when nothing ready is built", () => {
+  it("never suggests a lesson that is still being drawn", () => {
     const unbuilt = lessons.map(({ id, prerequisites }) => ({ id, prerequisites }));
-    expect(nextSuggested(unbuilt, progressOf({ a: done }))).toBe("b");
+    expect(nextSuggested(unbuilt, progressOf({ a: done }))).toBeNull();
+  });
+
+  it("returns null once every built lesson is mastered, though unbuilt ones remain", () => {
+    expect(nextSuggested(lessons, progressOf({ a: done, c: done, d: done }))).toBeNull();
+  });
+
+  it("takes plain data with any truthy load marker", () => {
+    const plain = lessons.map(({ id, prerequisites, load }) => ({
+      id,
+      prerequisites,
+      load: !!load,
+    }));
+    expect(nextSuggested(plain, progressOf({ a: done }))).toBe("c");
   });
 
   it("waits for every built prerequisite", () => {
@@ -103,10 +116,46 @@ describe("progress store", () => {
     expect(reloaded.getState().lessons.b?.visited).toBe(true);
   });
 
-  it("ignores saved data it does not recognise", async () => {
-    const storage = memoryStorage(new Map([["progress-v1", { lessons: { a: { visited: 1 } } }]]));
+  it("salvages a bad lesson record and keeps the good ones (PLT-01)", async () => {
+    const storage = memoryStorage(
+      new Map([["progress-v1", { lessons: { a: done, b: { visited: 1, missions: ["x", 3] } } }]]),
+    );
     const store = createProgressStore(storage);
-    await store.ready;
-    expect(store.getState()).toEqual({ lessons: {} });
+    await store.recordVisit("c");
+    const saved = storage.saved.get("progress-v1") as Progress;
+    expect(saved.lessons.a).toEqual(done);
+    expect(saved.lessons.b).toEqual({ visited: true, missions: ["x"], predicted: false });
+    expect(saved.lessons.c?.visited).toBe(true);
+  });
+
+  it("copies unreadable progress aside before writing over it (PLT-01)", async () => {
+    const storage = memoryStorage(new Map([["progress-v1", "garbage"]]));
+    const store = createProgressStore(storage);
+    await store.recordVisit("a");
+    const aside = [...storage.saved.keys()].filter((key) => key.startsWith("progress-v1-corrupt-"));
+    expect(aside).toHaveLength(1);
+    expect(storage.saved.get(aside[0] ?? "")).toBe("garbage");
+  });
+
+  it("keeps saving after one change throws (PLT-27)", async () => {
+    const storage = memoryStorage();
+    const store = createProgressStore(storage);
+    await expect(
+      store.change(() => {
+        throw new Error("bad change");
+      }),
+    ).rejects.toThrow("bad change");
+    await store.recordVisit("a");
+    expect((storage.saved.get("progress-v1") as Progress).lessons.a?.visited).toBe(true);
+  });
+
+  it("lets ready settle even when storage never answers (PLT-21)", async () => {
+    vi.useFakeTimers();
+    const store = createProgressStore({ read: () => new Promise(() => {}), write: async () => {} });
+    let settled = false;
+    void store.ready.then(() => (settled = true));
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(settled).toBe(true);
+    vi.useRealTimers();
   });
 });

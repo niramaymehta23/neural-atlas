@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { count } from "@/design/copy";
 import { DecisionField } from "@/data/DecisionField";
 import { gridInputs, toSamples } from "@/data/datasets";
-import { PaintCanvas } from "@/data/PaintCanvas";
+import { PaintCanvas, type PaintWords } from "@/data/PaintCanvas";
 import { createFieldReader } from "@/engine/model/forward";
 import { ModelEngine } from "@/engine/model/model-engine";
 import type { ModuleViewProps } from "@/platform/contract";
@@ -40,6 +40,8 @@ function useTeam({ state, update, timeline, side }: Props) {
   const read = useMemo(() => createFieldReader(model), [model]);
   const [engine, setEngine] = useState<ModelEngine | null>(null);
   const [view, setView] = useState<{ params: Float64Array; field: Float32Array } | null>(null);
+  // A worker that fails is handed to the lesson's error boundary (thrown from the scene).
+  const [failure, setFailure] = useState<Error | null>(null);
   const { live, cursor } = useSyncExternalStore(
     timeline.subscribe,
     timeline.getState,
@@ -65,8 +67,9 @@ function useTeam({ state, update, timeline, side }: Props) {
       },
       onSnapshot: (snapshot) => {
         timeline.record(snapshot);
-        if (side === "main") update({ epochs: snapshot.epoch });
+        if (side === "main") update({ epochs: snapshot.epoch }, { touch: false });
       },
+      onError: (message) => setFailure(new Error(message)),
     });
     // A shared link replays the run to the moment it was shared.
     if (start.epochs > 0) created.step(start.epochs);
@@ -111,13 +114,21 @@ function useTeam({ state, update, timeline, side }: Props) {
   }, [live, cursor, timeline, read]);
 
   const shownEpoch = timeline.at(live ? timeline.getState().length - 1 : cursor)?.epoch ?? 0;
-  return { model, view: live ? view : scrubbed, epoch: shownEpoch };
+  return { model, view: live ? view : scrubbed, epoch: shownEpoch, failure };
 }
+
+const PAINT_WORDS: PaintWords = {
+  instructions: words.paint.instructions,
+  position: (across, up) => words.paint.position(String(across), String(up)),
+  planted: (group, across, up) =>
+    words.paint.planted(words.paint.flowers[group] ?? "", String(across), String(up)),
+};
 
 /** The garden with its fences on the left, the team of cells on the right. */
 export function CellsScene(props: Props) {
   const { state, update } = props;
-  const { model, view, epoch } = useTeam(props);
+  const { model, view, epoch, failure } = useTeam(props);
+  if (failure) throw failure;
   return (
     <div className="flex grow flex-col gap-4" data-testid="stacking-cells" data-epoch={epoch}>
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -145,6 +156,7 @@ export function CellsScene(props: Props) {
       <div className="grid gap-4 md:grid-cols-2">
         <PaintCanvas
           label={words.garden}
+          words={PAINT_WORDS}
           points={state.points}
           group={state.brush}
           onAdd={(point) => update(({ points }) => ({ points: [...points, roundPoint(point)] }))}

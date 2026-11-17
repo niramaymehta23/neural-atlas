@@ -1,25 +1,32 @@
 /**
  * Snapshot links: a lesson's whole view (state, guesses, first touch, timeline moment) as
  * versioned, deflated, base64url JSON in the URL hash, so opening the link restores it exactly.
- * Restored state keeps only known keys holding the same kind of value; a scene should still
- * clamp values it cannot draw, since a link can be hand-made.
+ * A link can be hand-made, so restored state keeps only known keys holding the same kind of
+ * finite value, then runs through the module's `parseState`, which clamps it to what the scene
+ * can draw; guesses keep only known predictions and choices.
  */
-import type { Json, ModuleState } from "../contract";
+import type { Json, LessonModule, ModuleState } from "../contract";
 import type { Guess, ModuleView } from "../module-store";
 
-export const SNAPSHOT_VERSION = 1;
+/** v2 saves the moment as an epoch (v1 saved a buffer position, which differs between runs). */
+export const SNAPSHOT_VERSION = 2;
 const PARAM = "s";
-/** Links longer than this are refused before inflating, so a crafted link cannot balloon. */
-const MAX_LINK_CHARS = 32_000;
+/** Links longer than this are refused before inflating, and not offered when sharing. */
+export const MAX_LINK_CHARS = 32_000;
 const MAX_JSON_BYTES = 2_000_000;
 
 export type Snapshot = ModuleView & {
   v: typeof SNAPSHOT_VERSION;
   /** The lesson it belongs to. */
   id: string;
-  /** The timeline moment shown, or null when following live. */
-  moment: number | null;
+  /** The epoch of the timeline moment shown, or null when following live. */
+  momentEpoch: number | null;
+  /** A v1 link's moment: a position in the recorded frames. */
+  momentIndex?: number | null;
 };
+
+export type DecodeFailure = "version" | "lesson" | "broken" | "size";
+export type Decoded = { ok: true; snapshot: Snapshot } | { ok: false; reason: DecodeFailure };
 
 async function pipe(bytes: Uint8Array<ArrayBuffer>, through: GenericTransformStream) {
   const reader = new Blob([bytes]).stream().pipeThrough(through).getReader();
@@ -46,7 +53,9 @@ function fromBase64Url(text: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
-export async function encodeSnapshot(snapshot: Omit<Snapshot, "v">): Promise<string> {
+export async function encodeSnapshot(
+  snapshot: Omit<Snapshot, "v" | "momentIndex">,
+): Promise<string> {
   const json = JSON.stringify({ v: SNAPSHOT_VERSION, ...snapshot });
   return toBase64Url(
     await pipe(new TextEncoder().encode(json), new CompressionStream("deflate-raw")),
@@ -56,50 +65,87 @@ export async function encodeSnapshot(snapshot: Omit<Snapshot, "v">): Promise<str
 const sameKind = (a: unknown, b: unknown) =>
   typeof a === typeof b && Array.isArray(a) === Array.isArray(b) && (a === null) === (b === null);
 
-/** Keeps saved values only for keys the lesson knows, holding the same kind of value. */
+/** JSON can still carry 1e999, which parses to Infinity. */
+const finite = (value: unknown): boolean =>
+  typeof value === "number"
+    ? Number.isFinite(value)
+    : Array.isArray(value)
+      ? value.every(finite)
+      : typeof value === "object" && value !== null
+        ? Object.values(value).every(finite)
+        : true;
+
+/** Keeps saved values only for keys the lesson knows, holding the same kind of finite value. */
 function mergeState(initial: ModuleState, saved: unknown): ModuleState {
   if (typeof saved !== "object" || saved === null) return initial;
   const entries = Object.entries(initial).map(([key, value]): [string, Json] => {
     const candidate = (saved as Record<string, Json | undefined>)[key];
-    return [key, candidate !== undefined && sameKind(candidate, value) ? candidate : value];
+    const keep = candidate !== undefined && sameKind(candidate, value) && finite(candidate);
+    return [key, keep ? candidate : value];
   });
   return Object.fromEntries(entries);
 }
 
-function parseGuesses(saved: unknown): Record<string, Guess> {
+/** Keeps guesses for this lesson's predictions and choices; a revealed one needs its answer. */
+function parseGuesses(saved: unknown, predictions: LessonModule["predictions"]) {
   if (typeof saved !== "object" || saved === null) return {};
-  return Object.fromEntries(
-    Object.entries(saved).filter(
-      ([, guess]: [string, Partial<Guess>]) =>
-        typeof guess?.choice === "string" &&
-        typeof guess.revealed === "boolean" &&
-        (guess.answer === undefined || typeof guess.answer === "string"),
-    ),
-  );
+  const kept: Record<string, Guess> = {};
+  for (const [id, raw] of Object.entries(saved)) {
+    const choices = predictions.find((prediction) => prediction.id === id)?.choices;
+    const known = (choice: unknown) => choices?.some((known) => known.id === choice) ?? false;
+    const guess = raw as Partial<Guess> | null;
+    if (!guess || !known(guess.choice) || typeof guess.revealed !== "boolean") continue;
+    if (guess.revealed && !known(guess.answer)) continue;
+    kept[id] = {
+      choice: guess.choice as string,
+      revealed: guess.revealed,
+      ...(guess.revealed && { answer: guess.answer as string }),
+    };
+  }
+  return kept;
 }
 
-/** The view a link holds for this lesson, or null for another lesson, version or garbage. */
+const wholeNumber = (value: unknown) =>
+  Number.isInteger(value) && (value as number) >= 0 ? (value as number) : null;
+
+/** The view a link holds for this lesson, or why it cannot be opened. */
 export async function decodeSnapshot(
   encoded: string,
   id: string,
-  initialState: ModuleState,
-): Promise<Snapshot | null> {
-  if (encoded.length > MAX_LINK_CHARS) return null;
+  module: Pick<LessonModule, "initialState" | "predictions" | "parseState">,
+): Promise<Decoded> {
+  if (encoded.length > MAX_LINK_CHARS) return { ok: false, reason: "size" };
+  let saved: Partial<Snapshot> & { moment?: unknown };
   try {
     const bytes = await pipe(fromBase64Url(encoded), new DecompressionStream("deflate-raw"));
-    const saved = JSON.parse(new TextDecoder().decode(bytes)) as Partial<Snapshot>;
-    if (saved.v !== SNAPSHOT_VERSION || saved.id !== id) return null;
-    return {
+    saved = JSON.parse(new TextDecoder().decode(bytes)) as typeof saved;
+    if (typeof saved !== "object" || saved === null) return { ok: false, reason: "broken" };
+  } catch {
+    return { ok: false, reason: "broken" };
+  }
+  const version = saved.v as number;
+  if (version !== 1 && version !== SNAPSHOT_VERSION) return { ok: false, reason: "version" };
+  if (saved.id !== id) return { ok: false, reason: "lesson" };
+  const { initialState, predictions, parseState } = module;
+  const merged = mergeState(initialState, saved.state);
+  let state: ModuleState;
+  try {
+    state = parseState ? parseState(merged, initialState) : merged;
+  } catch {
+    return { ok: false, reason: "broken" };
+  }
+  return {
+    ok: true,
+    snapshot: {
       v: SNAPSHOT_VERSION,
       id,
-      state: mergeState(initialState, saved.state),
-      guesses: parseGuesses(saved.guesses),
+      state,
+      guesses: parseGuesses(saved.guesses, predictions),
       touched: saved.touched === true,
-      moment: Number.isInteger(saved.moment) ? (saved.moment as number) : null,
-    };
-  } catch {
-    return null;
-  }
+      momentEpoch: version === 1 ? null : wholeNumber(saved.momentEpoch),
+      ...(version === 1 && { momentIndex: wholeNumber(saved.moment) }),
+    },
+  };
 }
 
 /** The encoded snapshot in a location hash such as "#s=…", if any. */

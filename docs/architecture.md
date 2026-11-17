@@ -335,3 +335,50 @@ fetched cross-origin at runtime. Size limits, caching and the deploy are in "Hos
 - **Styleguide and evidence pages** (`/styleguide`, `/styleguide/engines`, `/styleguide/platform`) ship in
   production on purpose: the e2e suite and the hosted smoke test use them. They are to be marked `noindex`
   (NAV-28, H2) rather than hidden behind a build flag.
+
+## Hardening hand-over (H2: shell, design system, navigation)
+
+What later stages copy. Items and their tests are in `docs/hardening/` (platform, home-navigation, design-accessibility,
+live-testing, ENG-06/07/12).
+
+- **Contract additions** (`platform/contract.ts`): `parseState(saved, initial)` is **required** for any lesson with numeric
+  dials or arrays: clamp every number to its dial (`platform/clamp.ts`: `clampNumber`, `clampWhole`, `oneOf`, `capList`) and
+  cap list lengths, because snapshot links can be hand-made. `initialFrom(companion, initial)` starts a lesson from the
+  learner's own network when no link is opened. `describe(state, frame)` returns one plain sentence (words in captions.ts)
+  read politely to screen readers for scenes with no text of their own. `update(change, { touch: false })` for engine
+  syncs, so they do not count as the first touch; a guess is not a touch either.
+- **Shell** (`ModuleShell`): every part (scene, dials, drawer) sits in a `LessonErrorBoundary`; a scene that hits an engine
+  failure should `throw` it from render (keep it in state from `onError`) so the boundary shows "Something went wrong here"
+  with Try again. All announcements go through one persistent `role=status` region; panels must not mount their own.
+  Missions fire into a queue (shown one at a time); a link that already meets a mission primes it (no star). Until the
+  learner guesses or skips, the guess card sits above the dials ("Guess first, then press start"); a guess locks once
+  `answer` is non-null. The timeline sits under the scene. Focus moves to the card heading after reveal and next.
+- **Snapshots v2** carry `momentEpoch` (v1 links still open by position). `decodeSnapshot` returns `{ ok, reason }` and
+  LessonView shows why a link was ignored. A shared view's guesses show as "Their guess"; "Start from your own view"
+  drops the link. Sharing writes the clipboard inside the click and falls back to a selectable link field.
+- **Saving**: progress and companion records are salvaged field by field; unreadable values are copied to
+  `<key>-corrupt-<time>` before being overwritten; `ready` settles within 2 s; `storageHealth.persistent` turns false
+  where IndexedDB is missing or refuses.
+- **Engines**: without cross-origin isolation `ModelEngine` falls back to posted live copies (same `readLive()`); worker
+  load errors, message errors and a 20 s ready timeout reject `ready` and pending calls and reach `onError`. The
+  attention reader times out (60 s first load, 10 s per read) and restarts its worker.
+- **Site**: `platform/SiteNav` (map, puzzle, palette trigger, theme switch) on every page; a lesson offers "Next idea"
+  once its missions are done. `app/error.tsx`, `global-error.tsx`, `learn/[moduleId]/error.tsx` and `not-found.tsx`
+  use `platform/ProblemPage`. `app/template.tsx` cross-fades routes and focuses the new `main h1`. Lesson pages carry
+  `description: lesson.idea`; styleguide pages are `noindex`. `fetchLesson`/`fetchedLesson` (`platform/lesson-cache.ts`)
+  let a lesson fetched early open without the loading line.
+- **Theme**: with no saved choice the site follows `prefers-color-scheme` (before first paint) and other tabs' choices.
+- **Design tokens**: day `--ink-soft` is #5F5E58; clay as text, links and the focus ring is `text-accent-ink`
+  (`text-accent` is lint-banned); text on a clay fill is `text-on-accent`. `src/design/contrast.test.ts` resolves every
+  text/surface pair in both themes. Clay stays for fills of touchable or next things only.
+- **Colour-free cues**: `tileMark`, `valueMark`, `weightDash`, `classMark`/`markPath` in encodings; Board and PaintCanvas
+  take their spoken words as props from the lesson's captions; SegmentedControl stacks more than three options
+  (pass `vertical={false}` to keep a wrapping row); HoverNote opens on tap; Dial takes arc taps; SoftStage takes a
+  `fallback` for no WebGL (home: the lesson list; the valley: `ValleyMap`).
+- **Words**: `src/captions-scan.test.ts` fails on JSX text, spoken attributes or page metadata written outside captions
+  files (styleguide excluded). Every learner-facing string is reviewed by hand against the "smart 12-year-old" test:
+  no jargon, no formulas or raw numbers on the main screen, the real term only as the end tag.
+- **Checks**: `e2e/shell.spec.ts` (navigation, failures, links, guess flow, layout, theme, palette, touch),
+  `e2e/a11y.spec.ts` (axe: 9 pages × day/night × 1280/320 with reduced motion), `e2e/engine-failures.spec.ts`,
+  `e2e/primitives.spec.ts`, plus the home tests in `e2e/home.spec.ts`. Dev dependencies added: `@axe-core/playwright`,
+  `fake-indexeddb`.

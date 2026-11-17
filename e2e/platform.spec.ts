@@ -75,23 +75,26 @@ test("a mission fires once, replays its window, and its star survives a reload",
   await dial(page).focus();
   await page.keyboard.press("End");
   await takeSteps(page, 4);
-  await expect(page.getByText("You earned a star.")).toHaveCount(1);
+  const dock = page.locator("[data-region=dock]");
+  await expect(dock.getByText("You earned a star.")).toHaveCount(1);
   await expect(page.getByText("gradient descent")).toBeVisible();
 
   await page.getByRole("button", { name: "Watch why it happened" }).click();
   const moment = page.getByRole("slider", { name: "Moment" });
   await expect(moment).toHaveAttribute("aria-valuetext", /Moment (one|two|three|four) of/);
-  // The window ends where it fired: the first huge step already lands past the rim.
-  await expect(moment).toHaveAttribute("aria-valuetext", "Moment two of five");
+  // The window ends where it fired (the first huge step already lands past the rim), then the
+  // timeline goes back to following live, as it was before the replay (PLT-19).
+  await expect(moment).toHaveAttribute("aria-valuetext", "Moment five of five");
   await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
 
   await page.reload();
   await expect(page.locator("[data-mission=fly-off]")).toHaveAttribute("data-done", "true");
-  await expect(page.getByText("You earned a star.")).toHaveCount(0);
+  await expect(dock.getByText("You earned a star.")).toHaveCount(0);
   await expect(page.getByText("gradient descent")).toBeVisible();
 });
 
 test("a snapshot link restores the exact view", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await openFixture(page);
   await dial(page).focus();
   for (let i = 0; i < 10; i += 1) await page.keyboard.press("ArrowUp");
@@ -100,16 +103,18 @@ test("a snapshot link restores the exact view", async ({ page, context }) => {
   await page.getByRole("button", { name: "Back one moment" }).click();
   const value = await dial(page).getAttribute("aria-valuenow");
   await page.getByRole("button", { name: "Copy a link to this view" }).click();
-  await expect(page.getByText(/Link copied/)).toBeVisible();
+  await expect(page.locator("[data-share]").getByText(/Link copied/)).toBeVisible();
   const link = page.url();
   expect(link).toMatch(/#s=[\w-]+$/);
 
   const fresh = await context.newPage();
   await openFixture(fresh, new URL(link).hash);
   await expect(dial(fresh)).toHaveAttribute("aria-valuenow", value!);
+  // Their guess is shown as theirs; the learner's own guesses start empty (PLT-08).
+  await expect(fresh.getByText("Their guess: At the bottom")).toBeVisible();
   await expect(fresh.getByRole("button", { name: "At the bottom" })).toHaveAttribute(
     "aria-pressed",
-    "true",
+    "false",
   );
   await expect(fresh.getByRole("slider", { name: "Moment" })).toHaveAttribute(
     "aria-valuetext",

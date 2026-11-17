@@ -44,7 +44,7 @@ export const world5: WorldEntry = {
       id: "knowing-the-order",
       title: "Knowing the order",
       realTerm: "Positional encoding",
-      idea: 'Without order, "dog bites man" = "man bites dog"',
+      idea: 'Without order, "dog bites man" is the same as "man bites dog"',
       playWith: "Switch word order on and off",
       prerequisites: ["who-is-looking-at-whom"],
     },

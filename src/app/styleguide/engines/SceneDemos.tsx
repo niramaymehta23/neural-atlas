@@ -11,10 +11,10 @@ const valley = (x: number, z: number) =>
   0.6 * x * x + 2 * (z - 0.3 * x) ** 2 + 0.12 * Math.sin(5 * x) * Math.cos(4 * z);
 
 const BALLS = [
-  { x: -0.8, z: 0.6 },
-  { x: 0.1, z: 0.05 },
-  { x: 0.7, z: -0.4 },
-];
+  { x: -0.8, z: 0.6, shape: "circle" },
+  { x: 0.1, z: 0.05, shape: "triangle" },
+  { x: 0.7, z: -0.4, shape: "square" },
+] as const;
 
 const CLOUD: IdeaPoint[] = makeDataset("blobs", { count: 150, classes: 3, seed: 2 }).map(
   ({ x, y, label }, i) => ({
@@ -26,15 +26,21 @@ const CLOUD: IdeaPoint[] = makeDataset("blobs", { count: 150, classes: 3, seed: 
 const GARDEN = [
   ...["floor", "floor", "wall", "goal"],
   ...["floor", "wall", "floor", "floor"],
-  ...["floor", "floor", "floor", "trap"],
+  ...["coin", "floor", "floor", "trap"],
 ] as const;
 
 export function LandscapeDemo() {
+  const [dropped, setDropped] = useState<{ x: number; z: number } | null>(null);
   return (
     <LossLandscape
       height={valley}
-      markers={BALLS}
+      markers={dropped ? [...BALLS, dropped] : BALLS}
       label="A valley of mistakes with three balls resting on it"
+      onPick={setDropped}
+      pickWords={{
+        label: "Choose where to drop a ball",
+        instructions: "Arrow keys move a ring over the valley; Enter drops a ball there.",
+      }}
       className="h-80 w-full max-w-2xl"
     />
   );
@@ -47,7 +53,7 @@ export function IdeaSpaceDemo() {
       <button
         type="button"
         onClick={() => setFocus((current) => (current === undefined ? 12 : undefined))}
-        className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent"
+        className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent-ink"
       >
         {focus === undefined ? "Glide to one idea" : "Back to the whole map"}
       </button>
@@ -81,7 +87,7 @@ export function BoardDemo() {
       <button
         type="button"
         onClick={() => setStep((n) => n + 1)}
-        className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent"
+        className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent-ink"
       >
         Take a step
       </button>

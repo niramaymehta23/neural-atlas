@@ -68,4 +68,40 @@ describe("TimelineScrubber", () => {
       "Nothing recorded yet",
     );
   });
+
+  it("reads the same moment it shows while the recording catches up", () => {
+    const props = {
+      playing: false,
+      onPlayToggle: () => undefined,
+      onSeek: () => undefined,
+      losses: [],
+      describe: (position: number, length: number) => `${position + 1}/${length}`,
+    };
+    const { rerender } = render(<TimelineScrubber {...props} length={50} position={70} />);
+    const slider = screen.getByRole("slider", { name: "Moment" });
+    expect(slider).toHaveAttribute("aria-valuenow", "49");
+    expect(slider).toHaveAttribute("aria-valuetext", "50/50");
+    rerender(<TimelineScrubber {...props} length={71} position={70} />);
+    expect(slider).toHaveAttribute("aria-valuenow", "70");
+    expect(slider).toHaveAttribute("aria-valuetext", "71/71");
+  });
+
+  it("offers a way back to now only while an earlier moment is shown", async () => {
+    const user = userEvent.setup();
+    const onLive = vi.fn();
+    const props = {
+      length: 5,
+      position: 2,
+      playing: false,
+      onPlayToggle: () => undefined,
+      onSeek: () => undefined,
+      losses: LOSSES,
+      onLive,
+    };
+    const { rerender } = render(<TimelineScrubber {...props} live />);
+    expect(screen.queryByRole("button", { name: "Back to now" })).toBeNull();
+    rerender(<TimelineScrubber {...props} live={false} />);
+    await user.click(screen.getByRole("button", { name: "Back to now" }));
+    expect(onLive).toHaveBeenCalledOnce();
+  });
 });

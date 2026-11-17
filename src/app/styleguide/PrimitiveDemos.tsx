@@ -16,6 +16,12 @@ import { UnderTheHoodDrawer } from "@/ui/UnderTheHoodDrawer";
 import { Section } from "./Section";
 
 const STEP_WORDS = ["tiny", "small", "medium", "big", "huge"];
+const VALLEYS = [
+  { value: "bowl", label: "Round bowl" },
+  { value: "ravine", label: "Long ravine" },
+  { value: "pass", label: "Mountain pass" },
+  { value: "bumpy", label: "Bumpy field" },
+] as const;
 const SHAPES = [
   { value: "round", label: "Round" },
   { value: "pointy", label: "Pointy" },
@@ -46,6 +52,7 @@ export function PrimitiveDemos() {
   const [examples, setExamples] = useState(0.6);
   const [forgetting, setForgetting] = useState(false);
   const [shape, setShape] = useState<(typeof SHAPES)[number]["value"]>("round");
+  const [valley, setValley] = useState<(typeof VALLEYS)[number]["value"]>("bowl");
   const [touched, setTouched] = useState(false);
   const [missionDone, setMissionDone] = useState(false);
 
@@ -65,7 +72,7 @@ export function PrimitiveDemos() {
 
       <Section
         title="Dial"
-        note="A knob with a plain name. Drag up or down, or use the arrow keys."
+        note="A knob with a plain name. Tap the arc, drag up or down, or use the arrow keys."
       >
         <Dial label="How big a step" value={stepSize} onChange={setStepSize} describe={stepWords} />
       </Section>
@@ -85,11 +92,28 @@ export function PrimitiveDemos() {
         <Toggle label="Let it forget a little" checked={forgetting} onChange={setForgetting} />
       </Section>
 
-      <Section title="SegmentedControl" note="Pick one of a few choices.">
-        <SegmentedControl label="Fruit shape" options={SHAPES} value={shape} onChange={setShape} />
+      <Section
+        title="SegmentedControl"
+        note="Pick one of a few choices. Up to three sit side by side and wrap; more stack as a list."
+      >
+        <div className="flex flex-wrap items-start gap-8">
+          <SegmentedControl
+            label="Fruit shape"
+            options={SHAPES}
+            value={shape}
+            onChange={setShape}
+          />
+          <SegmentedControl
+            label="Which valley"
+            showLabel
+            options={VALLEYS}
+            value={valley}
+            onChange={setValley}
+          />
+        </div>
       </Section>
 
-      <Section title="HoverNote" note="One plain sentence on hover or focus.">
+      <Section title="HoverNote" note="One plain sentence on hover, focus, click or tap.">
         <HoverNote note="This dot is one tiny voter. Right now it is fairly sure the fruit is an apple.">
           <button type="button" aria-label="A neuron" className="size-8 rounded-pill bg-flow" />
         </HoverNote>
@@ -100,7 +124,7 @@ export function PrimitiveDemos() {
           <button
             type="button"
             onClick={() => setTouched(true)}
-            className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent"
+            className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent-ink"
           >
             Nudge the dot
           </button>

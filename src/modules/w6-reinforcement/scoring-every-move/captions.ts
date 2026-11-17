@@ -1,4 +1,4 @@
-// Every word the learner sees in this lesson (check-captions reads this file whole).
+// Every word the learner sees in this lesson, kept here so it can be reviewed in one place.
 export const captions = {
   opening:
     "A puppy wants to reach its food bowl on the far side of a board-game kitchen, without stepping in the lava. The floor is a little slippery, so now and then it slides sideways.",
@@ -15,6 +15,12 @@ export const words = {
   board:
     "The kitchen board: tap or drag to paint squares. Arrows show how good each move looks from each square.",
   puppy: "the puppy",
+  paint: {
+    instructions:
+      "Arrow keys move around the board; Enter or Space paints the square with the chosen brush.",
+    square: (row: string, column: string, kind: string) => `Row ${row}, square ${column}: ${kind}`,
+    kinds: { floor: "floor", wall: "wall", trap: "lava", coin: "treat", goal: "bowl" },
+  },
   rewards: "How well each try went, from first to latest",
   tries: (count: string) => `${count} tries so far.`,
   brush: {

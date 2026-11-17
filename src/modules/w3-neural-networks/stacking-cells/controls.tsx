@@ -1,5 +1,6 @@
 "use client";
 
+import { GroupMark } from "@/data/GroupMark";
 import { count } from "@/design/copy";
 import { companionStore } from "@/platform/companion/companion";
 import type { ModuleViewProps } from "@/platform/contract";
@@ -10,9 +11,10 @@ import { hiddenOf, LIMITS, type CellsFrame, type CellsState } from "./model";
 
 type Props = ModuleViewProps<CellsState, CellsFrame>;
 
+/** Brushes are named by the flower and show its shape, not only its colour (A11Y-08). */
 const BRUSHES = [
-  { value: "0", label: words.brush.blue },
-  { value: "1", label: words.brush.green },
+  { value: "0", label: words.brush.daisies, icon: <GroupMark group={0} /> },
+  { value: "1", label: words.brush.tulips, icon: <GroupMark group={1} /> },
 ] as const;
 
 const describeStep = (value: number) =>
@@ -55,6 +57,7 @@ export function CellsControls({ state, update, side }: Props) {
       />
       <SegmentedControl
         label={words.brush.label}
+        showLabel
         options={BRUSHES}
         value={String(state.brush) as "0" | "1"}
         onChange={(brush) => update({ brush: Number(brush) })}
@@ -63,7 +66,7 @@ export function CellsControls({ state, update, side }: Props) {
         <button
           type="button"
           onClick={() => update(({ learning }) => ({ learning: !learning }))}
-          className={`${BUTTON} text-accent`}
+          className={`${BUTTON} text-accent-ink`}
         >
           {state.learning ? words.pause : words.learn}
         </button>

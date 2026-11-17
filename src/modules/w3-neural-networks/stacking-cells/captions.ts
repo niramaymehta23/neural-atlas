@@ -1,4 +1,4 @@
-// Every word the learner sees in this lesson (check-captions reads this file whole).
+// Every word the learner sees in this lesson, kept here so it can be reviewed in one place.
 export const captions = {
   opening:
     "Two kinds of flowers grow in a garden, and you want fences so each kind gets its own patch. A team of little cells will learn where the fences should go.",
@@ -22,9 +22,17 @@ export const words = {
     own: "An empty garden",
   },
   brush: {
-    label: "Which flower",
-    blue: "Blue",
-    green: "Green",
+    label: "Plant:",
+    daisies: "Daisies",
+    tulips: "Tulips",
+  },
+  paint: {
+    instructions:
+      "Arrow keys move a ring around the garden; Enter or Space plants the chosen flower there.",
+    position: (across: string, up: string) => `${across}% across, ${up}% up`,
+    planted: (flower: string, across: string, up: string) =>
+      `Planted a ${flower} at ${across}% across, ${up}% up`,
+    flowers: ["daisy", "tulip"],
   },
   layers: {
     label: "How many layers",
@@ -53,7 +61,7 @@ export const words = {
       "A second layer does the same with the first layer’s answers, so its fences are made of fences. That is how curves appear.",
     maths: "The maths",
     formula:
-      "One cell: answer = bend(weight₁ × left–right + weight₂ × up–down + nudge). The last cell’s answer becomes a chance between 0 and 1 of the green flower.",
+      "One cell: answer = bend(weight₁ × left–right + weight₂ × up–down + nudge). The last cell’s answer becomes a chance between 0 and 1 of a tulip.",
   },
 };
 

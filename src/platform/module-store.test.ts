@@ -35,6 +35,17 @@ describe("createModuleStore", () => {
     expect(store.getState().guesses.where?.choice).toBe("left");
   });
 
+  it("does not count a guess or an engine sync as the first touch (PLT-24)", () => {
+    const store = createModuleStore({ epochs: 0 });
+    store.guess("where", "left");
+    store.update({ epochs: 5 }, { touch: false });
+    expect(store.getState().touched).toBe(false);
+    store.update({ epochs: 6 });
+    expect(store.getState().touched).toBe(true);
+    store.update({ epochs: 7 }, { touch: false });
+    expect(store.getState().touched).toBe(true);
+  });
+
   it("restores a whole view", () => {
     const store = createModuleStore({ step: 0.1 });
     const view = {

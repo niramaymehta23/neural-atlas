@@ -1,9 +1,17 @@
 import { createRandom } from "@/engine/random";
 
-/** The learner's calendar date, "2026-11-16": everyone on that date gets the same puzzle. */
+/**
+ * The UTC calendar date, "2026-11-16": everyone in the world at one moment gets the same puzzle,
+ * whatever their time zone.
+ */
 export function dateKey(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return date.toISOString().slice(0, 10);
+}
+
+/** Milliseconds until the next puzzle (UTC midnight). */
+export function untilNextPuzzle(now: Date): number {
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return next - now.getTime();
 }
 
 /** FNV-1a: a stable 32-bit number for a piece of text. */

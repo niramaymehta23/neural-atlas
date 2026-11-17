@@ -9,11 +9,13 @@ type LinksProps = {
   stars: readonly Star[];
   links: readonly Link[];
   colour: Color;
+  /** Full strength, or faded back when these lines belong to groups not picked. */
+  opacity: number;
   still: boolean;
 };
 
 /** Thin warm lines from each idea to the ones it builds on, riding along as the groups bob. */
-export function Links({ stars, links, colour, still }: LinksProps) {
+export function Links({ stars, links, colour, opacity, still }: LinksProps) {
   const invalidate = useThree((state) => state.invalidate);
   const geometry = useMemo(() => {
     const lines = new BufferGeometry();
@@ -49,7 +51,7 @@ export function Links({ stars, links, colour, still }: LinksProps) {
 
   return (
     <lineSegments geometry={geometry}>
-      <lineBasicMaterial color={colour} transparent opacity={0.85} />
+      <lineBasicMaterial color={colour} transparent opacity={opacity} />
     </lineSegments>
   );
 }

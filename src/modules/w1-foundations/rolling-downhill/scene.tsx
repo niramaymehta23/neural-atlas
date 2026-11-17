@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
-import { classTone } from "@/design/encodings";
+import { classMark, classTone, markPath } from "@/design/encodings";
 import { useReducedMotion } from "@/design/motion";
 import type { ModuleViewProps } from "@/platform/contract";
 import { LossLandscape } from "@/scene3d/LossLandscape";
@@ -13,6 +13,18 @@ type Props = ModuleViewProps<DownhillState, DownhillFrame>;
 
 /** One tone per walker; the steady walker is ink, as the valley floor is already sky. */
 const WALKER_TONES = ["var(--color-ink)", classTone(1), classTone(2)];
+/**
+ * Each walker also has its own shape and trail dash (ground units), shown in the legend too,
+ * so they are told apart without colour (A11Y-20).
+ */
+const WALKER_SHAPES = WALKERS.map((_, index) => classMark(index));
+const WALKER_DASHES: readonly (readonly [number, number] | undefined)[] = [
+  undefined,
+  [0.06, 0.04],
+  [0.015, 0.03],
+];
+/** The legend draws a trail 24 px long for 0.3 ground units. */
+const LEGEND_SCALE = 80;
 
 const round = (value: number) => Math.round(value * 1000) / 1000;
 
@@ -55,6 +67,7 @@ export function DownhillScene({ state, update, timeline, side }: Props) {
     return WALKERS.map((_, index) => ({
       points: frames.flatMap(({ walkers: at }) => at[index] ?? []),
       tone: WALKER_TONES[index] ?? classTone(index),
+      dash: WALKER_DASHES[index],
     }));
     // `length` changes whenever a frame is recorded; the frames are read from the timeline.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,7 +80,15 @@ export function DownhillScene({ state, update, timeline, side }: Props) {
         label={words.scene}
         className="h-80 w-full"
         markers={walkers.flatMap((at, index) =>
-          at.off ? [] : [{ ...at, tone: WALKER_TONES[index] ?? classTone(index) }],
+          at.off
+            ? []
+            : [
+                {
+                  ...at,
+                  tone: WALKER_TONES[index] ?? classTone(index),
+                  shape: WALKER_SHAPES[index],
+                },
+              ],
         )}
         trails={trails}
         onPick={
@@ -76,6 +97,7 @@ export function DownhillScene({ state, update, timeline, side }: Props) {
                 update(({ runs }) => ({ start: { x: round(x), z: round(z) }, runs: runs + 1 }))
             : undefined
         }
+        pickWords={words.dropSpot}
       />
       {state.runs === 0 && <p className="text-sm text-ink-soft">{words.tapHint}</p>}
       <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label={words.scene}>
@@ -83,11 +105,7 @@ export function DownhillScene({ state, update, timeline, side }: Props) {
           <li key={walker}>
             <HoverNote note={words.walkerNotes[walker]}>
               <button type="button" className="flex items-center gap-2" data-walker={walker}>
-                <span
-                  aria-hidden
-                  className="size-3 rounded-pill"
-                  style={{ background: WALKER_TONES[index] }}
-                />
+                <WalkerKey index={index} />
                 {words.walkers[walker]}
                 {walkers[index]?.off && <span className="text-ink-soft">· {words.flewOff}</span>}
               </button>
@@ -96,5 +114,35 @@ export function DownhillScene({ state, update, timeline, side }: Props) {
         ))}
       </ul>
     </div>
+  );
+}
+
+/** A walker's legend key: its trail dash and its shape, in its tone. */
+function WalkerKey({ index }: { index: number }) {
+  const tone = WALKER_TONES[index] ?? classTone(index);
+  const dash = WALKER_DASHES[index];
+  return (
+    <svg
+      viewBox="0 0 40 16"
+      className="h-4 w-10"
+      aria-hidden
+      data-walker-key={WALKER_SHAPES[index]}
+    >
+      <line
+        x1={2}
+        y1={8}
+        x2={26}
+        y2={8}
+        stroke={tone}
+        strokeWidth={2}
+        strokeDasharray={dash?.map((part) => part * LEGEND_SCALE).join(" ")}
+      />
+      <path
+        d={markPath(WALKER_SHAPES[index] ?? "circle", 32, 8, 5)}
+        fill={tone}
+        stroke="var(--color-ink)"
+        strokeWidth={1}
+      />
+    </svg>
   );
 }

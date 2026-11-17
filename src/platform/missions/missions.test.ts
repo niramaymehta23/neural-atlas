@@ -1,6 +1,12 @@
 import { Timeline } from "@/engine/timeline/timeline";
 import type { Mission, TimelineFrame } from "../contract";
-import { advanceReplay, createMissionWatcher, replayWindow, startReplay } from "./missions";
+import {
+  advanceReplay,
+  canReplay,
+  createMissionWatcher,
+  replayWindow,
+  startReplay,
+} from "./missions";
 
 type State = { step: number };
 const flyOff: Mission<State> = {
@@ -36,7 +42,7 @@ describe("missions", () => {
     const timeline = new Timeline<TimelineFrame>({ framesPerSecond: 10 });
     for (let epoch = 0; epoch < 50; epoch += 1) timeline.record({ epoch: epoch * 2, loss: 1 });
     const window = replayWindow(timeline, 30, flyOff.replay);
-    expect(window).toEqual({ fromEpoch: 40, atEpoch: 60, after: 5 });
+    expect(window).toEqual({ fromEpoch: 40, atEpoch: 60, after: 5, run: 0 });
 
     expect(startReplay(timeline, window!)).toBe(true);
     const seen = [timeline.getState().cursor];
@@ -65,10 +71,43 @@ describe("missions", () => {
     const timeline = new Timeline<TimelineFrame>();
     for (let epoch = 0; epoch < 4; epoch += 1) timeline.record({ epoch, loss: 1 });
     const window = replayWindow(timeline, 1, flyOff.replay)!;
-    expect(window).toEqual({ fromEpoch: 0, atEpoch: 1, after: 5 });
+    expect(window).toEqual({ fromEpoch: 0, atEpoch: 1, after: 5, run: 0 });
     expect(startReplay(timeline, window)).toBe(true);
     while (advanceReplay(timeline, window, 1));
     expect(timeline.getState().cursor).toBe(3);
     expect(replayWindow(new Timeline<TimelineFrame>(), -1, flyOff.replay)).toBeNull();
+  });
+
+  it("will not replay a window from an earlier run (PLT-06)", () => {
+    const timeline = new Timeline<TimelineFrame>();
+    for (let epoch = 0; epoch < 10; epoch += 1) timeline.record({ epoch, loss: 1 });
+    const window = replayWindow(timeline, 9, flyOff.replay)!;
+    timeline.newRun();
+    for (let epoch = 0; epoch < 10; epoch += 1) timeline.record({ epoch, loss: 2 });
+    expect(canReplay(timeline, window)).toBe(false);
+    expect(startReplay(timeline, window)).toBe(false);
+  });
+
+  it("has nothing to replay for a mission that fired on the first moment (PLT-25)", () => {
+    const timeline = new Timeline<TimelineFrame>();
+    timeline.record({ epoch: 0, loss: 1 });
+    expect(canReplay(timeline, replayWindow(timeline, 0, { before: 5, after: 0 })!)).toBe(false);
+  });
+
+  it("checks the other missions when one predicate throws (PLT-04)", () => {
+    const broken: Mission<State> = {
+      ...flyOff,
+      id: "broken",
+      when: () => {
+        throw new Error("bad predicate");
+      },
+    };
+    expect(createMissionWatcher([broken, flyOff])({ step: 0.9 }, undefined)).toEqual([flyOff]);
+  });
+
+  it("never hands back a mission already met when primed (PLT-08)", () => {
+    const check = createMissionWatcher([flyOff]);
+    check.prime({ step: 0.9 }, undefined);
+    expect(check({ step: 0.95 }, undefined)).toEqual([]);
   });
 });

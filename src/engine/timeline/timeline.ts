@@ -13,6 +13,8 @@ export type TimelineState = {
   /** Following new frames as they arrive. */
   live: boolean;
   hasGhost: boolean;
+  /** Counts runs: `newRun` bumps it, so a moment saved in one run is never looked up in another. */
+  run: number;
 };
 
 export type TimelineOptions = {
@@ -31,6 +33,7 @@ export class Timeline<T extends Frame> {
   private playing = false;
   private live = true;
   private carry = 0;
+  private run = 0;
   private state: TimelineState;
   private readonly listeners = new Set<() => void>();
   readonly framesPerSecond: number;
@@ -134,6 +137,7 @@ export class Timeline<T extends Frame> {
     this.cursor = -1;
     this.playing = false;
     this.live = true;
+    this.run += 1;
     this.changed();
   }
 
@@ -178,6 +182,7 @@ export class Timeline<T extends Frame> {
       playing: this.playing,
       live: this.live,
       hasGhost: this.ghost.length > 0,
+      run: this.run,
     };
   }
 }

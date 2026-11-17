@@ -8,9 +8,10 @@ import { advanceReplay, type ReplayWindow } from "./missions/missions";
 
 type TimelineBarProps = {
   timeline: Timeline<TimelineFrame>;
-  /** A mission replay in progress: plays only its window, then calls `onReplayEnd`. */
+  /** A mission replay in progress: plays only its window, then calls `onReplayEnd(true)`. */
   replay: ReplayWindow | null;
-  onReplayEnd: () => void;
+  /** `finished` is true when the replay ran to its end, false when the learner took over. */
+  onReplayEnd: (finished: boolean) => void;
 };
 
 /** The stage 01 scrubber bound to a lesson's Timeline, ticking playback from the frame loop. */
@@ -25,7 +26,7 @@ export function TimelineBar({ timeline, replay, onReplayEnd }: TimelineBarProps)
       const seconds = (now - last) / 1000;
       last = now;
       if (replay) {
-        if (!advanceReplay(timeline, replay, seconds)) return onReplayEnd();
+        if (!advanceReplay(timeline, replay, seconds)) return onReplayEnd(true);
       } else timeline.tick(seconds);
       frame = requestAnimationFrame(loop);
     };
@@ -39,13 +40,18 @@ export function TimelineBar({ timeline, replay, onReplayEnd }: TimelineBarProps)
       length={state.length}
       position={state.cursor}
       playing={state.playing}
+      live={state.live}
+      onLive={() => {
+        onReplayEnd(false);
+        timeline.goLive();
+      }}
       onPlayToggle={() => {
-        onReplayEnd();
+        onReplayEnd(false);
         if (state.playing) timeline.pause();
         else timeline.play();
       }}
       onSeek={(position) => {
-        onReplayEnd();
+        onReplayEnd(false);
         timeline.seek(position);
       }}
       losses={frames.map(({ loss }) => loss)}

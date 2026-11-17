@@ -1,6 +1,39 @@
-/** Every learner-facing word in the platform's own screens, here so check-captions can read them. */
+/** Every learner-facing word in the platform's own screens, kept here so they can be reviewed in one place. */
 export const platformCaptions = {
+  site: {
+    name: "Neural Atlas",
+    description: "Build a feel for how AI works by touching it.",
+    pageTitle: (page: string) => `${page} · Neural Atlas`,
+  },
+  notFound: {
+    title: "We couldn’t find that page",
+    note: "The link may be old, or the page has moved. The map has every idea.",
+    pageTitle: "Not found",
+  },
+  pageError: {
+    title: "Something went wrong on this page.",
+    note: "Try again, or head back to the map.",
+  },
+  lessonError: {
+    title: "This lesson could not start.",
+    note: "Try again. If it keeps happening, another lesson may work on this browser.",
+  },
+  nav: { label: "Around the atlas", home: "Back to the map", puzzle: "Today’s puzzle" },
   loading: "Setting the scene…",
+  loadFailed: "This lesson couldn’t load. Check the connection, then try again.",
+  problem: { title: "Something went wrong here.", retry: "Try again" },
+  link: {
+    version: "That link comes from a different version of the atlas, so this is a fresh start.",
+    lesson: "That link belongs to another lesson, so this is a fresh start.",
+    broken: "That link looks damaged, so this is a fresh start.",
+    size: "That link is too long to open, so this is a fresh start.",
+    theirs: "You are looking at someone else’s view.",
+    startOwn: "Start from your own view",
+  },
+  copyFailed: "Couldn’t copy it, so here is the link to copy yourself.",
+  linkLabel: "Link to this view",
+  tooBig: "This view is too big to fit in a link. Clear a few things and try again.",
+  nextIdea: (title: string) => `Next idea: ${title}`,
   share: "Copy a link to this view",
   shared: "Link copied. Whoever opens it sees exactly this.",
   dials: "Dials",
@@ -18,18 +51,26 @@ export const platformCaptions = {
     right: "Spot on.",
     wrong: "Not this time, and now you know why.",
     next: "On to the next guess",
+    first: "Guess first, then press start.",
+    skip: "Skip the guess for now",
+    locked: "Your guess is locked in now that it’s happening.",
+    theirs: (guess: string) => `Their guess: ${guess}`,
   },
   locked: {
     badge: "Still being drawn",
     note: "This lesson isn’t ready yet. Come back soon.",
     playWith: "You will get to play with",
     first: "Good to try first",
-    home: "Back to the map",
+    ready: "Ready to explore now",
   },
   puzzle: {
     title: "Today’s puzzle",
     note: "One break-it mission a day, the same for everyone.",
     empty: "The first puzzle arrives with the first lessons.",
     go: "Try it",
+    loading: "Picking today’s puzzle…",
+    failed: "Today’s puzzle couldn’t load. Check the connection, then try again.",
+    solved: "Solved today. A new one arrives tomorrow.",
+    date: (day: string) => `The puzzle for ${day}`,
   },
 };

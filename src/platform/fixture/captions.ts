@@ -1,5 +1,4 @@
-// The fixture lesson's words, kept the way a real module keeps them (check-captions reads a
-// module's captions.ts whole; this stand-in lesson is not in its sources).
+// The fixture lesson's words, kept the way a real module keeps them.
 export const captions = {
   opening: "A ball sits on the side of a valley. Each step rolls it a little way downhill.",
   story: "Small steps settle the ball at the bottom; big ones overshoot.",

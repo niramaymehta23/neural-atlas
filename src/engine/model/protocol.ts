@@ -40,8 +40,11 @@ export type Command =
       model: ModelSpec;
       data: Samples;
       train: TrainSettings;
-      /** Shared memory the worker writes the newest parameters into every epoch. */
-      live: SharedArrayBuffer;
+      /**
+       * Shared memory the worker writes the newest parameters into every epoch. Null when the
+       * page is not cross-origin isolated: the worker then posts `live` copies instead.
+       */
+      live: SharedArrayBuffer | null;
     }
   | { type: "setData"; data: Samples }
   | { type: "configure"; optimiser: OptimiserSettings }
@@ -57,4 +60,6 @@ export type Event =
   | { type: "snapshot"; snapshot: Snapshot }
   /** Per input: probabilities (one per class, or one for yes/no) or plain values for mean squared. */
   | { type: "prediction"; id: number; outputs: Float32Array }
+  /** The newest parameters, at most once per ~16 ms, when there is no shared memory. */
+  | { type: "live"; epoch: number; loss: number; params: Float64Array }
   | { type: "error"; message: string };

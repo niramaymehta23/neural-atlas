@@ -78,7 +78,7 @@ Keyboard drop spot and legend buttons: A11Y-11, A11Y-20. WebGL fallback: ENG-12.
 
 ### MLP-07 · Medium · Missing spec parts (prompt 5)
 - Missing: activation colouring and backward flow particles on `NetworkView` (`scene.tsx:155`); hover mini-field per hidden cell; per-layer activation choice; missions "fewest cells for the spiral", "every cell switched off", "overfit with 5 points".
-- Fix: implement them (wording through check-captions).
+- Fix: implement them (wording in the captions file, reviewed against the smart 12-year-old test).
 - Test: hover shows a mini field; activation selector changes the model; e2e per mission.
 
 ### MLP-08 · Low · The lesson opens with an empty field

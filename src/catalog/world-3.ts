@@ -52,7 +52,7 @@ export const world3: WorldEntry = {
       realTerm: "Optimisers",
       idea: "Some walkers keep momentum, some adapt their stride",
       playWith: "Three walkers race down the valley",
-      prerequisites: ["rolling-downhill", "passing-back-the-blame"],
+      prerequisites: ["passing-back-the-blame"],
     },
     {
       id: "big-steps-then-small",

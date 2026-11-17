@@ -68,13 +68,14 @@ describe("scoring every move", () => {
       />,
     );
     const board = screen.getByRole("application");
-    board.focus();
+    // The keyboard cursor starts on the puppy, which stands on the start square (A11Y-12).
+    act(() => board.focus());
+    update.mockClear();
     await userEvent.keyboard("{Enter}");
+    expect(update).not.toHaveBeenCalled();
+    await userEvent.keyboard("{ArrowUp}{ArrowUp}{ArrowUp}{ArrowUp}{Enter}");
     const change = update.mock.calls.at(-1)?.[0] as (s: ScoringState) => Partial<ScoringState>;
     expect(change(state()).tiles?.[0]).toBe("trap");
-    update.mockClear();
-    await userEvent.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}{Enter}");
-    expect(update).not.toHaveBeenCalled();
   });
 
   it("a shared link replays the tries it had made", async () => {

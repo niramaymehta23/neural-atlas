@@ -78,18 +78,18 @@ describe("ModuleShell", () => {
     expect(progressStore.getState().lessons["shell-guess"]?.predicted).toBe(true);
   });
 
-  it("restores a snapshot's view and moment", () => {
+  it("restores a snapshot's view and moment, showing its guess as theirs (PLT-08, PLT-10)", () => {
     render(
       <ModuleShell
         lesson={valleyLesson}
         module={valleyModule}
         restored={{
-          v: 1,
+          v: 2,
           id: valleyLesson.id,
           state: { step: 0.3, steps: 4 },
           touched: true,
           guesses: { "huge-steps": { choice: "settles", revealed: false } },
-          moment: 2,
+          momentEpoch: 2,
         }}
       />,
     );
@@ -98,9 +98,10 @@ describe("ModuleShell", () => {
       "0.3",
     );
     expect(screen.getByText(story)).toBeInTheDocument();
+    expect(screen.getByText("Their guess: At the bottom")).toBeVisible();
     expect(screen.getByRole("button", { name: "At the bottom" })).toHaveAttribute(
       "aria-pressed",
-      "true",
+      "false",
     );
     expect(screen.getByRole("slider", { name: "Moment" })).toHaveAttribute("aria-valuenow", "2");
   });

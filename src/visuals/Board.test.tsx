@@ -18,6 +18,23 @@ describe("Board", () => {
     expect(container.querySelector('[data-tile="goal"]')).toHaveAttribute("fill", tileTone("goal"));
     expect(container.querySelector("circle")).toHaveAttribute("fill", "var(--color-accent)");
   });
+
+  it("marks each special square with its own glyph and value tints with + or −", () => {
+    const { container } = render(
+      <Board
+        columns={3}
+        tiles={["floor", "wall", "goal", "trap", "coin", "floor"]}
+        floorValues={[0.6, 0, 0, 0, 0, -0.6]}
+        label="A small kitchen"
+      />,
+    );
+    const marks = [...container.querySelectorAll("[data-mark]")].map((mark) =>
+      mark.getAttribute("data-mark"),
+    );
+    expect(marks).toEqual(["plus", "hatch", "bowl", "lava", "treat", "minus"]);
+    for (const mark of container.querySelectorAll("[data-mark]"))
+      expect(mark).toHaveAttribute("stroke", "var(--color-ink)");
+  });
 });
 
 describe("Chart", () => {

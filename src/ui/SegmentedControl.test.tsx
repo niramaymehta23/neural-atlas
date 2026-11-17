@@ -36,4 +36,31 @@ describe("SegmentedControl", () => {
     await user.click(screen.getByRole("radio", { name: "Round" }));
     expect(screen.getByRole("radio", { name: "Round" })).toHaveAttribute("aria-checked", "true");
   });
+
+  it("wraps a short row instead of overflowing a narrow dock", () => {
+    render(<Harness />);
+    const group = screen.getByRole("radiogroup");
+    expect(group).toHaveAttribute("data-layout", "row");
+    expect(group).toHaveClass("flex-wrap", "max-w-full");
+  });
+
+  it("stacks more than three choices as a list that moves with up and down", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        label="Which valley"
+        showLabel
+        options={["Bowl", "Ravine", "Pass", "Bumpy"].map((name) => ({ value: name, label: name }))}
+        value="Bowl"
+        onChange={onChange}
+      />,
+    );
+    const group = screen.getByRole("radiogroup", { name: "Which valley" });
+    expect(group).toHaveAttribute("data-layout", "list");
+    expect(screen.getByText("Which valley")).toBeVisible();
+    await user.tab();
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(onChange).toHaveBeenCalledWith("Ravine");
+  });
 });

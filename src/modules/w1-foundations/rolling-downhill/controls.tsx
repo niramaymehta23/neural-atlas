@@ -48,7 +48,7 @@ export function DownhillControls({ state, update }: ModuleViewProps<DownhillStat
       <button
         type="button"
         onClick={() => update(({ runs }) => ({ runs: runs + 1 }))}
-        className="rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent"
+        className="rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent-ink"
       >
         {state.runs === 0 ? words.roll : words.rollAgain}
       </button>

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Dial } from "@/ui/Dial";
+import { clampNumber, clampWhole } from "../clamp";
 import { defineModule, type Lesson, type ModuleViewProps } from "../contract";
 import { captions, missionWords, predictionWords, words } from "./captions";
 
@@ -96,6 +97,10 @@ export const valleyModule = defineModule<ValleyState>({
   ],
   underTheHood: () => <p>{words.underTheHood}</p>,
   compare: (state) => ({ ...state, step: 0.2 }),
+  parseState: ({ step, steps }) => ({
+    step: clampNumber(step, 0, 1),
+    steps: clampWhole(steps, 0, 500),
+  }),
   trains: true,
 });
 

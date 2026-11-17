@@ -15,6 +15,8 @@ export type LoadBackend = (init: InitCommand, random: Random) => Promise<Backend
 
 /** Longest stretch of training before letting queued commands in. */
 const SLICE_MS = 12;
+/** Without shared memory, the newest parameters are posted at most this often (one frame). */
+const LIVE_MS = 16;
 
 const loadBackend: LoadBackend = async (init, random) =>
   init.backend === "autodiff"
@@ -35,6 +37,28 @@ export function createTrainer(post: Post, load: LoadBackend = loadBackend) {
   /** Bumped by every run and pause, so a slice scheduled for an older run never trains. */
   let generation = 0;
   let queue = Promise.resolve();
+  let liveSentAt = -Infinity;
+  let liveWaiting: { epoch: number; loss: number; params: Float64Array } | null = null;
+
+  const flushLive = () => {
+    if (!liveWaiting) return;
+    const { params } = liveWaiting;
+    post({ type: "live", ...liveWaiting }, [params.buffer]);
+    liveWaiting = null;
+    liveSentAt = performance.now();
+  };
+
+  /** Shared memory when there is some; otherwise a throttled message that always ends on the newest. */
+  const publish = (live: SharedArrayBuffer | null, loss: number, params: Float64Array) => {
+    if (live) return writeLive(live, epoch, loss, params);
+    const pending = liveWaiting !== null;
+    // A copy: the same parameters may be handed (transferred) to a snapshot too.
+    liveWaiting = { epoch, loss, params: params.slice() };
+    if (pending) return;
+    const wait = liveSentAt + LIVE_MS - performance.now();
+    if (wait <= 0) flushLive();
+    else setTimeout(flushLive, wait);
+  };
 
   const enqueue = (task: () => Promise<void>) => {
     queue = queue.then(task).catch((error: unknown) => {
@@ -69,7 +93,7 @@ export function createTrainer(post: Post, load: LoadBackend = loadBackend) {
     lastLoss = await backend.trainEpoch(data, shuffled(data.count, random), init.train.batchSize);
     epoch += 1;
     const params = await backend.readParameters();
-    writeLive(init.live, epoch, lastLoss, params);
+    publish(init.live, lastLoss, params);
     if (epoch % init.train.snapshotEvery === 0) await postSnapshot(lastLoss, params);
   };
 
@@ -96,6 +120,7 @@ export function createTrainer(post: Post, load: LoadBackend = loadBackend) {
           session = { init: command, backend, data: command.data, random };
           epoch = 0;
           lastPosted = -1;
+          liveWaiting = null;
           post({ type: "ready", backend: backend.name });
         });
       case "run":
@@ -125,7 +150,7 @@ export function createTrainer(post: Post, load: LoadBackend = loadBackend) {
           await backend.writeParameters(command.snapshot.params);
           epoch = lastPosted = command.snapshot.epoch;
           lastLoss = command.snapshot.loss;
-          writeLive(init.live, epoch, lastLoss, command.snapshot.params);
+          publish(init.live, lastLoss, command.snapshot.params);
         });
       case "predict":
         return enqueue(async () => {

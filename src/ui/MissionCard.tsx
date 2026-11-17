@@ -31,7 +31,7 @@ export function MissionCard({ goal, done, hint }: MissionCardProps) {
       </p>
       {hint && !done && (
         <Collapsible.Root open={hintOpen} onOpenChange={setHintOpen}>
-          <Collapsible.Trigger className="text-sm text-accent underline-offset-4 hover:underline">
+          <Collapsible.Trigger className="text-sm text-accent-ink underline-offset-4 hover:underline pointer-coarse:min-h-11">
             {hintOpen ? uiCaptions.mission.hideHint : uiCaptions.mission.showHint}
           </Collapsible.Trigger>
           <Collapsible.Content className="pt-2 text-sm text-ink-soft">{hint}</Collapsible.Content>

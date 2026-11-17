@@ -15,7 +15,10 @@ type SliderProps = {
   describe?: (value: number) => string;
 };
 
-/** A straight slider with a plain name; the clay thumb is the thing you touch. */
+/**
+ * A straight slider with a plain name; the clay thumb, outlined in ink, is the thing you touch.
+ * The filled range is ink so it stands out from the track (A11Y-05); the thumb has a 44px hit area.
+ */
 export function Slider({
   label,
   value,
@@ -44,12 +47,12 @@ export function Slider({
         onValueChange={([next]) => next !== undefined && onChange(next)}
       >
         <RadixSlider.Track className="relative h-1.5 grow rounded-pill bg-inset">
-          <RadixSlider.Range className="absolute h-full rounded-pill bg-ink-soft" />
+          <RadixSlider.Range className="absolute h-full rounded-pill bg-ink" />
         </RadixSlider.Track>
         <RadixSlider.Thumb
           aria-labelledby={labelId}
           aria-valuetext={words}
-          className="block size-5 cursor-grab rounded-pill border-2 border-paper bg-accent transition-transform duration-200 ease-settle hover:scale-110 active:cursor-grabbing"
+          className="relative block size-5 cursor-grab rounded-pill border-2 border-ink bg-accent transition-transform duration-200 ease-settle before:absolute before:-inset-3 before:rounded-pill hover:scale-110 active:cursor-grabbing"
         />
       </RadixSlider.Root>
     </div>
