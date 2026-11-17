@@ -215,9 +215,14 @@ function Waking({ sentence, progress }: { sentence: string; progress: number | n
         {wordsOf(sentence).map((word, index) => (
           <span
             key={`${word}-${index}`}
-            className="rounded-pill border border-hairline bg-card px-2.5 py-1 text-sm text-ink-soft motion-safe:animate-pulse"
-            style={{ animationDelay: `${index * 120}ms` }}
+            className="relative rounded-pill border border-hairline bg-card px-2.5 py-1 text-sm text-ink-soft"
           >
+            {/* Only the outline pulses, so the word itself stays easy to read. */}
+            <span
+              aria-hidden
+              className="absolute -inset-px rounded-pill ring-2 ring-ink-soft/40 motion-safe:animate-pulse"
+              style={{ animationDelay: `${index * 120}ms` }}
+            />
             {word}
           </span>
         ))}

@@ -53,7 +53,8 @@ export function createSession(load: () => Promise<LoadedModel>) {
 
 /**
  * Turns per-file download progress into one steady 0–1 share that never goes backwards: the
- * runtime counts for `runtimeShare` of it and the model files for the rest.
+ * runtime counts for `runtimeShare` of it and the model files for the rest. Every arrival is
+ * reported, so a watchdog can tell slow from stalled.
  */
 export function createProgress(report: (fraction: number) => void, runtimeShare = 0.4) {
   const files = new Map<string, { loaded: number; total: number }>();
@@ -65,10 +66,10 @@ export function createProgress(report: (fraction: number) => void, runtimeShare 
     const loaded = known.reduce((sum, file) => sum + Math.min(file.loaded, file.total), 0);
     const model = total > 0 ? loaded / total : 0;
     const fraction = runtime * runtimeShare + model * (1 - runtimeShare);
-    if (fraction > shown) {
-      shown = Math.min(1, fraction);
-      report(shown);
-    }
+    shown = Math.max(shown, Math.min(1, fraction));
+    // Reported on every arrival, even when the share holds still (a file sent without its size
+    // adds nothing to it): each report tells the reader the model is still coming, not stalled.
+    report(shown);
   };
   return {
     runtime(loaded: number, total: number) {

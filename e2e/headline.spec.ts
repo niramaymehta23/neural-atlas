@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { budget, expectSmooth, measureFrames, recordPerf, settle } from "./frames";
 import { watch } from "./watch";
 
@@ -112,6 +112,23 @@ test(
   },
 );
 
+/** A chip's box once fonts have loaded and it has stopped springing into place. */
+async function restingBox(page: Page, chip: Locator) {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  let last = "";
+  await expect
+    .poll(async () => {
+      const box = JSON.stringify(await chip.boundingBox());
+      const still = box === last;
+      last = box;
+      return still;
+    })
+    .toBe(true);
+  const box = await chip.boundingBox();
+  if (!box) throw new Error("the chip is not on screen");
+  return box;
+}
+
 test("who is looking at whom: dragging a word re-routes the threads", async ({ page }) => {
   const { errors, elsewhere } = watch(page);
   const looking = page.getByTestId("looking");
@@ -123,8 +140,8 @@ test("who is looking at whom: dragging a word re-routes the threads", async ({ p
   const before = await sentence.inputValue();
   const dog = page.locator("[data-word=dog]");
   const road = page.locator("[data-word=road]");
-  const from = (await dog.boundingBox())!;
-  const to = (await road.boundingBox())!;
+  const from = await restingBox(page, dog);
+  const to = await restingBox(page, road);
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });

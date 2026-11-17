@@ -19,6 +19,11 @@ export type AttentionPort = {
 export const MEMORY_BYTES = 16 * 1024 * 1024;
 /** A first load gives up after this long without any of the model arriving. */
 export const STALL_TIMEOUT_MS = 30_000;
+/**
+ * Once every byte has arrived the model is set up on this device, which sends no progress and can
+ * take a slow phone (or a busy computer) well over the stall time; it gets this long instead.
+ */
+export const SETUP_TIMEOUT_MS = 120_000;
 /** A loaded reader gives up on one reading after this long. */
 export const READ_TIMEOUT_MS = 10_000;
 /** A worker nobody has used for this long is ended, freeing the model's memory. */
@@ -174,16 +179,22 @@ export class AttentionReader {
 
   /**
    * Restarts the watchdog while readings are waiting: a first load may take as long as it likes
-   * while the model keeps arriving, but not a stall; a loaded reader gets a short wait per reading.
+   * while the model keeps arriving, but not a stall; setting it up once it has all arrived gets a
+   * longer wait; a loaded reader gets a short wait per reading.
    */
   private arm(port: AttentionPort): void {
     if (this.watchdog) clearTimeout(this.watchdog);
     this.watchdog = null;
     if (this.pending.size === 0) return;
     const warm = this.warm;
+    const wait = warm
+      ? READ_TIMEOUT_MS
+      : this.progress !== null && this.progress >= 1
+        ? SETUP_TIMEOUT_MS
+        : STALL_TIMEOUT_MS;
     this.watchdog = setTimeout(
       () => this.reset(port, warm ? "read" : "load", "The reader took too long."),
-      warm ? READ_TIMEOUT_MS : STALL_TIMEOUT_MS,
+      wait,
     );
   }
 

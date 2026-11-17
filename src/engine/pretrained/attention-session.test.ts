@@ -85,4 +85,14 @@ describe("createProgress", () => {
     for (let index = 1; index < seen.length; index += 1)
       expect(seen[index]).toBeGreaterThanOrEqual(seen[index - 1]!);
   });
+
+  it("reports every arrival, even a file sent without its size", () => {
+    const seen: number[] = [];
+    const progress = createProgress((fraction) => seen.push(fraction), 0.4);
+    progress.runtime(100, 100);
+    progress.file("model.onnx", 1_000, 0);
+    progress.file("model.onnx", 2_000, 0);
+    expect(seen).toHaveLength(3);
+    expect(seen.at(-1)).toBeCloseTo(0.4);
+  });
 });

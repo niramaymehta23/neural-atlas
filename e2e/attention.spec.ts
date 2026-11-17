@@ -24,6 +24,23 @@ async function retype(page: Page, text: string) {
   await expect(scene(page)).toHaveAttribute("data-ready", "true", { timeout: 15_000 });
 }
 
+/** A chip's box once fonts have loaded and it has stopped springing into place. */
+async function restingBox(page: Page, chip: Locator) {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  let last = "";
+  await expect
+    .poll(async () => {
+      const box = JSON.stringify(await chip.boundingBox());
+      const still = box === last;
+      last = box;
+      return still;
+    })
+    .toBe(true);
+  const box = await chip.boundingBox();
+  if (!box) throw new Error("the chip is not on screen");
+  return box;
+}
+
 /** Pairs of word chips whose boxes overlap (there should be none). */
 async function overlapping(chips: Locator) {
   const boxes = await chips.evaluateAll((elements) =>
@@ -133,8 +150,8 @@ test("dragging a word does not also pick it, and keeps the picked word picked (A
   await open(page);
   const it = chip(page, "it");
   await expect(it).toHaveAttribute("aria-pressed", "true");
-  const from = (await chip(page, "dog").boundingBox())!;
-  const to = (await chip(page, "road").boundingBox())!;
+  const from = await restingBox(page, chip(page, "dog"));
+  const to = await restingBox(page, chip(page, "road"));
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });

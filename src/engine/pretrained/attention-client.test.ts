@@ -5,6 +5,7 @@ import {
   MEMORY_BYTES,
   READ_TIMEOUT_MS,
   ReaderError,
+  SETUP_TIMEOUT_MS,
   STALL_TIMEOUT_MS,
   type AttentionPort,
 } from "./attention-client";
@@ -122,7 +123,8 @@ describe("AttentionReader", () => {
       const settled = expect(waiting).rejects.toMatchObject({ stage: "load" });
       for (let step = 0; step < 5; step += 1) {
         vi.advanceTimersByTime(STALL_TIMEOUT_MS - 1);
-        worker.tell({ type: "progress", fraction: step / 10 });
+        // The same share each time: a file sent without its size still counts as arriving.
+        worker.tell({ type: "progress", fraction: 0.4 });
       }
       expect(worker.ports[0]!.terminate).not.toHaveBeenCalled();
       vi.advanceTimersByTime(STALL_TIMEOUT_MS);
@@ -131,6 +133,18 @@ describe("AttentionReader", () => {
       expect(reader.getProgress()).toBeNull();
       void reader.read("a cat").catch(() => {});
       expect(worker.ports).toHaveLength(2);
+    });
+
+    it("gives setting up a fully arrived model longer than a stall", async () => {
+      const worker = fakeWorker(() => "silent");
+      const reader = new AttentionReader(worker.connect);
+      const settled = expect(reader.read("a cat")).rejects.toMatchObject({ stage: "load" });
+      worker.tell({ type: "progress", fraction: 1 });
+      vi.advanceTimersByTime(STALL_TIMEOUT_MS * 2);
+      expect(worker.ports[0]!.terminate).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(SETUP_TIMEOUT_MS);
+      await settled;
+      expect(worker.ports[0]!.terminate).toHaveBeenCalledOnce();
     });
 
     it("gives a loaded reader a shorter wait per reading", async () => {
