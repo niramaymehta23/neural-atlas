@@ -9,7 +9,7 @@ import { cloudOf, shadowPoints, shareOf, tipOf, turnOf, type ShadowState } from 
 type Props = ModuleViewProps<ShadowState>;
 
 /** The fixed spot the 3D cloud is seen from, a little to the side and above. */
-const CAMERA = { turn: 0.6, tip: 0.35 };
+const CAMERA = { turn: -0.9, tip: 0.35 };
 const TORCH = 1.35;
 const DOT = 0.03;
 
