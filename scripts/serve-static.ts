@@ -1,6 +1,7 @@
 /**
- * Serves the static export (`out/`) the way the host will: with the headers from `out/_headers`
- * (copied from `public/_headers`), so cross-origin isolation is tested from its one source.
+ * Serves the static export (`out/`) the way the host (Cloudflare Pages) will: with the headers from
+ * `out/_headers` (copied from `public/_headers`), so cross-origin isolation and caching are tested
+ * from their one source; with the host's content types; and redirecting `/x/` to `/x` (308).
  * Usage: pnpm serve [port]
  */
 import { readFile } from "node:fs/promises";
@@ -13,6 +14,9 @@ const PORT = Number(process.argv[2] ?? 4173);
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".wasm": "application/wasm",
+  ".onnx": "application/octet-stream",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json",
   ".txt": "text/plain; charset=utf-8",
@@ -47,6 +51,14 @@ createServer(async (request, response) => {
     urlPath = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);
   } catch {
     response.writeHead(400).end();
+    return;
+  }
+  // Like the host: a trailing slash redirects to the page without it, keeping the query.
+  if (urlPath.length > 1 && urlPath.endsWith("/")) {
+    const { pathname, search } = new URL(request.url ?? "/", "http://localhost");
+    // One leading slash, so "//elsewhere/" can never become a link to another site.
+    const location = `/${pathname.replace(/^\/+|\/+$/g, "")}${search}`;
+    response.writeHead(308, { Location: location }).end();
     return;
   }
   // normalize() resolves "..", and an absolute path cannot climb above ROOT once joined.

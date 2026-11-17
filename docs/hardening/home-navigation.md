@@ -125,6 +125,7 @@ Each item: severity, the problem, evidence, the fix, the test. Error boundaries 
 - Test: `indexedDB` undefined → the note renders.
 
 ## NAV-25 · Low · Trailing-slash URLs 404 on the project's own server
+- **Status:** Fixed in fd27c88 (308 in `scripts/serve-static.ts`, matching Cloudflare Pages; test in `e2e/hosting.spec.ts`).
 - Evidence: `scripts/serve-static.ts:53-56`.
 - Fix: 308 `/x/` → `/x`; document the host's behaviour (CI-08).
 - Test: `/learn/rolling-downhill/` ends at the lesson.

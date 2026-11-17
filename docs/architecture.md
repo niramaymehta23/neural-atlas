@@ -12,8 +12,7 @@ neural-atlas/
 │   ├── models/                   self-hosted pretrained weights, lazy-loaded per module
 │   └── _headers                  COOP/COEP headers (SharedArrayBuffer) for static hosting
 ├── e2e/                          Playwright: platform flows + one smoke spec per world
-├── scripts/
-│   └── check-captions.ts         "smart 12-year-old" test of every learner-facing string (Gemini)
+├── scripts/                      build, serve and check scripts (copy-runtime, check-build, check-model, serve-static)
 └── src/
     ├── app/                      Next.js routes only; thin pages that compose layers below
     │   ├── layout.tsx            fonts, theme, global providers, command palette
@@ -34,7 +33,7 @@ neural-atlas/
     │                             (latent / word maps), CameraRig. Soft light, no bloom or glow
     ├── engine/                   pure TypeScript — no React, no DOM; runs in workers
     │   ├── autodiff/             Value, Neuron, Layer, MLP, losses, optimisers
-    │   ├── model/                ModelEngine (main thread), worker.ts (single entry), protocol.ts,
+    │   ├── model/                ModelEngine (main thread), worker.ts (its one training worker), protocol.ts,
     │   │                         backends/{autodiff,tfjs}.ts
     │   ├── timeline/             ring-buffer Timeline, ghost runs
     │   ├── ml/                   classic algorithms (World 2)
@@ -93,8 +92,9 @@ Imports flow one way; ESLint (`eslint-plugin-boundaries`) fails the build on a v
   ~300 lines are a smell to split by responsibility, not by line count.
 - **Tests** are colocated (`*.test.ts`, Vitest). Engine maths is tested against numerical references;
   UI is tested through behaviour, not structure. Each world has a Playwright smoke spec.
-- **Plain language is enforced, not hoped for.** Every learner-facing string lives in a module's
-  `captions.ts`, `missions.ts` or the catalog, so `scripts/check-captions.ts` can test all of it. No jargon in
+- **Plain language is reviewed, not hoped for.** Every learner-facing string lives in a module's
+  `captions.ts`, `missions.ts`, `predictions.ts` or the catalog, so it is all in a few files that are easy to
+  review. No jargon in
   titles, buttons or missions; numbers reach the screen only through `design/copy.ts`.
 - **2D by default.** `scene3d/` is imported only by the home map, the downhill landscape and idea-space
   flights; everything else draws with `visuals/`.
@@ -117,13 +117,14 @@ Every curriculum module (split specs refer to this as **DoD**) must:
 8. Keep 60 fps on the reference laptop while training (training in the worker).
 9. Round-trip through a snapshot link to the same view.
 10. Pass its world's Playwright smoke test (opens, responds to one interaction, mission predicate fires).
-11. Pass `check-captions` for every string it adds.
+11. Have every string it adds reviewed, by the session that writes it, against "would a smart 12-year-old
+    follow this?" (a review, not an automated or model check).
 
 ## Hosting constraint
 
 `SharedArrayBuffer` needs cross-origin isolation (COOP `same-origin`, COEP `require-corp`). Therefore
 fonts are self-hosted via `next/font`, and all model weights are served from `public/models/` — never
-fetched cross-origin at runtime.
+fetched cross-origin at runtime. Size limits, caching and the deploy are in "Hosting and CI" below.
 
 ## Toolchain facts (from stage 01)
 
@@ -140,12 +141,10 @@ fetched cross-origin at runtime.
 - Colour, font, easing and spring literals are lint-banned outside `src/design`; use token classes
   (`bg-paper`, `text-ink`, `bg-accent`) or `var(--…)`. Motion via `useSpring` / `useReducedMotion` from
   `src/design/motion.ts`; tests mock with `mockReducedMotion`.
-- `check-captions` reads module `captions.ts` / `missions.ts` / `predictions.ts`, `src/catalog/*.ts`,
-  `src/ui/captions.ts` and `src/platform/captions.ts`, skipping keys `id`, `realTerm`, `term`, `prerequisites`,
-  `world` and the code keys `load`, `when`, `answer`. CI needs the `GEMINI_API_KEY` secret.
-
-## Engines hand-over (from stage 02)
-
+- Learner-facing words live only in module `captions.ts` / `missions.ts` / `predictions.ts`, `src/catalog/*.ts`,
+  `src/ui/captions.ts`, `src/platform/captions.ts` and `src/constellation/captions.ts`, so the "smart
+  12-year-old" review covers a handful of files. There is no automated caption check (the Gemini check was
+  removed by owner decision).
 - **Autodiff** (`engine/autodiff`): `Value`, `Neuron`/`Layer`/`MLP` (`call` builds a graph, `predict` is the fast
   no-learning pass), losses take raw scores (`binaryCrossEntropy` from a logit, `softmaxCrossEntropy`, `meanSquared`),
   `createOptimiser({ kind: "sgd" | "momentum" | "adam", learningRate })` steps any `{ data, grad }`, so a ball on
@@ -194,8 +193,8 @@ fetched cross-origin at runtime.
   training scene must rebuild its recorded frames from state (same seed, same run) after mount; the shell seeks to
   the saved moment as soon as it has been recorded.
 - **Words**: `captions.ts` exports `{ opening, story, compare? }` for the shell plus every other learner-facing
-  word the module shows (dial names, `describe` words, buttons, scene labels, drawer text); check-captions reads all
-  of its exports. `missions.ts`: `{ id, goal, hint?, success, replay: { before, after }, when(state, newestFrame) }`;
+  word the module shows (dial names, `describe` words, buttons, scene labels, drawer text), so the 12-year-old
+  review sees all of it. `missions.ts`: `{ id, goal, hint?, success, replay: { before, after }, when(state, newestFrame) }`;
   `predictions.ts`: `{ id, question, choices: { id, label }[], answer(state, frame) → choice id | null }` (null keeps
   the reveal waiting; the answer at the reveal is stored with the guess). `platform/fixture/` is the worked example.
 - **Catalog**: to switch a lesson on, add to its entry in `catalog/world-N.ts`
@@ -270,3 +269,69 @@ fetched cross-origin at runtime.
   a cached reload plus drag re-routing, and painting mid-practice plus the too-fast mission. The stability bound and
   the 50-episode re-plan are unit tests (`rolling-downhill/model.test.ts`, `engine/rl/gridworld.test.ts`).
   `e2e/frames.ts` holds the shared frame-timing helpers.
+
+## Hosting and CI (from hardening H1)
+
+- **Host: Cloudflare Pages** (recommended; the owner connects the account). It honours `public/_headers`, serves
+  `/x.html` at `/x` and redirects `/x/` to `/x` (308), and refuses files over 25 MiB. Netlify would also work;
+  Vercel ignores `_headers`; GitHub Pages cannot send COOP/COEP (and needs a sub-path), so the training and
+  attention lessons would not run there. If a sub-path is ever needed, derive `MODELS_PATH` in
+  `engine/pretrained/runtime.ts` from `NEXT_PUBLIC_BASE_PATH`.
+- **Deploy steps**: create a Pages project named `neural-atlas` (or set the `CLOUDFLARE_PAGES_PROJECT` repository
+  variable), then add the `CLOUDFLARE_API_TOKEN` (Pages: Edit) and `CLOUDFLARE_ACCOUNT_ID` repository secrets. The
+  CI `deploy` job uploads the tested `out/` with Wrangler: pushes to `main` go to production, same-repository pull
+  requests to a `pr-<number>` preview. Without the secrets it posts a notice and skips. `smoke` then runs
+  `e2e/hosting.spec.ts` against the deployment URL (`HOSTED_URL=… pnpm e2e:hosted` does the same by hand):
+  COOP/COEP and `crossOriginIsolated` on `/` and `/learn/stacking-cells`, wasm and module content types, caching,
+  the trailing-slash redirect and the attention model loading.
+- **Headers** (`public/_headers`, every matching block applies): COOP/COEP on `/*`; `/_next/static/*` is
+  `public, max-age=31536000, immutable` (content-hashed); `/models/*` is cached for a day. Model and runtime
+  folders are versioned by name (`attention-minilm-v1`, `ort-<onnxruntime-web version>`): a changed model goes
+  in a new folder, because browsers and Transformers.js's Cache API both key on the URL. `next dev` applies only
+  the non-caching headers (dev files are not hashed). `scripts/serve-static.ts` mirrors the host for e2e
+  (headers, `.mjs`/`.wasm`/`.onnx` types, 308 on a trailing slash).
+- **Without cross-origin isolation** (a host that drops the headers) `SharedArrayBuffer` is undefined: the
+  training lessons cannot start, and the ONNX runtime falls back to one thread (it already uses one). The smoke
+  test catches a host that drops them; the in-lesson fallback is ENG-06 (H2).
+- **Build size**: `pnpm build` ends with `scripts/check-build.ts`, which fails on any file over 24 MiB, on two
+  files of 1 MiB or more with the same content, and on a missing runtime or model. It also deletes the raw
+  `worker.ts` sources Turbopack copies into `_next/static/media` beside each `new Worker(new URL(…))` (it builds
+  the real worker chunk too; a browser cannot run a `.ts` file, so nothing loads them). The attention lesson runs
+  on `device: "wasm"`, so it uses the plain threaded runtime (`ort-wasm-simd-threaded.wasm`, 14 MB), not the
+  26 MB WebGPU-capable asyncify build. `next.config.ts` aliases `onnxruntime-web/webgpu` to its external-wasm
+  entry so the bundler emits no second copy. The export is about 45 MB, most of it the 21 MB model and the
+  14 MB runtime.
+- **ONNX runtime copy**: `scripts/copy-runtime.ts` (before `dev` and `build`) copies by content hash into
+  `public/models/ort-<version>/` and fails when the installed onnxruntime-web is not `RUNTIME_VERSION`
+  (bump it in `runtime.ts` when Transformers.js moves) or a file is missing.
+- **Model files**: plain git, not Git LFS (no extra accounts or quotas). `pnpm check-model` (CI) checks every
+  model folder against the SHA-256 lines in its README; `scripts/export-attention-model.py` with
+  `scripts/requirements-export.txt` (Python 3.12) and a pinned Hugging Face revision rebuilds the files byte for
+  byte. Licences: `attention-minilm-v1/LICENSE` and `NOTICE` (Apache-2.0), `onnxruntime-web.LICENSE.txt` and
+  `onnxruntime-web.ThirdPartyNotices.txt` (MIT, the npm package ships none). The repository's own licence is
+  the owner's choice and still to come.
+- **Workers**: three kinds, not one. The training `ModelEngine` worker (one per engine, so a compare split
+  runs two), the attention reader's worker (shared, lazy) and ONNX runtime's own threads if ever enabled.
+- **CI jobs** (`.github/workflows/ci.yml`): `checks` (format, lint, types, unit tests, model checksums),
+  `build` (export plus size check, `.next/cache` cached, `out/` uploaded) and `e2e` (on the built
+  `out/`) run in parallel where they can; then `deploy` and `smoke`. Actions are the Node 24 majors;
+  `permissions: contents: read`; one run per branch (pull requests cancel the older run). Failed e2e runs
+  upload `playwright-report/` and `test-results/`; every run uploads `test-results/perf/`.
+- **No caption check in CI**: the Gemini "smart 12-year-old" check was removed by owner decision; the session
+  that writes a string reviews it. CI calls no model or outside API.
+- **End-to-end projects** (`playwright.config.ts`): `functional` is everything not tagged `@perf`, in parallel,
+  one retry on CI. `perf` is the `@perf` tests (60 fps while training, 200 wiggling edges, the morphing
+  boundary, threads after a cached reload, the home glide and first paint), one worker, after `functional`, so
+  nothing competes for the CPU (a functional failure therefore leaves them unrun). Nothing runs in serial mode.
+  `reuseExistingServer` is off, so a stale `out/` is never tested; `E2E_PORT` moves the server off 4173 when
+  another checkout is using it. Every spec collects errors with `e2e/watch.ts`.
+- **Perf profiles** (`e2e/frames.ts`): `PERF_PROFILE=reference` (default off CI) enforces the real budgets:
+  mean frame ≤ 17.5 ms and p95 ≤ 25 ms, the glide 1.1 s ± 0.3, threads within 3 s, first paint within 1.5 s.
+  `PERF_PROFILE=ci` (default on CI, whose runners draw WebGL in software) records the same budgets as
+  `budget-missed` annotations and warnings, and fails only on gross regressions measured against an idle
+  baseline from the same page: more than 100 ms of extra long tasks per 3 s, or more than 10% more dropped
+  frames (gaps over 33 ms); a glide over 3 s, a lesson over 10 s to load, threads over 15 s or first paint over
+  5 s. Each perf test writes its numbers to `test-results/perf/<test>.json`.
+- **Styleguide and evidence pages** (`/styleguide`, `/styleguide/engines`, `/styleguide/platform`) ship in
+  production on purpose: the e2e suite and the hosted smoke test use them. They are to be marked `noindex`
+  (NAV-28, H2) rather than hidden behind a build flag.

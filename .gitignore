@@ -13,3 +13,16 @@ docs/*/implementation/
 .claude/
 # Copied from node_modules by scripts/copy-runtime.ts
 public/models/ort/
+public/models/ort-*/
+
+# Tool and host state
+docs/.zagrosi-project/
+.venv/
+__pycache__/
+*.pyc
+.vercel/
+.wrangler/
+.netlify/
+*.log
+npm-debug.log*
+pnpm-debug.log*

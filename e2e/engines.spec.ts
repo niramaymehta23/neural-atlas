@@ -1,55 +1,59 @@
-import { chromium, expect, test, type Page } from "@playwright/test";
-import { expectSixtyFps, frameGaps, settle } from "./frames";
+import { expect, test, type Page } from "@playwright/test";
+import { expectSmooth, measureFrames, settle } from "./frames";
+import { watch } from "./watch";
 
 const lab = (page: Page) => page.getByTestId("training-lab");
 const epochOf = async (page: Page) => Number(await lab(page).getAttribute("data-epoch"));
 
 async function openLab(page: Page): Promise<string[]> {
-  const errors: string[] = [];
-  page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
-  page.on("pageerror", (error) => errors.push(error.message));
+  const { errors } = watch(page);
   await page.goto("/styleguide/engines");
   await expect(lab(page)).toHaveAttribute("data-backend", "autodiff");
   return errors;
 }
 
-// Frame timing is the measurement, so these run one at a time.
-test.describe.configure({ mode: "serial" });
+// Frame-timing tests are tagged @perf: the `perf` project runs them alone, after everything else.
+test(
+  "holds 60 fps while a spiral network trains in the worker (trace saved)",
+  {
+    tag: "@perf",
+  },
+  async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "Chrome tracing");
+    const errors = await openLab(page);
+    expect(await page.evaluate(() => window.crossOriginIsolated)).toBe(true);
+    await settle(page);
+    const idle = await measureFrames(page, 3);
+    await page.getByRole("button", { name: "Practise" }).click();
+    await expect.poll(() => epochOf(page)).toBeGreaterThan(4);
+    await settle(page);
 
-test("holds 60 fps while a spiral network trains in the worker (trace saved)", async ({
-  page,
-  browserName,
-}) => {
-  test.skip(browserName !== "chromium", "Chrome tracing");
-  const errors = await openLab(page);
-  expect(await page.evaluate(() => window.crossOriginIsolated)).toBe(true);
-  await page.getByRole("button", { name: "Practise" }).click();
-  await expect.poll(() => epochOf(page)).toBeGreaterThan(4);
-  await settle(page);
+    // The test's own browser; tracing needs it, and it closes with the test run.
+    const browser = page.context().browser();
+    if (!browser) throw new Error("Tracing needs the browser that owns this page.");
+    await browser.startTracing(page, {
+      path: "test-results/engines-training-trace.json",
+      categories: ["devtools.timeline", "disabled-by-default-devtools.timeline.frame"],
+    });
+    const before = await epochOf(page);
+    const busy = await measureFrames(page, 3);
+    await browser.stopTracing();
+    expectSmooth(idle, busy);
+    expect(await epochOf(page)).toBeGreaterThan(before + 10); // it really trained meanwhile
 
-  const browser = page.context().browser() ?? (await chromium.launch());
-  await browser.startTracing(page, {
-    path: "test-results/engines-training-trace.json",
-    categories: ["devtools.timeline", "disabled-by-default-devtools.timeline.frame"],
-  });
-  const before = await epochOf(page);
-  const gaps = await frameGaps(page, 3);
-  await browser.stopTracing();
-  expectSixtyFps(gaps);
-  expect(await epochOf(page)).toBeGreaterThan(before + 10); // it really trained meanwhile
-
-  // The field keeps redrawing within a frame budget.
-  const paints = await page.evaluate(() =>
-    performance.getEntriesByName("decision-field-paint").map(({ duration }) => duration),
-  );
-  expect(paints.length).toBeGreaterThan(3);
-  expect(Math.max(...paints)).toBeLessThan(16);
-  test.info().annotations.push({
-    type: "field",
-    description: `${paints.length} redraws of 128², slowest ${Math.max(...paints).toFixed(2)} ms`,
-  });
-  expect(errors).toEqual([]);
-});
+    // The field keeps redrawing within a frame budget.
+    const paints = await page.evaluate(() =>
+      performance.getEntriesByName("decision-field-paint").map(({ duration }) => duration),
+    );
+    expect(paints.length).toBeGreaterThan(3);
+    expect(Math.max(...paints)).toBeLessThan(16);
+    test.info().annotations.push({
+      type: "field",
+      description: `${paints.length} redraws of 128², slowest ${Math.max(...paints).toFixed(2)} ms`,
+    });
+    expect(errors).toEqual([]);
+  },
+);
 
 test("scrubs back to a recorded moment, replays it, and races a ghost", async ({ page }) => {
   const errors = await openLab(page);
@@ -93,17 +97,25 @@ test("scrubs back to a recorded moment, replays it, and races a ghost", async ({
   expect(errors).toEqual([]);
 });
 
-test("draws 200 changing connections with flowing dots at 60 fps", async ({ page }) => {
-  await page.goto("/styleguide/engines");
-  const view = page.getByTestId("wiggle-network");
-  await expect(view.locator("line")).toHaveCount(200);
-  await view.getByRole("switch", { name: "Wiggle every connection" }).click();
-  await view.scrollIntoViewIfNeeded();
-  const first = await view.locator("line").first().getAttribute("stroke-width");
-  await settle(page);
-  expectSixtyFps(await frameGaps(page, 3));
-  expect(await view.locator("line").first().getAttribute("stroke-width")).not.toBe(first);
-});
+test(
+  "draws 200 changing connections with flowing dots at 60 fps",
+  {
+    tag: "@perf",
+  },
+  async ({ page }) => {
+    await page.goto("/styleguide/engines");
+    const view = page.getByTestId("wiggle-network");
+    await expect(view.locator("line")).toHaveCount(200);
+    await view.scrollIntoViewIfNeeded();
+    await settle(page);
+    const idle = await measureFrames(page, 3);
+    await view.getByRole("switch", { name: "Wiggle every connection" }).click();
+    const first = await view.locator("line").first().getAttribute("stroke-width");
+    await settle(page);
+    expectSmooth(idle, await measureFrames(page, 3));
+    expect(await view.locator("line").first().getAttribute("stroke-width")).not.toBe(first);
+  },
+);
 
 test("trains with TensorFlow.js in the worker on the best device it finds", async ({ page }) => {
   const errors = await openLab(page);

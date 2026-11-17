@@ -1,3 +1,16 @@
+# The one source of response headers (Cloudflare Pages / Netlify format). scripts/headers.ts reads
+# it for the e2e server and `next dev`. Every matching block applies.
+
+# Cross-origin isolation, for SharedArrayBuffer (training lessons, threaded ONNX runtime).
 /*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
+
+# Content-hashed by Next.js, so they never change under the same name.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Model and runtime folders are versioned by name (attention-minilm-v1, ort-<version>); a day
+# bounds how long a browser keeps a file if one is ever replaced in place.
+/models/*
+  Cache-Control: public, max-age=86400

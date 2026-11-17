@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { watch } from "./watch";
 
 const PRIMITIVES = [
   "PaperCard",
@@ -32,9 +33,7 @@ function paletteRgb(name: string): string {
 }
 
 async function openStyleguide(page: Page): Promise<string[]> {
-  const errors: string[] = [];
-  page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
-  page.on("pageerror", (error) => errors.push(error.message));
+  const { errors } = watch(page);
   await page.goto("/styleguide");
   return errors;
 }
