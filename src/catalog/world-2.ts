@@ -101,6 +101,8 @@ export const world2: WorldEntry = {
       idea: "A score can lie",
       playWith: "A sorting machine drops guesses into right and wrong boxes",
       prerequisites: ["the-surprise-test", "how-sure-is-it"],
+      load: () =>
+        import("@/modules/w2-classic-ml/is-99-percent-actually-good").then(({ definition }) => definition),
     },
   ],
 };

@@ -1,12 +1,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
+import { lessons } from "@/catalog";
 import { mockReducedMotion } from "@/design/reduced-motion.mock";
 import { progressStore } from "@/platform/progress/progress";
 import { storageHealth } from "@/platform/storage";
 import { setPaletteOpen } from "@/ui/palette-store";
 import type { ConstellationScene } from "./ConstellationScene";
 import { HomeMap } from "./HomeMap";
+
+/** Every lesson with a module, read from the catalog so a newly built lesson needs no edit here. */
+const builtIds = lessons.filter(({ load }) => load).map(({ id }) => id);
 
 const router = vi.hoisted(() => ({ push: vi.fn(), prefetch: vi.fn() }));
 const scene = vi.hoisted(() => ({
@@ -53,7 +57,7 @@ describe("HomeMap", () => {
     await screen.findByText("choose");
     expect(scene.props?.built.has("rolling-downhill")).toBe(true);
     expect(scene.props?.built.has("drawing-the-best-line")).toBe(false);
-    expect(scene.props?.built.size).toBe(4);
+    expect(scene.props?.built.size).toBe(builtIds.length);
   });
 
   it("lists every idea as plain links before the map arrives", () => {
@@ -163,19 +167,14 @@ describe("HomeMap", () => {
 
   it("suggests nothing, and says more is coming, once every built idea is learned", async () => {
     const done = { visited: true, missions: ["m"], predicted: true };
-    const built = [
-      "rolling-downhill",
-      "stacking-cells",
-      "who-is-looking-at-whom",
-      "scoring-every-move",
-    ];
+    const built = builtIds;
     render(<HomeMap />);
     await screen.findByText("choose");
     act(() =>
       progressStore.setState({ lessons: Object.fromEntries(built.map((id) => [id, done])) }),
     );
     expect(scene.props?.suggested).toBeNull();
-    expect(scene.props?.learned.size).toBe(4);
+    expect(scene.props?.learned.size).toBe(built.length);
     expect(screen.getByText(/More ideas are being drawn/)).toBeInTheDocument();
     act(() => progressStore.setState({ lessons: {} }));
   });

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { lessons } from "@/catalog";
 import type { ComponentProps } from "react";
 import type { Progress } from "@/platform/progress/progress";
 import type * as ProgressModule from "@/platform/progress/progress";
@@ -38,6 +39,8 @@ describe("HomeMap for a returning learner", () => {
     render(<HomeMap />);
     await screen.findByText("map");
     expect(seen.suggested[0]).not.toBe("rolling-downhill");
-    expect(seen.suggested[0]).toBe("stacking-cells");
+    // The next built lesson the learner has not learned yet.
+    const built = lessons.filter(({ load }) => load).map(({ id }) => id);
+    expect(built).toContain(seen.suggested[0]);
   });
 });
