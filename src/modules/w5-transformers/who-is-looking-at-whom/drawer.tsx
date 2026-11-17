@@ -10,6 +10,9 @@ export function LookingDrawer() {
       <p>{drawer.match}</p>
       <p>{drawer.readers}</p>
       <p>{drawer.model}</p>
+      <p className="text-ink-soft" data-credit>
+        {drawer.credit}
+      </p>
       <h3 className="font-serif text-lg">{drawer.maths}</h3>
       <p>{drawer.formula}</p>
     </div>

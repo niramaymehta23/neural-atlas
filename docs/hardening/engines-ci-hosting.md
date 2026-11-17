@@ -79,6 +79,7 @@
 ## ENG-13 · Low · The attention worker lives for the whole session
 - Evidence: `attention-client.ts:72-77`, `attention-worker.ts:52`.
 - Fix: reference-count from the scene; terminate after 60 s unused; reset `loading` only on load failures.
+- Fixed in 7956125.
 
 ## HOST-14 · High · No deploy target, and the obvious hosts break the design
 - **Status:** Fixed in fd27c88 (deploy and smoke jobs, ready for Cloudflare Pages). Owner still connects the account: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` secrets (steps in architecture.md, Hosting and CI).

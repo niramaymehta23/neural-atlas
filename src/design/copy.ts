@@ -41,3 +41,12 @@ export function count(value: number): string {
   const exact = scaled * scale.size === whole;
   return `${sign}${exact ? "" : "about "}${scaled.toLocaleString("en-GB")} ${scale.word}`;
 }
+
+/**
+ * Words that open a sentence, capitalised: count() gives "zero", which must read "Zero tries so
+ * far." at the start of a line.
+ */
+export function sentenceStart(text: string): string {
+  const [first = "", ...rest] = text;
+  return first.toLocaleUpperCase("en-GB") + rest.join("");
+}
