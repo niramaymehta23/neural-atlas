@@ -1,6 +1,7 @@
 # Engines, CI, hosting and repo fixes
 
 ## CI-01 · Blocker · CI on main is red: perf assertions are too strict and run beside everything else
+- **Status:** Fixed in fd27c88. Local reference run green; 10 consecutive green GitHub runs still to be observed after merge.
 - Evidence: runs 43912455168 and 43914793216: `engines.spec.ts` fps tests measured 17.64 and 21.58 ms against 17.5; `headline.spec.ts:77` 17.75 ms; `home.spec.ts:41` click-to-lesson 4907 ms against 3000. Code: `e2e/frames.ts:45-46`, `playwright.config.ts:9` (fullyParallel, 2 workers, software WebGL), `e2e/engines.spec.ts:17`.
 - Fix:
   - Two Playwright projects. `functional`: everything not tagged `@perf`, parallel, `retries: CI ? 1 : 0`. `perf`: `@perf` only, `workers: 1`, runs after `functional` so nothing runs beside it.
@@ -11,11 +12,13 @@
 - Proof: 10 consecutive green runs of `functional`; `perf` writes a JSON artifact; a strict local run on a laptop still passes 60 fps.
 
 ## CI-02 · High · Serial mode hides real regressions
+- **Status:** Fixed in fd27c88.
 - Evidence: `e2e/engines.spec.ts:17`; run 43914793216 shows "4 did not run" (scrub/ghost, 200 connections, TF.js backend, 3D scenes).
 - Fix: drop `mode:"serial"`; perf tests live in the `perf` project.
 - Proof: force-fail the fps test; the other four still run.
 
 ## CI-03 · High · The caption gate has never passed in CI
+- **Status:** Fixed in fd27c88 (script and job). Still needs the owner's `GEMINI_API_KEY` secret: until then PRs warn and pass, pushes to main fail.
 - Evidence: `.github/workflows/ci.yml:25-28`, `scripts/check-captions.ts:37-38,90-108,136-147`. Run 43899694531: "GEMINI_API_KEY is required in CI". On stage 04/05 runs it never ran (it sits after e2e), so their strings are unchecked.
 - Fix:
   - Its own job, parallel with build. With no secret: `::warning::` and pass on PRs; fail only on push to main.
@@ -26,10 +29,12 @@
 - Owner action: add the `GEMINI_API_KEY` repository secret, then fix any strings it rejects (expect the drawer formulas to be flagged).
 
 ## CI-04 · Medium · CI keeps no evidence and has no caching
+- **Status:** Fixed in fd27c88.
 - Evidence: no `upload-artifact`; "No build cache found"; build time went from ~13 s to 4.4 min at stage 05; actions on `@v4` with a Node 20 deprecation warning; no `permissions`/`concurrency`.
 - Fix: upload `playwright-report/` and `test-results/` on failure; cache `.next/cache`; bump actions; `permissions: contents: read`; `concurrency` with cancel-in-progress.
 
 ## CI-05 · Low · The e2e server doesn't match real hosts
+- **Status:** Fixed in fd27c88.
 - Evidence: `scripts/serve-static.ts:13-23` (no `.mjs`, `.wasm`, `.onnx` types), `playwright.config.ts:17` (`reuseExistingServer` reuses a stale `out/`), `engines.spec.ts:30` (`?? chromium.launch()` leaks a browser).
 - Fix: add the MIME types; `reuseExistingServer: false`; close the launched browser.
 - Proof: e2e asserts the wasm response is `application/wasm`.
@@ -74,39 +79,48 @@
 - Fix: reference-count from the scene; terminate after 60 s unused; reset `loading` only on load failures.
 
 ## HOST-14 · High · No deploy target, and the obvious hosts break the design
+- **Status:** Fixed in fd27c88 (deploy and smoke jobs, ready for Cloudflare Pages). Owner still connects the account: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` secrets (steps in architecture.md, Hosting and CI).
 - Evidence: no deploy config or workflow; `docs/requirements.md:327` says Vercel or Cloudflare Pages; Vercel ignores `_headers`; GitHub Pages can't send COOP/COEP, needs `.nojekyll` and a sub-path; `MODELS_PATH = "/models/"` (`src/engine/pretrained/runtime.ts:5`).
 - Fix: Cloudflare Pages (or Netlify) with a deploy workflow; a post-deploy smoke job asserting COOP/COEP on `/` and `/learn/stacking-cells` and `crossOriginIsolated` in Playwright against the preview URL. If a sub-path is ever needed, derive `MODELS_PATH` from `NEXT_PUBLIC_BASE_PATH`.
 - Owner action: choose the host and connect the account (needs your credentials).
 
 ## HOST-15 · High · The ONNX runtime file is over Cloudflare's 25 MiB limit and shipped twice
+- **Status:** Fixed in fd27c88.
 - Evidence (verified): `out/models/ort/ort-wasm-simd-threaded.asyncify.wasm` and `out/_next/static/media/ort-wasm-simd-threaded.asyncify.*.wasm` are both 26,861,777 bytes; `out/` is 82 MB. Raw `worker.*.ts` files also leak into `_next/static/media`.
 - Fix: use the non-asyncify `ort-wasm-simd-threaded.wasm` (~11 MB; the code forces `device: "wasm"`); keep exactly one copy (drop `scripts/copy-runtime.ts` and point `wasmPaths` at the bundled asset, or alias so the bundler doesn't emit its own); a build check that fails on any file over 24 MiB or duplicate content.
 - Proof: `find out -size +24M` empty; attention e2e passes.
 
 ## HOST-16 · Medium · No caching headers; model updates will be served stale
+- **Status:** Fixed in fd27c88.
 - Evidence: `public/_headers` has only COOP/COEP; model and wasm at unversioned URLs; Transformers.js caches in the Cache API.
 - Fix: `/_next/static/*` immutable for a year; `/models/*` one day; versioned model folder (`attention-minilm@v1`).
 - Proof: serve-static header check; `ATTENTION_MODEL` contains a version.
 
 ## HOST-17 · Low · Production ships the styleguide and evidence pages
+- **Status:** Partly fixed in fd27c88: kept on purpose and recorded in architecture.md (the e2e and smoke tests use them); the `noindex` itself is NAV-28 (H2).
 - Fix: keep them but `noindex` (NAV-28) and say so in architecture.md, or hide them behind a build flag.
 
 ## REPO-18 · Low · Unused dependencies
+- **Status:** Partly fixed in fd27c88: `d3` and `@types/d3` removed. Splitting `@tensorflow/tfjs` needs `src/engine/model/backends/tfjs.ts`, outside H1's files: left for H3a (ENG-11).
 - Evidence (verified): no imports of `d3`; `@tensorflow/tfjs` umbrella pulls unused converter/data packages.
 - Fix: remove `d3`, `@types/d3`; depend on `tfjs-core`, `tfjs-layers`, `tfjs-backend-webgl`, `tfjs-backend-cpu` (and webgpu).
 
 ## REPO-19 · Low · 21 MB model in plain git; no licence
+- **Status:** Fixed in fd27c88 except the repo LICENSE (owner's choice). Git LFS not used (needs the client and GitHub LFS quota); the model is guarded by checksums instead (public/models/README.md).
 - Evidence (verified): no LICENSE file; model README names Apache-2.0 but the licence text isn't shipped; fonts come from Google Fonts at build time.
 - Fix: track `*.onnx` with Git LFS (or fetch from a pinned release with a checksum in CI); add `public/models/attention-minilm/LICENSE` (Apache-2.0); add a repo LICENSE (owner chooses which); optionally `next/font/local` with the OFL files for offline builds.
 
 ## REPO-20 · Low · .gitignore gaps and committed tool state
+- **Status:** Fixed in fd27c88.
 - Evidence: `docs/.zagrosi-project/session.json` committed; no ignores for `.venv/`, `__pycache__/`, `.vercel/`, `.wrangler/`, `.netlify/`, `*.log`.
 - Fix: add them; `git rm --cached` the session file.
 
 ## REPO-21 · Low · Docs drift
+- **Status:** Fixed in fd27c88.
 - Evidence: architecture.md's check-captions sources miss `src/constellation/captions.ts`; "one worker" is untrue with compare and attention; hosting section lacks the size limit, caching and no-isolation behaviour; determinism for links (ENG-09).
 - Fix: update those sections and record the chosen host and deploy steps.
 
 ## REPO-22 · Low · Duplicated helpers
+- **Status:** Partly fixed in fd27c88: `e2e/watch.ts` used by every spec. `src/engine/worker-rpc.ts` touches H2's engine files: left for H2 (with ENG-07).
 - Evidence: e2e error collectors copied three times (`engines.spec.ts:7`, `home.spec.ts:6`, `headline.spec.ts:5`); pending-request map and worker start copied in `ModelEngine` and `AttentionReader`.
 - Fix: `e2e/watch.ts`; `src/engine/worker-rpc.ts` used by both clients.

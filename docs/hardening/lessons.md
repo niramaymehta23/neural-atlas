@@ -169,6 +169,7 @@ Paint canvas scroll-blocking on phones: see QL-14 (same fix for PaintCanvas).
 - Test: licence files exist; drawer names the model.
 
 ### ATT-18 · Low · Model export can't be reproduced; runtime copy is fragile
+- **Status:** Fixed in fd27c88 (`scripts/requirements-export.txt`, pinned revision, checksums in the model README checked by `pnpm check-model`, hash compare and version check in `copy-runtime`, `check-build` fails on a missing runtime; the pinned export reproduces the committed model byte for byte).
 - Evidence: `scripts/export-attention-model.py:8,37-38`; `scripts/copy-runtime.ts:19-29` (size-only compare).
 - Fix: `requirements-export.txt` with exact versions, pinned HF revision, SHA-256 in the README checked in CI; hash compare; `prebuild` fails if the runtime is missing. Git LFS: REPO-19.
 
