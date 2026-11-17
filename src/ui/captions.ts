@@ -22,6 +22,10 @@ export const uiCaptions = {
     track: "Moment",
     empty: "Nothing recorded yet",
     moment: (position: string, length: string) => `Moment ${position} of ${length}`,
+    now: "Back to now",
   },
   robot: "Robot learner",
+  compare: {
+    valuetext: (percent: string, side: string) => `${percent} percent shows ${side}`,
+  },
 };

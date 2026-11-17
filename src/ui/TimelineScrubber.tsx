@@ -19,6 +19,10 @@ type TimelineScrubberProps = {
   ghostLosses?: readonly number[];
   /** Words for a moment, read aloud. Defaults to "Moment five of twenty". */
   describe?: (position: number, length: number) => string;
+  /** False while an earlier moment is shown instead of the newest. */
+  live?: boolean;
+  /** Jumps back to the newest moment; shows a "Back to now" button while not live. */
+  onLive?: () => void;
   className?: string;
 };
 
@@ -28,7 +32,7 @@ const momentWords = (position: number, length: number) =>
   uiCaptions.timeline.moment(count(position + 1), count(length));
 
 const BUTTON =
-  "grid size-9 shrink-0 place-items-center rounded-pill border border-hairline bg-paper text-ink transition-colors duration-200 ease-settle hover:bg-card disabled:opacity-40";
+  "grid size-9 shrink-0 place-items-center rounded-pill border border-hairline bg-paper text-ink transition-colors duration-200 ease-settle hover:bg-card disabled:opacity-40 pointer-coarse:size-11";
 
 /** Video-editor-style bar for recorded training: play, step and scrub, over the mistake curve. */
 export function TimelineScrubber({
@@ -40,10 +44,14 @@ export function TimelineScrubber({
   losses,
   ghostLosses = [],
   describe = momentWords,
+  live = true,
+  onLive,
   className = "",
 }: TimelineScrubberProps) {
   const last = Math.max(0, length - 1);
   const empty = length === 0;
+  // One value feeds the thumb, its number and its words, so they never disagree (LIVE-10).
+  const shown = Math.min(position, last);
   const range = extent([...losses, ...ghostLosses]);
   const span = Math.max(losses.length, ghostLosses.length, 2) - 1;
   const lineFor = (values: readonly number[]) =>
@@ -58,8 +66,8 @@ export function TimelineScrubber({
         type="button"
         className={BUTTON}
         aria-label={uiCaptions.timeline.back}
-        disabled={empty || position <= 0}
-        onClick={() => seek(position - 1)}
+        disabled={empty || shown <= 0}
+        onClick={() => seek(shown - 1)}
       >
         <StepIcon flip />
       </button>
@@ -76,15 +84,15 @@ export function TimelineScrubber({
         type="button"
         className={BUTTON}
         aria-label={uiCaptions.timeline.forward}
-        disabled={empty || position >= last}
-        onClick={() => seek(position + 1)}
+        disabled={empty || shown >= last}
+        onClick={() => seek(shown + 1)}
       >
         <StepIcon />
       </button>
 
       <RadixSlider.Root
         className="relative mx-2 flex h-10 grow touch-none items-center select-none"
-        value={[Math.min(position, last)]}
+        value={[shown]}
         min={0}
         max={Math.max(1, last)}
         step={1}
@@ -116,14 +124,24 @@ export function TimelineScrubber({
           />
         </svg>
         <RadixSlider.Track className="relative h-1 grow self-end rounded-pill bg-inset">
-          <RadixSlider.Range className="absolute h-full rounded-pill bg-ink-soft" />
+          <RadixSlider.Range className="absolute h-full rounded-pill bg-ink" />
         </RadixSlider.Track>
         <RadixSlider.Thumb
           aria-label={uiCaptions.timeline.track}
-          aria-valuetext={empty ? uiCaptions.timeline.empty : describe(position, length)}
-          className="block h-10 w-1.5 cursor-grab rounded-pill bg-accent active:cursor-grabbing"
+          aria-valuenow={shown}
+          aria-valuetext={empty ? uiCaptions.timeline.empty : describe(shown, length)}
+          className="relative block h-10 w-2 cursor-grab rounded-pill border border-ink bg-accent before:absolute before:-inset-x-5 before:inset-y-0 active:cursor-grabbing"
         />
       </RadixSlider.Root>
+      {!live && onLive && (
+        <button
+          type="button"
+          onClick={onLive}
+          className="shrink-0 rounded-pill border border-hairline bg-paper px-3 py-2 text-sm text-ink transition-colors duration-200 ease-settle hover:bg-card pointer-coarse:min-h-11"
+        >
+          {uiCaptions.timeline.now}
+        </button>
+      )}
     </div>
   );
 }

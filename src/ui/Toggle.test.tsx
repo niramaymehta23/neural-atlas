@@ -26,4 +26,14 @@ describe("Toggle", () => {
     await user.click(screen.getByText("Let it forget a little"));
     expect(screen.getByRole("switch")).toBeChecked();
   });
+
+  it("shows off with an outline and on with a tick, not by colour alone", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const toggle = screen.getByRole("switch");
+    expect(toggle).toHaveClass("border", "border-ink-soft");
+    expect(toggle.querySelector("[data-tick]")).toBeNull();
+    await user.click(toggle);
+    expect(toggle.querySelector("[data-tick]")).not.toBeNull();
+  });
 });

@@ -22,8 +22,24 @@ const DRAG_PX_FOR_FULL_TURN = 220;
 const RADIUS = 34;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const ARC = (SWEEP_DEGREES / 360) * CIRCUMFERENCE;
+/** Where the sweep starts, in screen degrees (clockwise from 3 o'clock): bottom left. */
+const START_DEGREES = 135;
+/** A press further out than this (as a share of the dial's half-width) is on the arc. */
+const ARC_INNER = 0.6;
 
-/** A round knob with a plain name. Drag up or down, or use the arrow keys. */
+/**
+ * The share of the sweep under a point on the arc, or null when the point is inside the knob.
+ * Presses in the gap at the bottom go to the nearer end.
+ */
+export function fractionAt(dx: number, dy: number, half: number): number | null {
+  if (half <= 0 || Math.hypot(dx, dy) < half * ARC_INNER) return null;
+  const degrees = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const along = (((degrees - START_DEGREES) % 360) + 360) % 360;
+  if (along <= SWEEP_DEGREES) return along / SWEEP_DEGREES;
+  return along > SWEEP_DEGREES + (360 - SWEEP_DEGREES) / 2 ? 0 : 1;
+}
+
+/** A round knob with a plain name. Tap the arc, drag up or down, or use the arrow keys. */
 export function Dial({
   label,
   value,
@@ -47,7 +63,17 @@ export function Dial({
   };
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = { y: event.clientY, value };
+    const box = event.currentTarget.getBoundingClientRect();
+    const half = box.width / 2;
+    const tapped = fractionAt(
+      event.clientX - box.left - half,
+      event.clientY - box.top - box.height / 2,
+      half,
+    );
+    const start =
+      tapped === null ? value : snapToStep(min + tapped * (max - min), { min, max, step });
+    if (start !== value) onChange(start);
+    drag.current = { y: event.clientY, value: start };
   };
   const onPointerMove = (event: PointerEvent) => {
     if (!drag.current) return;
@@ -91,7 +117,7 @@ export function Dial({
               initial={false}
               animate={{ strokeDasharray: `${fraction * ARC} ${CIRCUMFERENCE}` }}
               transition={transition}
-              className="stroke-ink-soft"
+              className="stroke-ink"
             />
           </g>
           <circle cx="40" cy="40" r="24" strokeWidth="1" className="fill-card stroke-hairline" />
@@ -101,7 +127,7 @@ export function Dial({
             transition={transition}
           >
             <rect width="80" height="80" fill="none" />
-            <circle cx="40" cy="23" r="3.5" className="fill-accent" />
+            <circle cx="40" cy="23" r="5" strokeWidth="1.5" className="fill-accent stroke-ink" />
           </motion.g>
         </svg>
       </div>

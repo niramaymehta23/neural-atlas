@@ -15,6 +15,12 @@ export const words = {
   board:
     "The kitchen board: tap or drag to paint squares. Arrows show how good each move looks from each square.",
   puppy: "the puppy",
+  paint: {
+    instructions:
+      "Arrow keys move around the board; Enter or Space paints the square with the chosen brush.",
+    square: (row: string, column: string, kind: string) => `Row ${row}, square ${column}: ${kind}`,
+    kinds: { floor: "floor", wall: "wall", trap: "lava", coin: "treat", goal: "bowl" },
+  },
   rewards: "How well each try went, from first to latest",
   tries: (count: string) => `${count} tries so far.`,
   brush: {

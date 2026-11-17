@@ -22,9 +22,17 @@ export const words = {
     own: "An empty garden",
   },
   brush: {
-    label: "Which flower",
-    blue: "Blue",
-    green: "Green",
+    label: "Plant:",
+    daisies: "Daisies",
+    tulips: "Tulips",
+  },
+  paint: {
+    instructions:
+      "Arrow keys move a ring around the garden; Enter or Space plants the chosen flower there.",
+    position: (across: string, up: string) => `${across}% across, ${up}% up`,
+    planted: (flower: string, across: string, up: string) =>
+      `Planted a ${flower} at ${across}% across, ${up}% up`,
+    flowers: ["daisy", "tulip"],
   },
   layers: {
     label: "How many layers",

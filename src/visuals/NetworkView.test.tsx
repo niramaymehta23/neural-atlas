@@ -36,11 +36,27 @@ describe("NetworkView", () => {
     expect(container.querySelectorAll("circle")).toHaveLength(12); // a paper disc + a fill each
   });
 
-  it("drops the moving dots under reduced motion", () => {
+  it("swaps the moving dots for a still gradient weighted by activity under reduced motion", () => {
     mockReducedMotion(true);
     const { container } = render(
-      <NetworkView sizes={[2, 1]} params={[1, 1, 0]} label="Two inputs" flowing />,
+      <NetworkView sizes={[2, 1]} params={[1, 0.5, 0]} label="Two inputs" flowing />,
     );
     expect(container.querySelector("canvas")).toBeNull();
+    const still = container.querySelector("[data-still]");
+    expect(still?.querySelectorAll("line")).toHaveLength(2);
+    const ends = [...(still?.querySelectorAll('stop[offset="1"]') ?? [])].map((stop) =>
+      Number(stop.getAttribute("stop-opacity")),
+    );
+    expect(ends[0]).toBeGreaterThan(ends[1] ?? 1);
+  });
+
+  it("dashes negative connections so the sign does not rest on colour", () => {
+    const { container } = render(
+      <NetworkView sizes={[2, 3, 1]} params={PARAMS} label="A small network" />,
+    );
+    const lines = [...container.querySelectorAll("line")];
+    expect(lines[1]).toHaveAttribute("stroke-dasharray");
+    expect(lines[2]).not.toHaveAttribute("stroke-dasharray");
+    expect(lines[2]).not.toHaveAttribute("stroke-opacity");
   });
 });

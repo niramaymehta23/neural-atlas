@@ -113,21 +113,74 @@ export function ThreadView({ threads, focus, onFocus, onMove }: ThreadViewProps)
             dragMomentum={false}
             onDragEnd={onDragEnd(index)}
           >
-            <HoverNote note={captionWords.wordNote(word)}>
-              <button
-                type="button"
-                data-word={word}
-                aria-pressed={focus === index}
-                onClick={() => onFocus(focus === index ? -1 : index)}
-                onKeyDown={onKeyDown(index)}
-                className="cursor-grab touch-none rounded-pill border border-hairline bg-card px-2.5 py-1 text-sm whitespace-nowrap active:cursor-grabbing aria-pressed:border-accent aria-pressed:text-accent-ink"
-              >
-                {word}
-              </button>
-            </HoverNote>
+            <div className="flex items-center gap-1">
+              {focus === index && (
+                <MoveButton
+                  label={captionWords.moveLeft(word)}
+                  disabled={!onMove || index === 0}
+                  onClick={() => moveBy(index, -1)}
+                />
+              )}
+              <HoverNote note={captionWords.wordNote(word)}>
+                <button
+                  type="button"
+                  data-word={word}
+                  aria-pressed={focus === index}
+                  aria-keyshortcuts={onMove ? "Alt+ArrowLeft Alt+ArrowRight" : undefined}
+                  onClick={() => onFocus(focus === index ? -1 : index)}
+                  onKeyDown={onKeyDown(index)}
+                  className="cursor-grab touch-none rounded-pill border border-hairline bg-card px-2.5 py-1 text-sm whitespace-nowrap active:cursor-grabbing active:shadow-lifted aria-pressed:border-accent aria-pressed:text-accent-ink"
+                >
+                  {word}
+                </button>
+              </HoverNote>
+              {focus === index && (
+                <MoveButton
+                  label={captionWords.moveRight(word)}
+                  disabled={!onMove || index === count - 1}
+                  onClick={() => moveBy(index, 1)}
+                  right
+                />
+              )}
+            </div>
           </motion.div>
         ))}
       </div>
     </div>
+  );
+}
+
+/** A small arrow beside the chosen word that moves it one place (A11Y-10: no drag needed). */
+function MoveButton({
+  label,
+  disabled,
+  onClick,
+  right = false,
+}: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+  right?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      // aria-disabled keeps it focusable while the reader catches up with the last move.
+      aria-disabled={disabled}
+      onClick={() => !disabled && onClick()}
+      className="grid size-7 place-items-center rounded-pill border border-hairline bg-paper text-ink aria-disabled:opacity-40 pointer-coarse:size-11"
+    >
+      <svg viewBox="0 0 12 12" className={`size-3 ${right ? "" : "-scale-x-100"}`} aria-hidden>
+        <path
+          d="M4 2.5 L8 6 L4 9.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
   );
 }

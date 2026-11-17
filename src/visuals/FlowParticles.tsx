@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { speed } from "@/design/encodings";
 import { useReducedMotion } from "@/design/motion";
 import { cssRgb, useResolvedColours } from "@/design/paint";
@@ -16,10 +16,13 @@ type FlowParticlesProps = {
 };
 
 const DOT_RADIUS = 2.4;
+/** The still version: a sky wash along each path, strongest at its far end for the busiest. */
+const STILL = { width: 3, mostOpacity: 0.7 };
 
 /**
  * Information flowing: one small sky dot per path, on a single canvas and a single frame loop,
- * so hundreds of paths stay smooth. Still under reduced motion (nothing is drawn).
+ * so hundreds of paths stay smooth. Under reduced motion each path instead gets a still sky
+ * gradient towards where it flows, as strong as the path is busy (A11Y-27).
  */
 export function FlowParticles({ paths, width, height }: FlowParticlesProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -58,8 +61,52 @@ export function FlowParticles({ paths, width, height }: FlowParticlesProps) {
     return () => cancelAnimationFrame(frame);
   }, [flow, reduced, width, height]);
 
-  if (reduced) return null;
+  if (reduced) return <StillFlow paths={paths} width={width} height={height} />;
   return (
     <canvas ref={canvas} aria-hidden className="pointer-events-none absolute inset-0 size-full" />
+  );
+}
+
+function StillFlow({ paths, width, height }: FlowParticlesProps) {
+  const prefix = useId();
+  return (
+    <svg
+      aria-hidden
+      data-still
+      viewBox={`0 0 ${width} ${height}`}
+      className="pointer-events-none absolute inset-0 size-full"
+    >
+      {paths.map(({ from, to, activity }, index) =>
+        activity <= 0.02 ? null : (
+          <g key={index}>
+            <linearGradient
+              id={`${prefix}-${index}`}
+              gradientUnits="userSpaceOnUse"
+              x1={from[0]}
+              y1={from[1]}
+              x2={to[0]}
+              y2={to[1]}
+            >
+              <stop offset="0" stopColor="var(--color-flow)" stopOpacity={0} />
+              <stop
+                offset="1"
+                stopColor="var(--color-flow)"
+                stopOpacity={Math.round(Math.min(1, activity) * STILL.mostOpacity * 100) / 100}
+              />
+            </linearGradient>
+            <line
+              data-activity={activity}
+              x1={from[0]}
+              y1={from[1]}
+              x2={to[0]}
+              y2={to[1]}
+              stroke={`url(#${prefix}-${index})`}
+              strokeWidth={STILL.width}
+              strokeLinecap="round"
+            />
+          </g>
+        ),
+      )}
+    </svg>
   );
 }

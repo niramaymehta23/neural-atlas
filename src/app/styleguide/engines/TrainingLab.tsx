@@ -205,6 +205,8 @@ export function TrainingLab() {
         }}
         losses={losses}
         ghostLosses={ghostLosses}
+        live={state.live}
+        onLive={() => timeline.goLive()}
       />
     </div>
   );

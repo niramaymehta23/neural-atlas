@@ -35,4 +35,30 @@ describe("CompareSplit", () => {
     expect(screen.getByText("Small step")).toBeVisible();
     expect(screen.getByText("Big step")).toBeVisible();
   });
+
+  it("keeps the right half out of reach: it is only a picture over the left", () => {
+    const { container } = render(
+      <CompareSplit
+        label="Compare steps"
+        leftLabel="Small step"
+        rightLabel="Big step"
+        left={<button type="button">left start</button>}
+        right={<button type="button">right start</button>}
+      />,
+    );
+    const right = container.querySelector('[data-pane="right"]');
+    expect(right).toHaveAttribute("aria-hidden", "true");
+    expect(right).toHaveAttribute("inert");
+    expect(right).toHaveClass("absolute", "inset-0");
+    expect(screen.getByText("left start").parentElement).not.toHaveClass("absolute");
+    expect(screen.queryByRole("button", { name: "right start" })).toBeNull();
+  });
+
+  it("says in words how much shows each side, with the focus ring on the knob", () => {
+    renderSplit();
+    const divider = screen.getByRole("separator");
+    expect(divider).toHaveAttribute("aria-valuetext", "50 percent shows Small step");
+    expect(divider).toHaveClass("outline-none");
+    expect(divider.querySelector("[data-knob]")).toHaveClass("group-focus-visible:outline-2");
+  });
 });

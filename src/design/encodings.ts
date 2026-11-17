@@ -33,6 +33,13 @@ export function weightTone(weight: number): string {
   return weight < 0 ? "var(--color-bad)" : "var(--color-good)";
 }
 
+/** Negative connections are dashed as well as rose, so the sign reads without colour (A11Y-07). */
+export function weightDash(weight: number, width: number): string | undefined {
+  if (!(weight < 0)) return undefined;
+  const round = (value: number) => Math.round(value * 100) / 100;
+  return `${round(width * 1.5 + 3)} ${round(width + 3)}`;
+}
+
 const FULLNESS = { min: 0.18, max: 1 };
 
 /** How filled-in a neuron looks: 0 is a faint outline of a dot, 1 is solid. */
@@ -48,6 +55,24 @@ const CLASS_TONES = ["var(--color-flow)", "var(--color-good)", "var(--color-ink-
 
 export function classTone(group: number): string {
   return CLASS_TONES[Math.abs(Math.trunc(group)) % CLASS_TONES.length] ?? "var(--color-ink)";
+}
+
+/** Groups differ in shape as well as colour, so they read without colour vision (A11Y-08). */
+export type ClassShape = "circle" | "triangle" | "square";
+const CLASS_SHAPES: readonly ClassShape[] = ["circle", "triangle", "square"];
+
+export function classMark(group: number): ClassShape {
+  return CLASS_SHAPES[Math.abs(Math.trunc(group)) % CLASS_SHAPES.length] ?? "circle";
+}
+
+/** An SVG path for a group's shape centred on (x, y), about `r` from centre to edge. */
+export function markPath(shape: ClassShape, x: number, y: number, r: number): string {
+  const at = (dx: number, dy: number) => `${(x + dx).toFixed(2)} ${(y + dy).toFixed(2)}`;
+  if (shape === "triangle")
+    return `M${at(0, -r * 1.2)} L${at(r * 1.1, r * 0.7)} L${at(-r * 1.1, r * 0.7)} Z`;
+  if (shape === "square")
+    return `M${at(-r * 0.9, -r * 0.9)} H${(x + r * 0.9).toFixed(2)} V${(y + r * 0.9).toFixed(2)} H${(x - r * 0.9).toFixed(2)} Z`;
+  return `M${at(-r, 0)} A${r} ${r} 0 1 0 ${at(r, 0)} A${r} ${r} 0 1 0 ${at(-r, 0)} Z`;
 }
 
 /** Strongest tint a region reaches, so points stay readable on top. */
@@ -96,6 +121,38 @@ const TILE_TONES: Record<TileKind, string> = {
 /** Board squares: the goal is good, a coin a little good, a trap is bad, walls are plain ink. */
 export function tileTone(kind: TileKind): string {
   return TILE_TONES[kind];
+}
+
+/** A cut-paper glyph per special square, drawn in ink in a 0–1 box, so kinds read without colour. */
+export type TileMark = "bowl" | "lava" | "treat" | "hatch";
+const TILE_MARKS: Record<TileKind, TileMark | null> = {
+  floor: null,
+  wall: "hatch",
+  goal: "bowl",
+  trap: "lava",
+  coin: "treat",
+};
+const TILE_MARK_PATHS: Record<TileMark, string> = {
+  bowl: "M0.25 0.48 H0.75 Q0.72 0.74 0.5 0.74 Q0.28 0.74 0.25 0.48 Z",
+  lava: "M0.24 0.42 Q0.37 0.3 0.5 0.42 T0.76 0.42 M0.24 0.62 Q0.37 0.5 0.5 0.62 T0.76 0.62",
+  treat: "M0.5 0.3 L0.68 0.5 L0.5 0.7 L0.32 0.5 Z",
+  hatch: "M0.2 0.5 L0.5 0.2 M0.2 0.8 L0.8 0.2 M0.5 0.8 L0.8 0.5",
+};
+
+export function tileMark(kind: TileKind): { name: TileMark; path: string } | null {
+  const name = TILE_MARKS[kind];
+  return name ? { name, path: TILE_MARK_PATHS[name] } : null;
+}
+
+/** Values closer to zero than this get no sign: the square is plain. */
+const SIGN_FROM = 0.1;
+
+/** A small + or − in a square's corner (0–1 box), so good and bad read without colour. */
+export function valueMark(value: number): { sign: "plus" | "minus"; path: string } | null {
+  if (!Number.isFinite(value) || Math.abs(value) < SIGN_FROM) return null;
+  return value > 0
+    ? { sign: "plus", path: "M0.78 0.2 H0.92 M0.85 0.13 V0.27" }
+    : { sign: "minus", path: "M0.78 0.2 H0.92" };
 }
 
 /** Strongest tint a square's value reaches, so the board stays calm. */

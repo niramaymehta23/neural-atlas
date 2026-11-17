@@ -14,6 +14,10 @@ export const captions = {
 export const words = {
   scene: "A valley of mistakes: higher and warmer means a bigger mistake",
   tapHint: "Tap anywhere on the valley to drop the walkers there.",
+  dropSpot: {
+    label: "Choose where to drop the walkers",
+    instructions: "Arrow keys move a ring over the valley; Enter or Space drops the walkers there.",
+  },
   walkers: {
     sgd: "Steady walker",
     momentum: "Rolling ball",

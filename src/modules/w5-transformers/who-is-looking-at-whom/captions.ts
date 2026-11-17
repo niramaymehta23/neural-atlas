@@ -17,8 +17,11 @@ export const words = {
   sentence: "Type your own sentence",
   waking: "Waking up the reader…",
   failed: "The reader couldn’t wake up. Try reloading the page.",
-  dragHint: "Tap a word to see who it looks at. Drag a word to move it.",
+  dragHint:
+    "Tap a word to see who it looks at. To move it, drag it, use the arrows beside it, or hold Alt and press the left or right arrow key.",
   wordNote: (word: string) => `“${word}”: tap to see who it looks at, or drag it somewhere else.`,
+  moveLeft: (word: string) => `Move “${word}” left`,
+  moveRight: (word: string) => `Move “${word}” right`,
   everyone: "Show everyone’s threads",
   depth: {
     label: "How deep it reads",

@@ -6,7 +6,7 @@ import { valueTone } from "@/design/encodings";
 import { MOVE_COUNT, MOVES, type Tile } from "@/engine/rl/gridworld";
 import { bestMove, createQRunner, squareValue, type QRunner } from "@/engine/rl/q-learning";
 import type { ModuleViewProps } from "@/platform/contract";
-import { Board, type Square } from "@/visuals/Board";
+import { Board, type BoardWords, type Square } from "@/visuals/Board";
 import { Chart } from "@/visuals/Chart";
 import { words } from "./captions";
 import {
@@ -88,7 +88,8 @@ function usePuppy({ state, update, timeline, side }: Props) {
         const previous = timeline.at(timeline.getState().length - 1);
         timeline.record(frameFor(episode, runner.q, board, previous));
       }
-      if (finished.length > 0 && side === "main") update({ episodes: runner.episodes });
+      if (finished.length > 0 && side === "main")
+        update({ episodes: runner.episodes }, { touch: false });
       setTick((tick) => tick + 1);
       frame = requestAnimationFrame(loop);
     };
@@ -98,6 +99,12 @@ function usePuppy({ state, update, timeline, side }: Props) {
 
   return runner;
 }
+
+const BOARD_WORDS: BoardWords = {
+  instructions: words.paint.instructions,
+  square: (row, column, kind) =>
+    words.paint.square(count(row), count(column), words.paint.kinds[kind]),
+};
 
 const smooth = (values: readonly number[]) =>
   values.map((_, index) => {
@@ -126,7 +133,7 @@ function ScoreArrows({ q, square, tile }: { q: ArrayLike<number>; square: Square
             data-arrow={move === best ? "best" : undefined}
             d={`M${middle.x + side.x} ${middle.y + side.y} L${tip.x} ${tip.y} L${middle.x - side.x} ${middle.y - side.y} Z`}
             fill={move === best ? "var(--color-ink)" : "var(--color-ink-soft)"}
-            fillOpacity={move === best ? 0.85 : 0.35}
+            fillOpacity={move === best ? 0.85 : 0.6}
           />
         );
       })}
@@ -170,10 +177,12 @@ export function ScoringScene(props: Props) {
         label={words.board}
         piece={{ row: Math.floor(position / COLUMNS), column: position % COLUMNS }}
         floorTones={tiles.map((_, index) => valueTone(squareValue(q, index)))}
+        floorValues={tiles.map((_, index) => squareValue(q, index))}
         overlay={(square) => (
           <ScoreArrows q={q} square={square} tile={tiles[square.index] ?? "floor"} />
         )}
         onPaint={side === "main" ? paint : undefined}
+        words={BOARD_WORDS}
         className="mx-auto w-full max-w-lg"
       />
       <div className="flex flex-col gap-1">

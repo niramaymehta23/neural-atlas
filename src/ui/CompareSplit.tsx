@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { uiCaptions } from "./captions";
 import { valueForKey } from "./keyboard-step";
 
 type CompareSplitProps = {
@@ -15,7 +16,11 @@ type CompareSplitProps = {
 
 const RANGE = { min: 5, max: 95, step: 5 };
 
-/** Two settings side by side over the same scene; drag the divider (or use arrows) to compare. */
+/**
+ * Two settings side by side over the same scene; drag the divider (or use arrows) to compare.
+ * The left scene sets the height; the right one is a picture laid over it, so only the left
+ * one is reachable by keyboard and screen reader (PLT-16, PLT-18).
+ */
 export function CompareSplit({
   label,
   left,
@@ -45,10 +50,16 @@ export function CompareSplit({
       ref={frame}
       className={`relative overflow-hidden rounded-card border border-hairline bg-card ${className}`}
     >
-      <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}>
+      <div className="h-full" style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}>
         {left}
       </div>
-      <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${split}%)` }}>
+      <div
+        data-pane="right"
+        inert
+        aria-hidden
+        className="absolute inset-0"
+        style={{ clipPath: `inset(0 0 0 ${split}%)` }}
+      >
         {right}
       </div>
       <span className="absolute top-3 left-3 rounded-pill bg-paper px-2.5 py-0.5 text-xs text-ink-soft">
@@ -65,7 +76,7 @@ export function CompareSplit({
         aria-valuemin={RANGE.min}
         aria-valuemax={RANGE.max}
         aria-valuenow={Math.round(split)}
-        aria-valuetext={`${Math.round(split)} percent shows ${leftLabel}`}
+        aria-valuetext={uiCaptions.compare.valuetext(String(Math.round(split)), leftLabel)}
         onKeyDown={onKeyDown}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
@@ -74,11 +85,14 @@ export function CompareSplit({
         onPointerMove={(event) =>
           event.currentTarget.hasPointerCapture(event.pointerId) && followPointer(event)
         }
-        className="absolute inset-y-0 -ml-3 flex w-6 cursor-ew-resize touch-none justify-center"
+        className="group absolute inset-y-0 -ml-3 flex w-6 cursor-ew-resize touch-none justify-center outline-none pointer-coarse:-ml-5.5 pointer-coarse:w-11"
         style={{ left: `${split}%` }}
       >
         <span className="h-full w-px bg-hairline" />
-        <span className="absolute top-1/2 size-5 -translate-y-1/2 rounded-pill border-2 border-paper bg-accent" />
+        <span
+          data-knob
+          className="absolute top-1/2 size-5 -translate-y-1/2 rounded-pill border-2 border-ink bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-accent-ink group-focus-visible:outline-solid"
+        />
       </div>
     </div>
   );
