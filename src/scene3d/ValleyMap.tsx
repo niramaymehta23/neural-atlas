@@ -8,6 +8,8 @@ type ValleyMapProps = {
   height: (x: number, z: number) => number;
   markers: readonly (Spot & { tone?: string; shape?: ClassShape })[];
   trails: readonly { points: readonly Spot[]; tone: string; dash?: readonly [number, number] }[];
+  /** See-through markers, drawn as dashed outlines. */
+  ghosts?: readonly (Spot & { tone?: string; shape?: ClassShape })[];
   /** The keyboard drop spot, ringed. */
   cursor?: Spot | null;
   label: string;
@@ -22,7 +24,7 @@ const toView = (value: number) => Math.round(((value + 1) / 2) * VIEW * 100) / 1
  * The valley seen from straight above, for devices that cannot draw 3D: each square is warmer
  * where the mistake is bigger, with the walkers and their paths on top (ENG-12).
  */
-export function ValleyMap({ height, markers, trails, cursor, label }: ValleyMapProps) {
+export function ValleyMap({ height, markers, trails, ghosts = [], cursor, label }: ValleyMapProps) {
   const squares = useMemo(() => {
     const centre = (index: number) => ((index + 0.5) / CELLS) * 2 - 1;
     const levels = Array.from({ length: CELLS * CELLS }, (_, i) =>
@@ -60,6 +62,17 @@ export function ValleyMap({ height, markers, trails, cursor, label }: ValleyMapP
           stroke={tone}
           strokeWidth={1.5}
           strokeDasharray={dash ? dash.map((part) => part * VIEW).join(" ") : undefined}
+        />
+      ))}
+      {ghosts.map(({ x, z, tone, shape = "circle" }, index) => (
+        <path
+          key={index}
+          data-ghost={shape}
+          d={markPath(shape, toView(x), toView(z), 5)}
+          fill="none"
+          stroke={tone ?? "var(--color-accent)"}
+          strokeWidth={2}
+          strokeDasharray="2 1.5"
         />
       ))}
       {markers.map(({ x, z, tone, shape = "circle" }, index) => (

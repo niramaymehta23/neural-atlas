@@ -36,17 +36,24 @@ export function PredictionSlot({
   onRevealed,
   onSkip,
 }: PredictionSlotProps) {
-  const { length } = useSyncExternalStore(timeline.subscribe, timeline.getState, timeline.getState);
+  const { length, run } = useSyncExternalStore(
+    timeline.subscribe,
+    timeline.getState,
+    timeline.getState,
+  );
   const { state, guesses } = useStore(store);
   const [justRevealed, setJustRevealed] = useState<string | null>(null);
+  /** For guesses about the next run: the run that was on screen when each guess was placed. */
+  const [guessedDuring, setGuessedDuring] = useState<Record<string, number>>({});
   const waiting = predictions.find(({ id }) => !guesses[id]?.revealed);
   const prediction =
     predictions.find(({ id }) => id === justRevealed) ?? waiting ?? predictions.at(-1);
   if (!prediction) return null;
   const frame = timeline.at(length - 1);
+  const stale = prediction.fresh && guessedDuring[prediction.id] === run;
   let answer: string | null;
   try {
-    answer = prediction.answer(state, frame);
+    answer = stale ? null : prediction.answer(state, frame);
   } catch {
     answer = null; // A broken answer keeps the reveal waiting rather than blanking the lesson.
   }
@@ -58,7 +65,10 @@ export function PredictionSlot({
         guess={guesses[prediction.id]}
         answer={answer}
         theirs={theirs[prediction.id]}
-        onGuess={(choice) => store.guess(prediction.id, choice)}
+        onGuess={(choice) => {
+          if (length > 0) setGuessedDuring((during) => ({ ...during, [prediction.id]: run }));
+          store.guess(prediction.id, choice);
+        }}
         onReveal={(happened) => {
           const guess = guesses[prediction.id];
           store.reveal(prediction.id, happened);

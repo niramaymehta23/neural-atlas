@@ -163,7 +163,8 @@ describe("trainer replays a run exactly (ENG-09)", () => {
   });
 
   it("replays in slices, so a long replay keeps the worker answering", async () => {
-    const { send, events, init } = harness();
+    // Slices are cut by time, so a small garden still takes many of them over 3000 epochs.
+    const { send, events, init } = harness({ data: blobs(6, 1) });
     await init;
     const replay = send({ type: "step", epochs: 3000 });
     let checks = 0;

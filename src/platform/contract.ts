@@ -60,8 +60,17 @@ export type Mission<S extends ModuleState, F extends TimelineFrame = TimelineFra
   hint?: string;
   /** Why it broke, shown once it fires. */
   success: string;
-  /** Moments of the timeline replayed around the moment it fired. */
-  replay: { before: number; after: number };
+  /**
+   * Moments of the timeline replayed around the moment it fired. `moment` picks a different
+   * moment to centre on (the epoch something broke, read from the newest frame), and
+   * `framesPerSecond` slows the replay down below the timeline's own speed.
+   */
+  replay: {
+    before: number;
+    after: number;
+    moment?: (frame: F) => number | null;
+    framesPerSecond?: number;
+  };
   /** True once the learner has broken it; checked against the newest state and moment. */
   when: (state: S, frame: F | undefined) => boolean;
 };
@@ -75,6 +84,11 @@ export type Prediction<S extends ModuleState, F extends TimelineFrame = Timeline
   choices: readonly Choice[];
   /** The choice that really happened, or null while it cannot be told yet. */
   answer: (state: S, frame: F | undefined) => string | null;
+  /**
+   * The guess is about the next run: one placed while a run is on screen waits for a new run
+   * before it can be revealed, so it is never a guess made after watching.
+   */
+  fresh?: boolean;
 };
 
 export type ModuleDefinition<S extends ModuleState, F extends TimelineFrame = TimelineFrame> = {
