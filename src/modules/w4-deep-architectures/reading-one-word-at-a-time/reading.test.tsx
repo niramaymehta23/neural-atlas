@@ -91,7 +91,7 @@ describe("reading one word at a time: in the lesson", () => {
       timeout: 8000,
     });
     expect(document.querySelectorAll("[data-word]")).toHaveLength(6);
-  });
+  }, 15_000);
 
   it("earns the star once a long sentence is forgotten", async () => {
     renderLesson();
@@ -103,5 +103,5 @@ describe("reading one word at a time: in the lesson", () => {
     await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
       timeout: 8000,
     });
-  });
+  }, 15_000);
 });

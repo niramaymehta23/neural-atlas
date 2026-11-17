@@ -137,7 +137,8 @@ describe("painting from fog: in the lesson", () => {
     await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(), {
       timeout: 5000,
     });
-  });
+    // Long enough for both waits above: the clearing, then the star.
+  }, 15_000);
 
   it("paints from the keyboard", async () => {
     renderLesson();

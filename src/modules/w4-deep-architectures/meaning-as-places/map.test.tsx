@@ -111,7 +111,7 @@ describe("meaning as places: in the lesson", () => {
       timeout: 10_000,
     });
     expect(screen.getByText("Ways to travel")).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it("earns the star once every word is squashed into one spot", async () => {
     renderLesson();

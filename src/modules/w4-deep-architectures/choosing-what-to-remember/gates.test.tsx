@@ -107,5 +107,6 @@ describe("choosing what to remember: in the lesson", () => {
       timeout: 5000,
     });
     expect(document.querySelector("[data-memory=guessing]")).not.toBeNull();
-  });
+    // Long enough for both waits above: practice, then the star.
+  }, 20_000);
 });

@@ -20,6 +20,15 @@ import { predictions } from "./predictions";
 const initial = definition.initialState as DuelState;
 const at = (change: Partial<DuelState>): DuelState => ({ ...initial, runs: 1, ...change });
 const lastOf = (state: DuelState) => [...duelRun(state)].at(-1) as DuelFrame;
+/** The first `count` frames of a duel; the run is lazy, so only these are worked out. */
+const firstOf = (state: DuelState, count: number) => {
+  const frames: DuelFrame[] = [];
+  for (const frame of duelRun(state)) {
+    frames.push(frame);
+    if (frames.length === count) break;
+  }
+  return frames;
+};
 
 let lessons = 0;
 const renderLesson = () =>
@@ -52,9 +61,9 @@ describe("forger vs detective: the duel", () => {
   }, 30_000);
 
   it("replays the same duel for a link", () => {
-    expect([...duelRun(at({ tries: 3 }))].slice(0, 5)).toEqual(
-      [...duelRun(at({ tries: 3 }))].slice(0, 5),
-    );
+    const first = firstOf(at({ tries: 3 }), 5);
+    expect(first).toHaveLength(5);
+    expect(firstOf(at({ tries: 3 }), 5)).toEqual(first);
   });
 
   it("measures bunching as the share of points near their middle", () => {
@@ -76,7 +85,7 @@ describe("forger vs detective: mission and guess", () => {
   it("fires once the forger's fakes all land in one place", () => {
     expect(mission.when(at({ tries: 8, forger: 1 }), eager)).toBe(true);
     expect(mission.when(at({}), steady)).toBe(false);
-    expect(mission.when(at({ tries: 8 }), [...duelRun(at({ tries: 8 }))][1])).toBe(false);
+    expect(mission.when(at({ tries: 8 }), firstOf(at({ tries: 8 }), 2)[1])).toBe(false);
   });
 
   it("answers the eight-tries question from a finished duel with eight tries", () => {
