@@ -4,15 +4,8 @@ import { captions, words } from "./captions";
 import { DownhillControls } from "./controls";
 import { DownhillDrawer } from "./drawer";
 import { missions } from "./missions";
-import {
-  dialFor,
-  STEPS,
-  VALLEYS,
-  WALKERS,
-  type DownhillFrame,
-  type DownhillState,
-  type Spot,
-} from "./model";
+import { dialFor, STEPS, VALLEYS, WALKERS, type Spot } from "@/features/building/race/race";
+import type { DownhillFrame, DownhillState } from "./model";
 import { predictions } from "./predictions";
 import { DownhillScene } from "./scene";
 

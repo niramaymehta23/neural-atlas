@@ -5,18 +5,15 @@ import {
   firstToSettle,
   guessesAgainst,
   HEIGHTS,
-  placeMark,
   rollDown,
-  shownMarks,
   slope,
   startsFor,
   STEPS,
   TOP,
   VALLEYS,
-  type DownhillFrame,
-  type DownhillState,
   type Valley,
-} from "./model";
+} from "@/features/building/race/race";
+import { placeMark, shownMarks, type DownhillFrame, type DownhillState } from "./model";
 
 /** Steepest bend at each valley's bottom, so the steady walker's bound is 2 ÷ bend. */
 const BEND: Partial<Record<Valley, number>> = { bowl: 3, ravine: 6 };

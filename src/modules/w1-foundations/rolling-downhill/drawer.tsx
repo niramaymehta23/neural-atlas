@@ -3,7 +3,8 @@
 import { useSyncExternalStore } from "react";
 import type { ModuleViewProps } from "@/platform/contract";
 import { words } from "./captions";
-import { slope, stepSize, type DownhillFrame, type DownhillState } from "./model";
+import { slope, stepSize } from "@/features/building/race/race";
+import type { DownhillFrame, DownhillState } from "./model";
 
 const { drawer } = words;
 const show = (value: number) => value.toFixed(2);
