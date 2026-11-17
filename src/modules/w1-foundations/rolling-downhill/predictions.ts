@@ -1,6 +1,7 @@
 import type { Prediction } from "@/platform/contract";
 import { predictionWords, words } from "./captions";
-import { firstToSettle, OUTCOMES, type DownhillFrame, type DownhillState } from "./model";
+import { firstToSettle, OUTCOMES } from "@/features/building/race/race";
+import type { DownhillFrame, DownhillState } from "./model";
 
 export const predictions = [
   {

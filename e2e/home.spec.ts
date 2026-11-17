@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { budget, recordPerf } from "./frames";
 import { watch } from "./watch";
 
@@ -11,6 +11,22 @@ async function openHome(page: Page, path = "/"): Promise<string[]> {
   await page.goto(path);
   await expect(page.locator("[data-star]")).toHaveCount(74);
   return errors;
+}
+
+/**
+ * Waits until a star has stopped gliding (after a filter the camera moves for a moment, longer
+ * on a busy machine), so a click at its middle lands on it. Its slow float still moves it a
+ * little, so "stopped" means it moves less than a quarter of its own width between looks.
+ */
+async function settled(star: Locator) {
+  let last = await star.boundingBox();
+  await expect(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const now = await star.boundingBox();
+    const moved = last && now ? Math.hypot(now.x - last.x, now.y - last.y) : Infinity;
+    last = now;
+    expect(moved).toBeLessThan((now?.width ?? 0) / 4);
+  }).toPass({ timeout: 10_000 });
 }
 
 /** Saves progress straight into the site's IndexedDB, as if earlier visits had. */
@@ -67,10 +83,10 @@ test("the home map shows all 74 ideas and a paper label on hover", async ({ page
 
 test("ideas still being drawn say so; built ones don't", async ({ page }) => {
   await openHome(page);
-  await page.locator('[data-star="drawing-the-best-line"]').hover(steady);
+  await page.locator('[data-star="the-pattern-torch"]').hover(steady);
   await expect(page.getByRole("tooltip")).toContainText("Still being drawn");
   await expect(
-    page.getByRole("link", { name: "Drawing the best line, Still being drawn" }),
+    page.getByRole("link", { name: "The pattern torch, Still being drawn" }),
   ).toBeAttached();
   await page.mouse.move(0, 0);
   await page.locator('[data-star="stacking-cells"]').hover(steady);
@@ -85,7 +101,7 @@ test("a learned idea is announced as learned", async ({ page }) => {
     page.getByRole("link", { name: /Rolling downhill, You have learned this/ }),
   ).toBeAttached();
   await expect(
-    page.getByRole("link", { name: /Stacking cells, A good one to try next/ }),
+    page.getByRole("link", { name: /Teach by showing, A good one to try next/ }),
   ).toBeAttached();
 });
 
@@ -158,6 +174,7 @@ test(
 test("the picked group is still picked after a lesson and Back", async ({ page }) => {
   await openHome(page);
   await page.getByRole("radio", { name: "Learning from examples" }).click();
+  await settled(page.getByRole("link", { name: "Rolling downhill" }));
   await page.getByRole("link", { name: "Rolling downhill" }).click(steady);
   // Mid-flight the header (and its filter) cannot be used.
   await expect(page.locator("header")).toHaveAttribute("inert", "");
@@ -199,9 +216,11 @@ test("clicking a built idea flies in, with its lesson already fetched", async ({
 
 test("an idea still being drawn fades across instead of flying", async ({ page }) => {
   await openHome(page);
-  await page.getByRole("link", { name: "Drawing the best line" }).click(steady);
+  // Zooming out sits clear of its neighbours, so the click lands on it and not on one in front.
+  await settled(page.getByRole("link", { name: "Zooming out" }));
+  await page.getByRole("link", { name: "Zooming out" }).click(steady);
   await expect(page.getByRole("main")).toHaveAttribute("data-leaving", "fade");
-  await page.waitForURL("**/learn/drawing-the-best-line");
+  await page.waitForURL("**/learn/zooming-out");
 });
 
 test("a modifier-click on a star opens it in a new tab", async ({ page, context }) => {
@@ -259,9 +278,10 @@ test("the palette takes over a flight that has started", async ({ page }) => {
 });
 
 test("the locked page offers a lesson that is ready now", async ({ page }) => {
-  await page.goto("/learn/teach-by-showing");
+  await page.goto("/learn/the-pattern-torch");
   const ready = page.getByRole("navigation", { name: "Ready to explore now" });
-  await expect(ready.getByRole("link")).toHaveAttribute("href", "/learn/rolling-downhill");
+  // The first built lesson in curriculum order, for a learner who has mastered nothing.
+  await expect(ready.getByRole("link")).toHaveAttribute("href", "/learn/teach-by-showing");
 });
 
 test("the words paint within 1.5 s; the 3D arrives after", { tag: "@perf" }, async ({ page }) => {

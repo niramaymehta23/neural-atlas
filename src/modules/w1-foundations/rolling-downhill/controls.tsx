@@ -5,7 +5,8 @@ import type { ModuleViewProps } from "@/platform/contract";
 import { Dial } from "@/ui/Dial";
 import { SegmentedControl } from "@/ui/SegmentedControl";
 import { words } from "./captions";
-import { STEPS, VALLEYS, type DownhillFrame, type DownhillState } from "./model";
+import { STEPS, VALLEYS } from "@/features/building/race/race";
+import type { DownhillFrame, DownhillState } from "./model";
 
 const describeStep = (value: number) =>
   value > 0.66

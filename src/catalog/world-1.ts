@@ -11,6 +11,8 @@ export const world1: WorldEntry = {
       idea: "Show lots of examples instead of writing rules, and it spots the pattern",
       playWith: "Sort fruit yourself; a little robot copies you",
       prerequisites: [],
+      load: () =>
+        import("@/modules/w1-foundations/teach-by-showing").then(({ definition }) => definition),
     },
     {
       id: "what-the-machine-sees",
@@ -19,6 +21,10 @@ export const world1: WorldEntry = {
       idea: "It only knows what you describe to it",
       playWith: "Pick which facts describe a house and watch the price guess change",
       prerequisites: ["teach-by-showing"],
+      load: () =>
+        import("@/modules/w1-foundations/what-the-machine-sees").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "drawing-the-best-line",
@@ -27,6 +33,10 @@ export const world1: WorldEntry = {
       idea: "Find the line closest to all the dots",
       playWith: 'Drag a line; little "miss" bars shrink and grow',
       prerequisites: ["what-the-machine-sees"],
+      load: () =>
+        import("@/modules/w1-foundations/drawing-the-best-line").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "splitting-into-groups",
@@ -35,6 +45,10 @@ export const world1: WorldEntry = {
       idea: "Put a fence between two kinds of things",
       playWith: "Paint two colours of dots; a fence appears",
       prerequisites: ["what-the-machine-sees"],
+      load: () =>
+        import("@/modules/w1-foundations/splitting-into-groups").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "keeping-score-of-mistakes",
@@ -43,6 +57,10 @@ export const world1: WorldEntry = {
       idea: 'One score for "how wrong"',
       playWith: "Compare a gentle and a strict mistake-scorer",
       prerequisites: ["drawing-the-best-line"],
+      load: () =>
+        import("@/modules/w1-foundations/keeping-score-of-mistakes").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "rolling-downhill",
@@ -61,6 +79,10 @@ export const world1: WorldEntry = {
       idea: "Learning answers by heart fails on new questions",
       playWith: "A student who crammed past papers sits a new exam",
       prerequisites: ["drawing-the-best-line"],
+      load: () =>
+        import("@/modules/w1-foundations/memorising-vs-understanding").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "the-surprise-test",
@@ -69,6 +91,8 @@ export const world1: WorldEntry = {
       idea: "Hide some examples to check it really learned",
       playWith: "Slide how much to hide; see the honest score",
       prerequisites: ["memorising-vs-understanding"],
+      load: () =>
+        import("@/modules/w1-foundations/the-surprise-test").then(({ definition }) => definition),
     },
     {
       id: "stubborn-vs-jumpy",
@@ -77,6 +101,8 @@ export const world1: WorldEntry = {
       idea: "Some learners never change, some change at every example",
       playWith: "A darts board of slightly different robots",
       prerequisites: ["the-surprise-test"],
+      load: () =>
+        import("@/modules/w1-foundations/stubborn-vs-jumpy").then(({ definition }) => definition),
     },
     {
       id: "how-sure-is-it",
@@ -85,6 +111,8 @@ export const world1: WorldEntry = {
       idea: "Machines give guesses with a confidence, not facts",
       playWith: "Confidence bars above each guess",
       prerequisites: ["splitting-into-groups"],
+      load: () =>
+        import("@/modules/w1-foundations/how-sure-is-it").then(({ definition }) => definition),
     },
   ],
 };

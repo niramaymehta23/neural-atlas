@@ -11,6 +11,10 @@ export const world3: WorldEntry = {
       idea: "Listens to a few voices, trusts some more, then decides",
       playWith: "Pluck strings for how much it trusts each voice",
       prerequisites: ["splitting-into-groups", "rolling-downhill"],
+      load: () =>
+        import("@/modules/w3-neural-networks/one-tiny-brain-cell").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "the-decision-curve",
@@ -19,6 +23,10 @@ export const world3: WorldEntry = {
       idea: "The bend that lets it learn more than straight lines",
       playWith: "Swap the bend and see what it can draw",
       prerequisites: ["one-tiny-brain-cell"],
+      load: () =>
+        import("@/modules/w3-neural-networks/the-decision-curve").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "stacking-cells",
@@ -37,6 +45,10 @@ export const world3: WorldEntry = {
       idea: "Information flows through the layers",
       playWith: "Watch dots flow left to right",
       prerequisites: ["stacking-cells"],
+      load: () =>
+        import("@/modules/w3-neural-networks/thinking-forwards").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "passing-back-the-blame",
@@ -45,6 +57,10 @@ export const world3: WorldEntry = {
       idea: "After a mistake, each cell learns its share of blame",
       playWith: "Blame rain falls back through the network",
       prerequisites: ["thinking-forwards"],
+      load: () =>
+        import("@/modules/w3-neural-networks/passing-back-the-blame").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "smarter-ways-downhill",
@@ -53,6 +69,10 @@ export const world3: WorldEntry = {
       idea: "Some walkers keep momentum, some adapt their stride",
       playWith: "Three walkers race down the valley",
       prerequisites: ["passing-back-the-blame"],
+      load: () =>
+        import("@/modules/w3-neural-networks/smarter-ways-downhill").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "big-steps-then-small",
@@ -61,6 +81,10 @@ export const world3: WorldEntry = {
       idea: "Start bold, finish careful",
       playWith: "Draw a step-size plan",
       prerequisites: ["smarter-ways-downhill"],
+      load: () =>
+        import("@/modules/w3-neural-networks/big-steps-then-small").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "where-you-start",
@@ -69,6 +93,8 @@ export const world3: WorldEntry = {
       idea: "The start changes where you end up",
       playWith: "Re-roll the start and compare",
       prerequisites: ["stacking-cells"],
+      load: () =>
+        import("@/modules/w3-neural-networks/where-you-start").then(({ definition }) => definition),
     },
     {
       id: "dont-cram",
@@ -77,6 +103,8 @@ export const world3: WorldEntry = {
       idea: "Make studying harder so it can't just memorise",
       playWith: "Randomly switch cells off while it learns",
       prerequisites: ["stacking-cells", "memorising-vs-understanding"],
+      load: () =>
+        import("@/modules/w3-neural-networks/dont-cram").then(({ definition }) => definition),
     },
     {
       id: "keeping-things-steady",
@@ -85,6 +113,10 @@ export const world3: WorldEntry = {
       idea: "Keep signals calm so learning doesn't wobble",
       playWith: "Wild vs calm signals side by side",
       prerequisites: ["passing-back-the-blame"],
+      load: () =>
+        import("@/modules/w3-neural-networks/keeping-things-steady").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "it-can-draw-anything",
@@ -93,6 +125,10 @@ export const world3: WorldEntry = {
       idea: "With enough cells it can copy any squiggle",
       playWith: "Draw a squiggle; add cells until it matches",
       prerequisites: ["stacking-cells"],
+      load: () =>
+        import("@/modules/w3-neural-networks/it-can-draw-anything").then(
+          ({ definition }) => definition,
+        ),
     },
   ],
 };

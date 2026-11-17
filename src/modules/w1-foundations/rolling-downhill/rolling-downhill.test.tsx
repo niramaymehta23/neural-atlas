@@ -8,7 +8,8 @@ import { ModuleShell } from "@/platform/ModuleShell";
 import { predictionWords, words } from "./captions";
 import { DownhillDrawer } from "./drawer";
 import { definition } from "./index";
-import { rollDown, STEPS, type DownhillFrame, type DownhillState } from "./model";
+import { rollDown, STEPS } from "@/features/building/race/race";
+import type { DownhillFrame, DownhillState } from "./model";
 import { DownhillScene } from "./scene";
 
 const initial = definition.initialState as DownhillState;

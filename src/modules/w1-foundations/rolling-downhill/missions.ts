@@ -1,6 +1,7 @@
 import type { Mission } from "@/platform/contract";
 import { missionWords } from "./captions";
-import { steadyFlewOff, steadyOffAt, type DownhillFrame, type DownhillState } from "./model";
+import { steadyFlewOff, steadyOffAt } from "@/features/building/race/race";
+import type { DownhillFrame, DownhillState } from "./model";
 
 export const missions = [
   {

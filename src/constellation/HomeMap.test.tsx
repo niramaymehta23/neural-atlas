@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
+import { lessons } from "@/catalog";
 import { mockReducedMotion } from "@/design/reduced-motion.mock";
 import { progressStore } from "@/platform/progress/progress";
 import { storageHealth } from "@/platform/storage";
@@ -21,8 +22,8 @@ vi.mock("./ConstellationScene", () => ({
     return (
       <>
         <button onClick={() => props.onChoose("rolling-downhill")}>choose</button>
-        <button onClick={() => props.onChoose("drawing-the-best-line")}>choose locked</button>
-        <button type="button" data-star="teach-by-showing">
+        <button onClick={() => props.onChoose("the-pattern-torch")}>choose locked</button>
+        <button type="button" data-star="the-pattern-torch">
           star
         </button>
       </>
@@ -44,7 +45,7 @@ describe("HomeMap", () => {
     render(<HomeMap />);
     await screen.findByText("choose");
     expect(scene.props?.stars).toHaveLength(74);
-    expect(scene.props?.suggested).toBe("rolling-downhill");
+    expect(scene.props?.suggested).toBe("teach-by-showing");
     expect(scene.props?.learned.size).toBe(0);
   });
 
@@ -52,8 +53,8 @@ describe("HomeMap", () => {
     render(<HomeMap />);
     await screen.findByText("choose");
     expect(scene.props?.built.has("rolling-downhill")).toBe(true);
-    expect(scene.props?.built.has("drawing-the-best-line")).toBe(false);
-    expect(scene.props?.built.size).toBe(4);
+    expect(scene.props?.built.has("the-pattern-torch")).toBe(false);
+    expect(scene.props?.built.size).toBe(lessons.filter(({ load }) => load).length);
   });
 
   it("lists every idea as plain links before the map arrives", () => {
@@ -138,7 +139,7 @@ describe("HomeMap", () => {
     await user.click(await screen.findByText("choose locked"));
     expect(scene.props?.flyingTo).toBeNull();
     expect(screen.getByRole("main")).toHaveAttribute("data-leaving", "fade");
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/learn/drawing-the-best-line"));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/learn/the-pattern-torch"));
   });
 
   it("lets the palette take over a flight that has started", async () => {
@@ -163,19 +164,14 @@ describe("HomeMap", () => {
 
   it("suggests nothing, and says more is coming, once every built idea is learned", async () => {
     const done = { visited: true, missions: ["m"], predicted: true };
-    const built = [
-      "rolling-downhill",
-      "stacking-cells",
-      "who-is-looking-at-whom",
-      "scoring-every-move",
-    ];
+    const built = lessons.filter(({ load }) => load).map(({ id }) => id);
     render(<HomeMap />);
     await screen.findByText("choose");
     act(() =>
       progressStore.setState({ lessons: Object.fromEntries(built.map((id) => [id, done])) }),
     );
     expect(scene.props?.suggested).toBeNull();
-    expect(scene.props?.learned.size).toBe(4);
+    expect(scene.props?.learned.size).toBe(built.length);
     expect(screen.getByText(/More ideas are being drawn/)).toBeInTheDocument();
     act(() => progressStore.setState({ lessons: {} }));
   });

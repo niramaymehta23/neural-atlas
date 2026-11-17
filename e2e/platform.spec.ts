@@ -132,7 +132,7 @@ test("the companion model survives navigation and reload", async ({ page }) => {
   await expect(layers).toHaveAttribute("data-layers", "2");
 
   await expect(layers).toHaveAttribute("data-saving", "false");
-  await page.goto("/learn/teach-by-showing");
+  await page.goto("/learn/the-pattern-torch");
   await page.goBack();
   await expect(layers).toHaveAttribute("data-layers", "2");
   await page.reload();
@@ -140,17 +140,17 @@ test("the companion model survives navigation and reload", async ({ page }) => {
 });
 
 test("an unbuilt lesson shows its locked page", async ({ page }) => {
-  await page.goto("/learn/keeping-score-of-mistakes");
-  await expect(page.getByRole("heading", { name: "Keeping score of mistakes" })).toBeVisible();
+  await page.goto("/learn/zooming-out");
+  await expect(page.getByRole("heading", { name: "Zooming out" })).toBeVisible();
   await expect(page.getByText("Still being drawn")).toBeVisible();
-  await expect(page.getByText('One score for "how wrong"')).toBeVisible();
-  await expect(page.getByText("Loss function")).toHaveCount(0);
-  await page.getByRole("link", { name: "Drawing the best line" }).click();
-  await expect(page).toHaveURL(/\/learn\/drawing-the-best-line$/);
+  await expect(page.getByText("Keep the gist, drop the detail")).toBeVisible();
+  await expect(page.getByText("Pooling")).toHaveCount(0);
+  await page.getByRole("link", { name: "The pattern torch" }).click();
+  await expect(page).toHaveURL(/\/learn\/the-pattern-torch$/);
 });
 
 test("the palette jumps to a lesson by its real term", async ({ page }) => {
-  await page.goto("/learn/teach-by-showing");
+  await page.goto("/learn/the-pattern-torch");
   await page.keyboard.press("ControlOrMeta+k");
   await page.getByRole("combobox").fill("attention");
   await page.getByRole("option", { name: /Who is looking at whom/ }).click();
