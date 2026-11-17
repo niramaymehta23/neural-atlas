@@ -17,13 +17,13 @@ export default function StyleguidePage() {
         <div className="flex items-center gap-4">
           <a
             href="/styleguide/engines"
-            className="text-sm text-accent underline-offset-4 hover:underline"
+            className="text-sm text-accent-ink underline-offset-4 hover:underline"
           >
             Engines
           </a>
           <a
             href="/styleguide/platform"
-            className="text-sm text-accent underline-offset-4 hover:underline"
+            className="text-sm text-accent-ink underline-offset-4 hover:underline"
           >
             Platform
           </a>

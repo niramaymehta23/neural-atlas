@@ -45,6 +45,7 @@ export function TrainingLab() {
   const [attempt, setAttempt] = useState(0);
   const [params, setParams] = useState<Float64Array | null>(null);
   const [field, setField] = useState<Float32Array | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
   const pointsRef = useRef(points);
   useEffect(() => {
     pointsRef.current = points;
@@ -57,8 +58,9 @@ export function TrainingLab() {
       data: toSamples(pointsRef.current),
       train: { ...TRAIN, seed: TRAIN.seed + attempt },
       onSnapshot: (snapshot) => timeline.record(snapshot),
+      onError: setFailure,
     });
-    void created.ready.then(setEngineName);
+    void created.ready.then(setEngineName, () => {}); // failures arrive through onError
     setEngine(created);
     return () => {
       created.dispose();
@@ -137,6 +139,14 @@ export function TrainingLab() {
   const ghostLosses = timeline.ghostFrames().map(({ loss }) => loss);
   const epoch = (shown ?? frames.at(-1))?.epoch ?? 0;
 
+  if (failure) {
+    return (
+      <p role="alert" className="text-sm text-ink-soft" data-testid="training-lab-failed">
+        The training engine stopped: {failure} Reload the page to try again.
+      </p>
+    );
+  }
+
   return (
     <div
       className="flex w-full flex-col gap-6"
@@ -146,7 +156,7 @@ export function TrainingLab() {
       data-live={String(state.live)}
     >
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={train} className={`${BUTTON} text-accent`}>
+        <button type="button" onClick={train} className={`${BUTTON} text-accent-ink`}>
           {running ? "Pause" : "Practise"}
         </button>
         <button type="button" onClick={() => setAttempt((n) => n + 1)} className={BUTTON}>

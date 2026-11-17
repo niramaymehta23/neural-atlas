@@ -44,7 +44,7 @@ export function PredictionCard({
             <button
               type="button"
               onClick={onNext}
-              className="pt-1 text-accent underline-offset-4 hover:underline"
+              className="pt-1 text-accent-ink underline-offset-4 hover:underline"
             >
               {words.next}
             </button>
@@ -70,7 +70,7 @@ export function PredictionCard({
               type="button"
               disabled={answer === null}
               onClick={() => answer !== null && onReveal(answer)}
-              className="self-start text-sm text-accent underline-offset-4 hover:underline disabled:text-ink-soft disabled:no-underline"
+              className="self-start text-sm text-accent-ink underline-offset-4 hover:underline disabled:text-ink-soft disabled:no-underline"
             >
               {answer === null ? words.waiting : words.reveal}
             </button>

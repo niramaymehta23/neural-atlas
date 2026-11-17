@@ -100,7 +100,7 @@ export function StarMark({
             <p className="font-serif text-base">{lesson.title}</p>
             <p className="text-sm text-ink-soft">{lesson.idea}</p>
             {(learned || suggested) && (
-              <p className="mt-1 text-xs text-accent">
+              <p className="mt-1 text-xs text-accent-ink">
                 {learned ? captions.learned : captions.next}
               </p>
             )}

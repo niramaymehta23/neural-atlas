@@ -25,7 +25,7 @@ export function MissionPanel({ mission, done, justFired, onReplay, onNext }: Mis
             <button
               type="button"
               onClick={onReplay}
-              className="text-accent underline-offset-4 hover:underline"
+              className="text-accent-ink underline-offset-4 hover:underline"
             >
               {platformCaptions.replay}
             </button>
@@ -34,7 +34,7 @@ export function MissionPanel({ mission, done, justFired, onReplay, onNext }: Mis
             <button
               type="button"
               onClick={onNext}
-              className="text-accent underline-offset-4 hover:underline"
+              className="text-accent-ink underline-offset-4 hover:underline"
             >
               {platformCaptions.nextMission}
             </button>

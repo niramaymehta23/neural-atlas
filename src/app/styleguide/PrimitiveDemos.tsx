@@ -100,7 +100,7 @@ export function PrimitiveDemos() {
           <button
             type="button"
             onClick={() => setTouched(true)}
-            className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent"
+            className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent-ink"
           >
             Nudge the dot
           </button>

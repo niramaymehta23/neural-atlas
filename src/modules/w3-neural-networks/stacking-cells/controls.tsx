@@ -63,7 +63,7 @@ export function CellsControls({ state, update, side }: Props) {
         <button
           type="button"
           onClick={() => update(({ learning }) => ({ learning: !learning }))}
-          className={`${BUTTON} text-accent`}
+          className={`${BUTTON} text-accent-ink`}
         >
           {state.learning ? words.pause : words.learn}
         </button>

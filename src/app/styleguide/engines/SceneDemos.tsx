@@ -47,7 +47,7 @@ export function IdeaSpaceDemo() {
       <button
         type="button"
         onClick={() => setFocus((current) => (current === undefined ? 12 : undefined))}
-        className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent"
+        className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent-ink"
       >
         {focus === undefined ? "Glide to one idea" : "Back to the whole map"}
       </button>
@@ -81,7 +81,7 @@ export function BoardDemo() {
       <button
         type="button"
         onClick={() => setStep((n) => n + 1)}
-        className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent"
+        className="self-start rounded-pill border border-hairline bg-paper px-4 py-2 text-sm text-accent-ink"
       >
         Take a step
       </button>

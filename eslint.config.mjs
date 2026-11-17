@@ -99,6 +99,14 @@ const designBans = [
     selector: "Property[key.name='fontFamily'], JSXAttribute[name.name='fontFamily']",
     message: "Fonts live only in src/design/fonts.ts.",
   },
+  // Plain clay is too light to read as text on ivory (A11Y-02); clay stays for fills.
+  ...[
+    "Literal[value=/\\btext-accent(?![-\\w])/]",
+    "TemplateElement[value.raw=/\\btext-accent(?![-\\w])/]",
+  ].map((selector) => ({
+    selector,
+    message: "Use text-accent-ink for clay text; text-accent fails contrast.",
+  })),
 ];
 
 const config = [

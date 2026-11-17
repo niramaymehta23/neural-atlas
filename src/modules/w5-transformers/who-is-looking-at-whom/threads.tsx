@@ -120,7 +120,7 @@ export function ThreadView({ threads, focus, onFocus, onMove }: ThreadViewProps)
                 aria-pressed={focus === index}
                 onClick={() => onFocus(focus === index ? -1 : index)}
                 onKeyDown={onKeyDown(index)}
-                className="cursor-grab touch-none rounded-pill border border-hairline bg-card px-2.5 py-1 text-sm whitespace-nowrap active:cursor-grabbing aria-pressed:border-accent aria-pressed:text-accent"
+                className="cursor-grab touch-none rounded-pill border border-hairline bg-card px-2.5 py-1 text-sm whitespace-nowrap active:cursor-grabbing aria-pressed:border-accent aria-pressed:text-accent-ink"
               >
                 {word}
               </button>

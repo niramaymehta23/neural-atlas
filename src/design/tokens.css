@@ -17,6 +17,9 @@
   --rose: #c4646b;
   --sky: #6a9bcc;
   --sand: #e3dacc;
+  /* Darker cuts of warm grey and clay that pass AA as text on every day surface. */
+  --warm-grey-deep: #5f5e58;
+  --clay-deep: #a8502f;
 
   /* Semantic colours (ivory) */
   --paper: var(--ivory);
@@ -24,7 +27,9 @@
   --inset: var(--sand);
   --hairline: #e8e6dc;
   --ink: var(--ink-black);
-  --ink-soft: var(--warm-grey);
+  --ink-soft: var(--warm-grey-deep);
+  /* Clay as text or a focus ring: plain clay is too light on ivory (2.9:1). */
+  --accent-ink: var(--clay-deep);
   --scrim: color-mix(in oklab, var(--ink-black) 28%, transparent);
   --shadow-tint: color-mix(in oklab, var(--ink-black) 16%, transparent);
 
@@ -38,6 +43,7 @@
   --hairline: color-mix(in oklab, var(--ivory) 13%, var(--charcoal));
   --ink: var(--ivory);
   --ink-soft: color-mix(in oklab, var(--warm-grey) 70%, var(--ivory));
+  --accent-ink: var(--clay);
   --scrim: color-mix(in oklab, black 45%, transparent);
   --shadow-tint: color-mix(in oklab, black 40%, transparent);
 
@@ -53,6 +59,7 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-accent: var(--clay);
+  --color-accent-ink: var(--accent-ink);
   --color-good: var(--sage);
   --color-bad: var(--rose);
   --color-flow: var(--sky);
@@ -101,7 +108,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--clay);
+    outline: 2px solid var(--accent-ink);
     outline-offset: 3px;
   }
 

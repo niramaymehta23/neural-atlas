@@ -14,7 +14,7 @@ export function MotionDemo() {
       <button
         type="button"
         onClick={() => setMoved((was) => !was)}
-        className="self-start rounded-pill border border-hairline bg-card px-4 py-2 text-sm text-accent"
+        className="self-start rounded-pill border border-hairline bg-card px-4 py-2 text-sm text-accent-ink"
       >
         {moved ? "Send them back" : "Send them across"}
       </button>

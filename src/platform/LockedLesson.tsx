@@ -9,7 +9,7 @@ type LockedLessonProps = {
 };
 
 const words = platformCaptions.locked;
-const LINK = "text-accent underline-offset-4 hover:underline";
+const LINK = "text-accent-ink underline-offset-4 hover:underline";
 
 /** The page an unbuilt lesson shows: its everyday name and idea, and what to try first. */
 export function LockedLesson({ lesson, prerequisites }: LockedLessonProps) {
