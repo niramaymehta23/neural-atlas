@@ -1,5 +1,8 @@
 // @vitest-environment node
-import { collectStrings, defaultFiles, main } from "./check-captions";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { collectStrings, defaultFiles, type Lock, lockKey, main } from "./check-captions";
 
 const FIXTURE = "scripts/fixtures/jargon-captions.ts";
 
@@ -125,6 +128,117 @@ describe("check-captions", () => {
   it("rates templated captions with a stand-in value", () => {
     const captions = { shrank: (amount: string) => `The mistake shrank by ${amount}.` };
     expect(collectStrings(captions)).toEqual(["The mistake shrank by a few."]);
+  });
+});
+
+describe("check-captions in CI", () => {
+  const noWait = { sleep: vi.fn(async () => {}) };
+  const tempLock = async () => join(await mkdtemp(join(tmpdir(), "captions-")), "lock.json");
+
+  it("retries a 429 with backoff, then rates the batch", async () => {
+    const plain = geminiRejecting([]);
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("slow down", { status: 429 }))
+      .mockImplementation(plain);
+    const sleep = vi.fn(async () => {});
+    const code = await main(["--file", FIXTURE], { GEMINI_API_KEY: "k" }, fetchImpl, quietLog(), {
+      sleep,
+    });
+    expect(code).toBe(0);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledWith(1000);
+    expect(fetchImpl.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("gives up with a clear message after a request keeps timing out", async () => {
+    const timeout = vi.fn(async () => {
+      throw new DOMException("The operation timed out.", "TimeoutError");
+    });
+    await expect(
+      main(["--file", FIXTURE], { GEMINI_API_KEY: "k" }, timeout, quietLog(), noWait),
+    ).rejects.toThrow("no answer within 30 s (after 3 retries)");
+    expect(timeout).toHaveBeenCalledTimes(4);
+  });
+
+  it("names the model when Gemini does not know it", async () => {
+    const missing = vi.fn(async () => new Response("not found", { status: 404 }));
+    await expect(
+      main(
+        ["--file", FIXTURE],
+        { GEMINI_API_KEY: "k", GEMINI_MODEL: "gemini-0" },
+        missing,
+        quietLog(),
+        noWait,
+      ),
+    ).rejects.toThrow('Gemini has no model "gemini-0" (404)');
+  });
+
+  it("keeps verdicts in the lock file and sends nothing for strings it already knows", async () => {
+    const lockPath = await tempLock();
+    const first = geminiRejecting(["ReLU"]);
+    const options = { ...noWait, lockPath, today: "2026-11-17" };
+    expect(
+      await main(["--file", FIXTURE], { GEMINI_API_KEY: "k" }, first, quietLog(), options),
+    ).toBe(1);
+    const lock = JSON.parse(await readFile(lockPath, "utf8")) as Lock;
+    expect(Object.values(lock.verdicts)).toHaveLength(3);
+    expect(Object.values(lock.verdicts)[0]).toMatchObject({
+      model: "gemini-2.5-flash",
+      date: "2026-11-17",
+    });
+
+    // Same strings, no key, on main: the lock answers, so nothing is sent and the verdicts hold.
+    const again = vi.fn();
+    const log = quietLog();
+    expect(
+      await main(
+        ["--file", FIXTURE],
+        { CI: "true", GITHUB_EVENT_NAME: "push" },
+        again,
+        log,
+        options,
+      ),
+    ).toBe(1);
+    expect(again).not.toHaveBeenCalled();
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining("ReLU"));
+  });
+
+  it("sends only the string that changed", async () => {
+    const lockPath = await tempLock();
+    const strings = collectStrings(await import("./fixtures/jargon-captions"));
+    const verdicts = Object.fromEntries(
+      strings
+        .slice(1)
+        .map((text) => [
+          lockKey(text),
+          { verdict: "yes" as const, reason: "Clear.", model: "m", date: "d" },
+        ]),
+    );
+    await writeFile(lockPath, JSON.stringify({ version: 1, verdicts }));
+    const fetchImpl = geminiRejecting([]);
+    expect(
+      await main(["--file", FIXTURE], { GEMINI_API_KEY: "k" }, fetchImpl, quietLog(), {
+        ...noWait,
+        lockPath,
+      }),
+    ).toBe(0);
+    const prompt = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body)).contents[0].parts[0]
+      .text as string;
+    expect(prompt).toContain(JSON.stringify(strings[0]));
+    expect(prompt).not.toContain(JSON.stringify(strings[1]));
+  });
+
+  it("warns and passes on a pull request without the key", async () => {
+    const log = quietLog();
+    const env = { CI: "true", GITHUB_EVENT_NAME: "pull_request" };
+    expect(await main(["--file", FIXTURE], env, vi.fn(), log)).toBe(0);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringMatching(/^::warning::.*GEMINI_API_KEY/));
+  });
+
+  it("fails on a push to main without the key", async () => {
+    const env = { CI: "true", GITHUB_EVENT_NAME: "push" };
+    expect(await main(["--file", FIXTURE], env, vi.fn(), quietLog())).toBe(1);
   });
 });
 

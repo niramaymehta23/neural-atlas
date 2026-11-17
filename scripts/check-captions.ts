@@ -5,9 +5,17 @@
  * Usage: pnpm check-captions [--file path/to/strings.ts ...]
  * Without --file it checks every module's captions.ts, missions.ts and predictions.ts, the
  * catalog, and the ui, platform and home map captions.
- * Without GEMINI_API_KEY it warns and passes locally, but fails in CI (where CI is set).
+ *
+ * Verdicts are kept in captions.lock.json (a hash of prompt and string → verdict, reason, model,
+ * date), committed, so only new or changed strings are sent and results are reproducible. Delete
+ * an entry to have that string rated again.
+ *
+ * Without GEMINI_API_KEY, strings that are not in the lock file cannot be rated: that warns and
+ * passes locally and on pull requests, and fails on any other CI run (a push to main).
+ * GEMINI_MODEL picks the model (default gemini-2.5-flash).
  */
-import { glob } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { glob, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -36,10 +44,26 @@ const NOT_FOR_LEARNERS = new Set([
 ]);
 const BATCH_SIZE = 40;
 const DEFAULT_MODEL = "gemini-2.5-flash";
+export const LOCK_FILE = "captions.lock.json";
+const REQUEST_TIMEOUT_MS = 30_000;
+const RETRIES = 3;
+const BATCH_PAUSE_MS = 1_000;
 
 export type Rating = { text: string; ok: boolean; reason: string };
 type Env = Record<string, string | undefined>;
 type Log = Pick<Console, "log" | "warn" | "error">;
+export type Verdict = { verdict: "yes" | "no"; reason: string; model: string; date: string };
+export type Lock = { version: 1; verdicts: Record<string, Verdict> };
+export type Options = {
+  /** Where verdicts are cached; without it every string is sent. */
+  lockPath?: string;
+  /** Waits between retries and batches (replaced in tests). */
+  sleep?: (ms: number) => Promise<void>;
+  /** The date written beside new verdicts. */
+  today?: string;
+};
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Every string reachable from a module's exports (calling caption functions), skipping identifier-like keys. */
 export function collectStrings(value: unknown, key = ""): string[] {
@@ -87,10 +111,60 @@ const RESPONSE_SCHEMA = {
 
 type GeminiVerdict = { index: number; verdict: "yes" | "no"; reason: string };
 
-async function rateBatch(texts: string[], env: Env, fetchImpl: typeof fetch): Promise<Rating[]> {
-  const model = env.GEMINI_MODEL ?? DEFAULT_MODEL;
+/** The cache key: a changed prompt re-rates everything. */
+export const lockKey = (text: string) =>
+  createHash("sha256").update(`${PROMPT}\n${text}`).digest("hex").slice(0, 32);
+
+async function readLock(path: string | undefined): Promise<Lock> {
+  if (!path) return { version: 1, verdicts: {} };
+  try {
+    const lock = JSON.parse(await readFile(path, "utf8")) as Lock;
+    return lock.version === 1 ? lock : { version: 1, verdicts: {} };
+  } catch {
+    return { version: 1, verdicts: {} };
+  }
+}
+
+/** POSTs with a timeout, retrying timeouts, 429 and 5xx with backoff (1 s, 2 s, 4 s). */
+async function post(
+  url: string,
+  init: RequestInit,
+  fetchImpl: typeof fetch,
+  sleep: (ms: number) => Promise<void>,
+  model: string,
+): Promise<Response> {
+  for (let attempt = 0; ; attempt += 1) {
+    let response: Response | null = null;
+    let failure = "";
+    try {
+      response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    } catch (error) {
+      const name = (error as Error).name;
+      if (name !== "TimeoutError" && name !== "AbortError") throw error;
+      failure = `no answer within ${REQUEST_TIMEOUT_MS / 1000} s`;
+    }
+    if (response?.status === 404) {
+      throw new Error(
+        `Gemini has no model "${model}" (404). Set GEMINI_MODEL (the repository variable in CI) to a current one.`,
+      );
+    }
+    const retryable = !response || response.status === 429 || response.status >= 500;
+    if (response && !retryable) return response;
+    if (response) failure = `Gemini answered ${response.status}: ${await response.text()}`;
+    if (attempt >= RETRIES) throw new Error(`${failure} (after ${RETRIES} retries)`);
+    await sleep(1000 * 2 ** attempt);
+  }
+}
+
+async function rateBatch(
+  texts: string[],
+  env: Env,
+  fetchImpl: typeof fetch,
+  sleep: (ms: number) => Promise<void>,
+): Promise<Rating[]> {
+  const model = env.GEMINI_MODEL || DEFAULT_MODEL;
   const lines = texts.map((text, index) => `${index}: ${JSON.stringify(text)}`).join("\n");
-  const response = await fetchImpl(
+  const response = await post(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
       method: "POST",
@@ -104,6 +178,9 @@ async function rateBatch(texts: string[], env: Env, fetchImpl: typeof fetch): Pr
         },
       }),
     },
+    fetchImpl,
+    sleep,
+    model,
   );
   if (!response.ok) throw new Error(`Gemini answered ${response.status}: ${await response.text()}`);
   const body = (await response.json()) as {
@@ -126,6 +203,7 @@ export async function main(
   env: Env,
   fetchImpl: typeof fetch = fetch,
   log: Log = console,
+  { lockPath, sleep = wait, today = new Date().toISOString().slice(0, 10) }: Options = {},
 ): Promise<number> {
   const files = args.flatMap((arg, index) => (args[index - 1] === "--file" ? [arg] : []));
   const texts = await stringsFrom(files.length > 0 ? files : await defaultFiles());
@@ -133,25 +211,58 @@ export async function main(
     log.log("check-captions: no learner-facing strings found yet.");
     return 0;
   }
-  if (!env.GEMINI_API_KEY) {
-    if (env.CI) {
-      log.error("check-captions: GEMINI_API_KEY is required in CI.");
+  const lock = await readLock(lockPath);
+  const known = (text: string) => lock.verdicts[lockKey(text)];
+  const unrated = texts.filter((text) => !known(text));
+  if (unrated.length > 0 && !env.GEMINI_API_KEY) {
+    const message = `check-captions: ${unrated.length} of ${texts.length} strings have no verdict in ${LOCK_FILE} and GEMINI_API_KEY is not set.`;
+    if (env.CI && env.GITHUB_EVENT_NAME !== "pull_request") {
+      log.error(`${message} It is required here (add the repository secret).`);
       return 1;
     }
-    log.warn(`check-captions: skipped ${texts.length} strings because GEMINI_API_KEY is not set.`);
+    // On GitHub this line becomes a warning annotation on the run.
+    log.warn(env.CI ? `::warning::${message}` : `${message} Skipped.`);
     return 0;
   }
 
-  const ratings: Rating[] = [];
-  for (let start = 0; start < texts.length; start += BATCH_SIZE) {
-    ratings.push(...(await rateBatch(texts.slice(start, start + BATCH_SIZE), env, fetchImpl)));
+  // Saved after every batch, so a run that fails part-way keeps the verdicts it already has.
+  const save = async () => {
+    if (!lockPath) return;
+    // A full run also forgets strings that no longer exist.
+    const keep = files.length > 0 ? null : new Set(texts.map(lockKey));
+    const verdicts = Object.fromEntries(
+      Object.entries(lock.verdicts)
+        .filter(([key]) => !keep || keep.has(key))
+        .sort(([a], [b]) => a.localeCompare(b)),
+    );
+    await writeFile(lockPath, `${JSON.stringify({ version: 1, verdicts }, null, 2)}\n`);
+  };
+  const model = env.GEMINI_MODEL || DEFAULT_MODEL;
+  for (let start = 0; start < unrated.length; start += BATCH_SIZE) {
+    if (start > 0) await sleep(BATCH_PAUSE_MS);
+    const batch = unrated.slice(start, start + BATCH_SIZE);
+    for (const { text, ok, reason } of await rateBatch(batch, env, fetchImpl, sleep)) {
+      lock.verdicts[lockKey(text)] = { verdict: ok ? "yes" : "no", reason, model, date: today };
+    }
+    await save();
   }
+  if (unrated.length === 0) await save();
+
+  const ratings: Rating[] = texts.map((text) => {
+    const verdict = known(text);
+    return { text, ok: verdict?.verdict === "yes", reason: verdict?.reason ?? "" };
+  });
   const failures = ratings.filter((rating) => !rating.ok);
   for (const { text, reason } of failures) log.error(`✗ "${text}"\n    ${reason}`);
+  if (unrated.length < texts.length) {
+    log.log(`check-captions: ${texts.length - unrated.length} verdicts came from ${LOCK_FILE}.`);
+  }
   log.log(`check-captions: ${ratings.length - failures.length} of ${ratings.length} strings pass.`);
   return failures.length > 0 ? 1 : 0;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  process.exitCode = await main(process.argv.slice(2), process.env);
+  process.exitCode = await main(process.argv.slice(2), process.env, fetch, console, {
+    lockPath: LOCK_FILE,
+  });
 }

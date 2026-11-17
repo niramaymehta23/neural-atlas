@@ -1,0 +1,13 @@
+attention-minilm-v1
+
+This folder contains a modified copy of sentence-transformers/all-MiniLM-L6-v2
+(https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2, revision
+1110a243fdf4706b3f48f1d95db1a4f5529b4d41), licensed under the Apache License,
+Version 2.0 (see LICENSE). The model builds on Microsoft's MiniLM
+(nreimers/MiniLM-L6-H384-uncased) and was fine-tuned by the sentence-transformers
+authors.
+
+Changes made for Neural Atlas: the model was exported to ONNX with a single
+output holding every layer's attention weights, and its MatMul and embedding
+weights were quantised to 8-bit integers per channel. The tokenizer and
+configuration files are unchanged copies.

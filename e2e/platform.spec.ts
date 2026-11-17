@@ -1,13 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { watch } from "./watch";
 
 const STORY = "Small steps settle the ball at the bottom; big ones overshoot.";
 
-function watchErrors(page: Page): string[] {
-  const errors: string[] = [];
-  page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
+const watchErrors = (page: Page) => watch(page).errors;
 
 async function openFixture(page: Page, hash = "") {
   await page.goto(`/styleguide/platform${hash}`);

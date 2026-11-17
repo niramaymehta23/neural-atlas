@@ -1,0 +1,9 @@
+# Text files are stored with LF endings, whatever the checkout's platform.
+* text=auto eol=lf
+
+# Binary assets: never diffed or merged as text.
+*.onnx binary
+*.wasm binary
+*.woff2 binary
+*.png binary
+*.ico binary

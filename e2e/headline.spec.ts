@@ -1,18 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
-import { expectSixtyFps, frameGaps, settle } from "./frames";
-
-/** Console errors, page errors and any request that leaves this site (COEP forbids them). */
-function watch(page: Page) {
-  const errors: string[] = [];
-  const elsewhere: string[] = [];
-  page.on("console", (message) => message.type() === "error" && errors.push(message.text()));
-  page.on("pageerror", (error) => errors.push(error.message));
-  page.on("request", (request) => {
-    const { protocol, hostname } = new URL(request.url());
-    if (protocol.startsWith("http") && hostname !== "localhost") elsewhere.push(request.url());
-  });
-  return { errors, elsewhere };
-}
+import { expect, test } from "@playwright/test";
+import { budget, expectSmooth, measureFrames, recordPerf, settle } from "./frames";
+import { watch } from "./watch";
 
 const LESSONS = [
   {
@@ -74,38 +62,61 @@ test("rolling downhill: huge steps fly off the map and earn the star", async ({ 
   await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
 });
 
-test("stacking cells: the boundary morphs at 60 fps while the team learns", async ({
-  page,
-  browserName,
-}) => {
-  test.skip(browserName !== "chromium", "frame timing");
-  const { errors } = watch(page);
-  await page.goto("/learn/stacking-cells");
-  const scene = page.getByTestId("stacking-cells");
-  await page.getByRole("button", { name: "Let it learn" }).click();
-  await expect.poll(async () => Number(await scene.getAttribute("data-epoch"))).toBeGreaterThan(20);
-  await settle(page);
-  const before = Number(await scene.getAttribute("data-epoch"));
-  expectSixtyFps(await frameGaps(page, 3));
-  // Still learning throughout the measurement, so the field kept being redrawn.
-  expect(Number(await scene.getAttribute("data-epoch"))).toBeGreaterThan(before);
-  expect(errors).toEqual([]);
-});
+test(
+  "stacking cells: the boundary morphs at 60 fps while the team learns",
+  {
+    tag: "@perf",
+  },
+  async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "frame timing");
+    const { errors } = watch(page);
+    await page.goto("/learn/stacking-cells");
+    const scene = page.getByTestId("stacking-cells");
+    await settle(page);
+    const idle = await measureFrames(page, 3);
+    await page.getByRole("button", { name: "Let it learn" }).click();
+    await expect
+      .poll(async () => Number(await scene.getAttribute("data-epoch")))
+      .toBeGreaterThan(20);
+    await settle(page);
+    const before = Number(await scene.getAttribute("data-epoch"));
+    expectSmooth(idle, await measureFrames(page, 3));
+    // Still learning throughout the measurement, so the field kept being redrawn.
+    expect(Number(await scene.getAttribute("data-epoch"))).toBeGreaterThan(before);
+    expect(errors).toEqual([]);
+  },
+);
 
-test("who is looking at whom: threads within 3 s once cached, and dragging re-routes them", async ({
-  page,
-}) => {
+test(
+  "who is looking at whom: threads within 3 s once the model is cached",
+  {
+    tag: "@perf",
+  },
+  async ({ page }) => {
+    const { errors, elsewhere } = watch(page);
+    const looking = page.getByTestId("looking");
+    await page.goto("/learn/who-is-looking-at-whom");
+    await expect(looking).toHaveAttribute("data-ready", "true", { timeout: 60_000 });
+
+    await page.reload();
+    const started = Date.now();
+    // Gross bound on every profile: a cached model that takes this long is not being cached.
+    await expect(looking).toHaveAttribute("data-ready", "true", { timeout: 15_000 });
+    const threads = Date.now() - started;
+    test.info().annotations.push({ type: "threads", description: `${threads} ms after reload` });
+    recordPerf({ threadsAfterReloadMs: threads });
+    budget("threads after a cached reload (ms)", threads, 3_000);
+    await expect(page.locator("[data-thread]").first()).toBeAttached();
+    expect(elsewhere).toEqual([]);
+    expect(errors).toEqual([]);
+  },
+);
+
+test("who is looking at whom: dragging a word re-routes the threads", async ({ page }) => {
   const { errors, elsewhere } = watch(page);
   const looking = page.getByTestId("looking");
   await page.goto("/learn/who-is-looking-at-whom");
   await expect(looking).toHaveAttribute("data-ready", "true", { timeout: 60_000 });
-
-  await page.reload();
-  const started = Date.now();
-  await expect(looking).toHaveAttribute("data-ready", "true", { timeout: 3_000 });
-  test
-    .info()
-    .annotations.push({ type: "threads", description: `${Date.now() - started} ms after reload` });
   await expect(page.locator("[data-thread]").first()).toBeAttached();
 
   const sentence = page.getByRole("textbox", { name: "Type your own sentence" });
