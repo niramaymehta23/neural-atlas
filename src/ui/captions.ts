@@ -2,7 +2,7 @@
 export const uiCaptions = {
   palette: {
     title: "Find an idea",
-    placeholder: "Type an idea, like “sorting fruit”",
+    placeholder: "Type an idea, like “rolling downhill”",
     empty: "Nothing by that name yet.",
   },
   mission: {

@@ -1,5 +1,6 @@
 /** Every learner-facing word in the platform's own screens, here so check-captions can read them. */
 export const platformCaptions = {
+  nav: { label: "Around the atlas", home: "Back to the map", puzzle: "Today’s puzzle" },
   loading: "Setting the scene…",
   share: "Copy a link to this view",
   shared: "Link copied. Whoever opens it sees exactly this.",
