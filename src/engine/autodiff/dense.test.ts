@@ -154,6 +154,20 @@ describe("dense network maths", () => {
     expect(Array.from(trainer.params)).toEqual(before);
   });
 
+  it("cells that start the same stay the same however long they practise", () => {
+    const spec: DenseSpec = { sizes: [2, 4, 1], bends: ["tanh"], loss: "logistic" };
+    const trainer = createTrainer(spec, startParams(spec.sizes, { seed: 5, same: true }), DATA, {
+      optimiser: "adam",
+      learningRate: 0.05,
+      seed: 1,
+    });
+    for (let round = 0; round < 50; round += 1) trainer.round();
+    const cells = [0, 1, 2, 3].map((cell) =>
+      Array.from(trainer.params.slice(cell * 3, cell * 3 + 3)),
+    );
+    for (const cell of cells) expect(cell).toEqual(cells[0]);
+  });
+
   it("starts every cell the same when asked, and reports blame for every layer", () => {
     const spec: DenseSpec = { sizes: [2, 3, 3, 1], bends: ["sigmoid"], loss: "squared" };
     const params = startParams(spec.sizes, { seed: 5, same: true });

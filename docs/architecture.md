@@ -468,3 +468,37 @@ Items and their tests are in `docs/hardening/lessons.md` (DH-01..08, MLP-01..10)
 - **Checks**: `e2e/rolling-downhill.spec.ts` and `e2e/stacking-cells.spec.ts` (every mission, links, the garden cap, the
   hover fence, the field before practice, guesses, turning the valley, the slow replay, the biggest team at 60 fps as
   `@perf`).
+
+## Worlds 1 and 3 hand-over (stage 06)
+
+Plan: `docs/06-autodiff-worlds/plan.md`. Nineteen lessons, each shaped like the stage 05 ones (`model.ts`,
+`captions.ts`, `missions.ts`, `predictions.ts`, `scene.tsx`, `controls.tsx`, `drawer.tsx`, `index.ts`, tests).
+
+- **Recorded runs, not live training.** Every World 1 and 3 lesson that trains works out its whole run as a pure
+  function of state (`run` generator: settings + seed + run counter) with `features/building/use-recorded-run.ts`:
+  slices of ≤ 6 ms (`SLICE_MS`) so the page keeps 60 fps, then the run is recorded at once as a new run (the last
+  one stays as the ghost) and played from its start (reduced motion shows the end). A hidden tab still finishes it
+  (DH-01). Changing the settings a run depends on (`settings`, one string) asks for one new run once they rest
+  400 ms (`SETTLE_MS`, DH-05). Frames carry the run's `key`, so missions and guesses only judge the run on screen
+  (MLP-05). A link replays the same run because nothing in it depends on time or on how it was sliced. The
+  `ModelEngine` worker stays for Stacking cells' open-ended practice; these models are a few hundred numbers.
+- **Dense maths** (`engine/autodiff/dense.ts`): the `nn.ts` network on typed arrays, same parameter order (so
+  `NetworkView` and `createFieldReader` read it), held to `Value` gradients in `dense.test.ts`. Adds `calm` (layer
+  normalisation without a learned gain), `dropout`, a step size per round, `same` starts, `scale`, batches with
+  seeded shuffles, and per-round `blame` (mean blame size per layer, for gradient rain). `hiddenOutputs` gives what
+  every cell said (activation strip). **Fits** (`engine/fit/least-squares.ts`): `leastSquares`, `fitCurve`,
+  `curveAt`, for lessons that show the answer rather than the walk.
+- **Shared features** (each used by two lessons or more): `features/building/race/` (the landscape race, promoted
+  from Rolling downhill: `race.ts` maths with an optional seeded `jitter` for the batch blender, `RaceView.tsx`,
+  `tones.ts`); `WeightStrings` (weights on strings: pull a knob, voices on and off); `GradientRain` (blame per layer
+  as drops and a puddle; `DRY_SHARE` names a dry layer in words); `use-hold-drag.ts` (mouse drags at once, a finger
+  after a 300 ms hold, a tap still acts, a swipe scrolls); `features/inside/ActivationStrip` (a histogram per layer,
+  silent and stuck layers named in words) and `DataLens` (a magnifying glass with sureness halos sized and dashed,
+  never colour alone; `lensCount` for the lesson's own sentence). Features take every word as props from the
+  lesson's captions.
+- **Tests that assumed World 1 was locked** now use World 4's "The pattern torch" and "Zooming out" as the locked
+  examples, and HomeMap's built count comes from the catalog. The first suggested lesson for a new learner is now
+  "Teach by showing".
+- **Checks**: `e2e/world-1.spec.ts` and `e2e/world-3.spec.ts` smoke every built lesson of the world (story first,
+  real name held back, no errors, nothing sent elsewhere, no sideways spill at 320 px); `e2e/w1-<id>.spec.ts` and
+  `e2e/w3-<id>.spec.ts` cover each lesson's interaction, mission and link; `e2e/a11y.spec.ts` covers every lesson.

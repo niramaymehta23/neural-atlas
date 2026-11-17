@@ -28,7 +28,10 @@ export type DenseStart = {
   seed: number;
   /** How wild the starting weights are: 1 is the usual 1/√inputs spread. */
   scale?: number;
-  /** Every cell in a layer starts with the same weights. */
+  /**
+   * Every weight in a layer starts at the same number, so every cell in a layer starts as an
+   * exact copy of the others (in and out), and practice can never tell them apart.
+   */
   same?: boolean;
 };
 
@@ -100,10 +103,12 @@ export function startParams(sizes: readonly number[], start: DenseStart): Float6
   for (let layer = 1; layer < sizes.length; layer += 1) {
     const fanIn = sizes[layer - 1] ?? 0;
     const spread = scale / Math.sqrt(fanIn || 1);
-    const shared = Array.from({ length: fanIn }, () => random.normal() * spread);
+    // Drawn for every layer, used or not, so the "same" choice never shifts other starts.
+    const draws = Array.from({ length: fanIn }, () => random.normal() * spread);
+    const shared = Math.abs(draws[0] ?? 0);
     for (let cell = 0; cell < (sizes[layer] ?? 0); cell += 1) {
       for (let input = 0; input < fanIn; input += 1)
-        params[at + input] = start.same ? (shared[input] ?? 0) : random.normal() * spread;
+        params[at + input] = start.same ? shared : random.normal() * spread;
       at += fanIn + 1;
     }
   }

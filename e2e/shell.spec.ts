@@ -338,7 +338,7 @@ test.describe("the palette (A11Y-18, NAV-03, NAV-21, NAV-29)", () => {
 test.describe("on a touch phone (A11Y-18)", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  for (const path of ["/", "/puzzle", "/learn/rolling-downhill", "/learn/teach-by-showing"]) {
+  for (const path of ["/", "/puzzle", "/learn/rolling-downhill", "/learn/the-pattern-torch"]) {
     test(`${path}: the find button shows no keyboard shortcut and covers nothing`, async ({
       page,
     }) => {

@@ -15,12 +15,12 @@ vi.mock("./ConstellationScene", () => ({
     return <p>map</p>;
   },
 }));
-// A returning learner whose saved progress (Rolling downhill learned) takes a moment to read.
+// A returning learner whose saved progress (Teach by showing learned) takes a moment to read.
 vi.mock("@/platform/progress/progress", async (importOriginal) => {
   const actual = await importOriginal<typeof ProgressModule>();
   const { useStore } = await import("zustand");
   const saved = {
-    lessons: { "rolling-downhill": { visited: true, missions: ["m"], predicted: true } },
+    lessons: { "teach-by-showing": { visited: true, missions: ["m"], predicted: true } },
   };
   const progressStore = actual.createProgressStore({
     read: () => new Promise((resolve) => setTimeout(() => resolve(saved), 120)),
@@ -37,7 +37,7 @@ describe("HomeMap for a returning learner", () => {
   it("holds the map until saved progress is read, so the first suggestion is already right", async () => {
     render(<HomeMap />);
     await screen.findByText("map");
-    expect(seen.suggested[0]).not.toBe("rolling-downhill");
-    expect(seen.suggested[0]).toBe("stacking-cells");
+    expect(seen.suggested[0]).not.toBe("teach-by-showing");
+    expect(seen.suggested[0]).toBe("what-the-machine-sees");
   });
 });
