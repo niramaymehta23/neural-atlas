@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { platformCaptions } from "./captions";
 import { companionStore } from "./companion/companion";
+import { fetchedLesson, fetchLesson } from "./lesson-cache";
 import type { Lesson, LessonModule, ModuleState } from "./contract";
 import { ModuleShell } from "./ModuleShell";
 import {
@@ -42,9 +43,30 @@ function dropSnapshotFromUrl() {
   );
 }
 
+let companionHydrated = false;
+void companionStore.ready.then(() => (companionHydrated = true));
+
+/**
+ * The lesson ready to show at once, when its code has already arrived and nothing needs waiting
+ * for (no link to decode, no companion still loading). Never on the server.
+ */
+function loadedAlready(lesson: Lesson): Loaded | null {
+  if (typeof window === "undefined") return null;
+  const definition = fetchedLesson(lesson.id);
+  const hash = window.location.hash;
+  if (!definition || snapshotFromHash(hash)) return null;
+  if (definition.initialFrom && !companionHydrated) return null;
+  return {
+    module: definition,
+    restored: null,
+    linkProblem: null,
+    focusMission: new URLSearchParams(hash.slice(1)).get("mission"),
+    initialState: definition.initialFrom?.(companionStore.getState(), definition.initialState),
+  };
+}
+
 async function loadLesson(lesson: Lesson, hash: string): Promise<Loaded> {
-  if (!lesson.load) throw new Error(`${lesson.id} is not built`);
-  const definition = await lesson.load();
+  const definition = await fetchLesson(lesson);
   const encoded = snapshotFromHash(hash);
   const decoded = encoded ? await decodeSnapshot(encoded, lesson.id, definition) : null;
   const restored = decoded?.ok ? decoded.snapshot : null;
@@ -69,9 +91,12 @@ async function loadLesson(lesson: Lesson, hash: string): Promise<Loaded> {
  */
 export function LessonView({ lesson, nextIdea }: LessonViewProps) {
   const [attempt, setAttempt] = useState(0);
-  const [loaded, setLoaded] = useState<Loaded | "failed" | null>(null);
+  // A lesson fetched early opens at once; otherwise it loads after the first paint.
+  const [opened] = useState(() => loadedAlready(lesson));
+  const [loaded, setLoaded] = useState<Loaded | "failed" | null>(opened);
 
   useEffect(() => {
+    if (attempt === 0 && opened && opened.module === fetchedLesson(lesson.id)) return;
     let current = true;
     loadLesson(lesson, window.location.hash).then(
       (result) => current && setLoaded(result),
@@ -80,7 +105,7 @@ export function LessonView({ lesson, nextIdea }: LessonViewProps) {
     return () => {
       current = false;
     };
-  }, [lesson, attempt]);
+  }, [lesson, attempt, opened]);
 
   const reload = () => {
     setLoaded(null);

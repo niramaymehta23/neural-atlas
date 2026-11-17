@@ -62,7 +62,6 @@ export const platformCaptions = {
     playWith: "You will get to play with",
     first: "Good to try first",
     ready: "Ready to explore now",
-    home: "Back to the map",
   },
   puzzle: {
     title: "Today’s puzzle",

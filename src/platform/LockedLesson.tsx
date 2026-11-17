@@ -5,6 +5,7 @@ import { PaperCard } from "@/ui/PaperCard";
 import { platformCaptions } from "./captions";
 import type { Lesson } from "./contract";
 import { nextSuggested, useProgress } from "./progress/progress";
+import { SiteNav } from "./SiteNav";
 
 type LockedLessonProps = {
   lesson: Pick<Lesson, "title" | "idea" | "playWith">;
@@ -28,8 +29,9 @@ export function LockedLesson({ lesson, prerequisites, built }: LockedLessonProps
   );
   const ready = built.find(({ id }) => id === readyId);
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-4 py-12">
-      <p className="self-start rounded-pill border border-hairline bg-inset px-3 py-1 text-sm text-ink-soft">
+    <main className="mx-auto flex min-h-dvh max-w-xl flex-col gap-6 px-4 py-6">
+      <SiteNav current="other" />
+      <p className="mt-6 self-start rounded-pill border border-hairline bg-inset px-3 py-1 text-sm text-ink-soft">
         {words.badge}
       </p>
       <h1 className="text-4xl leading-tight">{lesson.title}</h1>
@@ -61,9 +63,6 @@ export function LockedLesson({ lesson, prerequisites, built }: LockedLessonProps
           </Link>
         </nav>
       )}
-      <Link href="/" className={`self-start text-sm ${LINK}`}>
-        {words.home}
-      </Link>
     </main>
   );
 }

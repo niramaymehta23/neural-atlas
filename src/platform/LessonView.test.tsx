@@ -4,6 +4,7 @@ import { Blob as NodeBlob } from "node:buffer";
 import { companionStore } from "./companion/companion";
 import { valleyLesson, valleyModule } from "./fixture/fixture-module";
 import type { Lesson, LessonModule } from "./contract";
+import { fetchLesson } from "./lesson-cache";
 import { LessonView } from "./LessonView";
 
 afterEach(() => window.history.replaceState(null, "", "/"));
@@ -33,10 +34,20 @@ describe("LessonView", () => {
       ...valleyModule,
       initialFrom: (companion, initial) => ({ ...initial, step: companion.hidden.length / 10 }),
     };
-    const lesson: Lesson = { ...valleyLesson, load: async () => own };
+    const lesson: Lesson = { ...valleyLesson, id: "own-network", load: async () => own };
     render(<LessonView lesson={lesson} />);
     const dial = await screen.findByRole("slider", { name: "How big a step" });
     expect(dial).toHaveAttribute("aria-valuenow", "0.3");
     await companionStore.reset();
+  });
+});
+
+describe("LessonView with code fetched early (NAV-12)", () => {
+  it("opens at once, without the loading line", async () => {
+    const lesson: Lesson = { ...valleyLesson, id: "fetched-early" };
+    await fetchLesson(lesson);
+    render(<LessonView lesson={lesson} />);
+    expect(screen.queryByText("Setting the scene…")).toBeNull();
+    expect(screen.getByRole("heading", { name: "A ball in a valley" })).toBeVisible();
   });
 });

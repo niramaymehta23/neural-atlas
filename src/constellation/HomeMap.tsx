@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { lessonById, lessons, worlds } from "@/catalog";
 import { cameraGlide, springs, useReducedMotion } from "@/design/motion";
+import { fetchLesson } from "@/platform/lesson-cache";
 import type { WorldNumber } from "@/platform/contract";
 import {
   isMastered,
@@ -47,9 +48,8 @@ function worldFromAddress(): WorldNumber | null {
 /** Start fetching a lesson's code, so it is ready when the flight lands. */
 function preload(id: string) {
   // A failed fetch here is retried, and reported, by the lesson page itself.
-  void lessonById(id)
-    ?.load?.()
-    .catch(() => undefined);
+  const lesson = lessonById(id);
+  if (lesson?.load) void fetchLesson(lesson).catch(() => undefined);
 }
 
 type Leaving = { id: string; fade: boolean };
