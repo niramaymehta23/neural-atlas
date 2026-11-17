@@ -99,74 +99,91 @@ Paint canvas scroll-blocking on phones: see QL-14 (same fix for PaintCanvas).
 - Evidence: `missions.ts:6,13`, `src/engine/pretrained/attention.ts:74-83`; "hi there" scores 1.0, the intended hint sentence only 0.43 at depth 6.
 - Fix: at least 6 real words; hog share ≥0.4 and ≥4/(n−1).
 - Test: 2- and 3-word readings don't fire; e2e: hint sentence at depth 6 earns the star.
+- Fixed in 7956125.
 
 ### ATT-02 · High · The guess's right answer changes with the dials
 - Evidence: `model.ts:37-49`, `predictions.ts:10`; "it" looks most at "tired" at depths 1–3 and 6, "dog" at 4–5.
 - Fix: compute the answer at a fixed depth with all readers blended (or averaged over depths 4–6), regardless of dials; caption agrees.
 - Test: `frameFor` gives the same answer for every depth and reader; a recorded real-model fixture.
+- Fixed in 7956125.
 
 ### ATT-03 · High · First load is ~49 MB with no progress and no timeout
 - Evidence: model 21.4 MB + runtime wasm 26.9 MB + tokenizer 0.7 MB; `attention-worker.ts:27-33` (no `progress_callback`), `scene.tsx:95-97`; spec asks for weights to stream in behind an animated intro (`docs/requirements.md:337`).
 - Fix: `progress_callback` → progress events → a progress bar with a plain caption and a short animated intro; stall timeout with "Try again"; smaller wasm (HOST-15).
 - Test: progress events forwarded; e2e with a throttled model sees the progress change.
+- Fixed in 7956125, 68c3f4e (progress reported on every arrival, so a model sent without its size is not taken for a stall; a longer wait while a fully arrived model is set up).
 
 ### ATT-04 · High · Chips show tokenizer pieces, and dragging rewrites the sentence
 - Evidence: `attention.ts:20-36`, `scene.tsx:86`, `model.ts:53-58`; "can't" → `can | ' | t`, accents removed, `[UNK]` written into the text box, everything lowercased.
 - Fix: group tokens under the learner's own words (tokenize each original word and count its pieces); show original spelling with punctuation attached; `moveWord` works on original words.
 - Test: "Héllo, can't 😀" → `["Héllo,", "can't", "😀"]`; a move keeps the original text.
+- Fixed in 7956125.
 
 ### ATT-05 · Medium · Returning visitors keep an old model forever
 - Fix: versioned model folder (HOST-16), set in `runtime.ts` and written by the export script.
+- Fixed in fd27c88 (H1: versioned model folder); covered by tests in 7956125.
 
 ### ATT-06 · Medium · Any reading error throws away the model and blames start-up
 - Evidence: `attention-worker.ts:42,51-54`, `scene.tsx:22,69,96`; a link can carry a 3000-character sentence.
 - Fix: reset `loading` only on load failure; clip to `MAX_LETTERS` in `useReading` and on restore, tokenizer `truncation: true, max_length: 128`; separate "couldn't load" and "couldn't read this sentence" messages with retry.
 - Test: a sentence error doesn't reload the model; a 2000-character initial sentence is clipped.
+- Fixed in 7956125.
 
 ### ATT-07 · Medium · Empty or one-word sentence: the lesson goes silent
 - Fix: status "Type a few words to see them look at each other."
+- Fixed in 7956125.
 
 ### ATT-08 · Medium · The guess waits silently once the example sentence is edited
 - Evidence: `model.ts:40-42`.
 - Fix: the card offers "Bring back the example sentence" when there's no answer.
+- Fixed in 7956125.
 
 ### ATT-09 · Medium · Compare shows the same thing twice by default
 - Evidence: `index.ts:13,24`.
 - Fix: when reader is "all", compare against one characterful reader; otherwise against "all".
 - Test: `compare(initialState)` differs from `initialState`.
+- Fixed in 7956125.
 
 ### ATT-10 · Medium · Threads can't show hogging or direction
 - Evidence: `threads.tsx:29-35,65-71` (thickness relative per word; A→B and B→A share a curve), `captions.ts:6`.
 - Fix: thickness from the absolute share; A→B above the line, B→A below (or taper from the looker).
 - Test: `arc(0,3,5) !== arc(3,0,5)`; strengths equal raw looks.
+- Fixed in 7956125.
 
 ### ATT-11 · Medium · Many words: overlap, n² threads, scrolling blocked on phones
 - Evidence: `threads.tsx:23-24,75-79,123`; confirmed live: default sentence overflows at 1024px (A11Y-19).
 - Fix: cap at ~16 words with a note; slots from measured widths; top 2 threads per word in "everyone" mode; drag from a handle or long-press so swipes scroll.
 - Test: 16 words at 375px: no overlap; swipe scrolls.
+- Fixed in 7956125.
 
 ### ATT-12 · Medium (suspected) · Dragging a word also counts as a tap
 - Evidence: `threads.tsx:103-121`.
 - Fix: a `dragged` ref set in `onDragStart` ignores the next click.
 - Test: after dragging "dog" onto "road", "it" keeps `aria-pressed=true`.
+- Fixed in 7956125.
 
 ### ATT-13 · Medium · Keyboard reordering is hidden and may clash with browser Back
 - Fix: sortable pattern (Space pick up, arrows move, Space drop); live announcement "dog moved after road"; keys in the hover note (A11Y-10).
+- Fixed in 7956125.
 
 ### ATT-14 · Medium · Screen readers can't tell who looks at whom
 - Fix: chip `aria-description` "looks most at dog, then tired" (A11Y-13).
+- Fixed in 7956125.
 
 ### ATT-15 · Low · Old picture shown under a new sentence
 - Evidence: `scene.tsx:49-51,95-97`.
 - Fix: soft "reading…" overlay while the sentence differs from the loaded one.
+- Fixed in 7956125.
 
 ### ATT-16 · Low · Reader memory is FIFO and can reach ~78 MB
 - Evidence: `attention-client.ts:35-48`, `attention-worker.ts:43,50`.
 - Fix: LRU capped by bytes; transfer `weights.buffer`; terminate when unused (ENG-13).
+- Fixed in 7956125.
 
 ### ATT-17 · Medium · No licence file or credit for the bundled model
 - Fix: `public/models/attention-minilm/LICENSE` (Apache-2.0) and NOTICE; drawer credit "all-MiniLM-L6-v2 by sentence-transformers, Apache-2.0"; `copy-runtime.ts` also copies the onnxruntime-web licence.
 - Test: licence files exist; drawer names the model.
+- Fixed in fd27c88 (H1: licence files) and 7956125 (drawer credit, tests).
 
 ### ATT-18 · Low · Model export can't be reproduced; runtime copy is fragile
 - **Status:** Fixed in fd27c88 (`scripts/requirements-export.txt`, pinned revision, checksums in the model README checked by `pnpm check-model`, hash compare and version check in `copy-runtime`, `check-build` fails on a missing runtime; the pinned export reproduces the committed model byte for byte).
@@ -176,6 +193,7 @@ Paint canvas scroll-blocking on phones: see QL-14 (same fix for PaintCanvas).
 ### ATT-19 · Low · Spec gaps (prompt 6)
 - Missing: the "all heads" gallery and words in an arc; "reader 7" is a bare number.
 - Fix: implement the gallery (or record its move to "Many readers at once" in architecture.md); give readers plain names.
+- Fixed in 7956125.
 
 ## Scoring every move (src/modules/w6-reinforcement/scoring-every-move, src/engine/rl, src/visuals/Board)
 
@@ -183,69 +201,87 @@ Paint canvas scroll-blocking on phones: see QL-14 (same fix for PaintCanvas).
 - Evidence: `scene.tsx:146-148,158-163`.
 - Fix: `timeline.goLive()` before painting.
 - Test: seek, paint → live and `data-tile` updated.
+- Fixed in bdc271d.
 
 ### QL-02 · Medium · Curiosity dial says "never tries new moves" at its default
 - Evidence: `controls.tsx:16-19,25`, `index.ts:16`, `model.ts:53` (ε = 0.1 at default). Confirmed live.
 - Fix: "never" only below 0.02, then "now and then", "sometimes", "often".
+- Fixed in bdc271d.
 
 ### QL-03 · Medium · Treats are never eaten and look like the heatmap
 - Evidence: `src/engine/rl/gridworld.ts:58`, `encodings.ts:93,105-109`.
 - Fix: each treat pays once per try (or make pacing the stated reward-hacking mission with a caption); a treat icon.
 - Test: two visits in one try reward once.
+- Fixed in bdc271d: treats pay on every visit, said in the captions and drawer, and pacing is the "find a loophole" mission; treats are sand with a treat glyph.
 
 ### QL-04 · Medium · Square types are colour only; puppy is a clay dot
 - Fix: icons per tile and a puppy icon (A11Y-07, A11Y-24).
+- Fixed in bdc271d.
 
 ### QL-05 · Medium · No bowl, unreachable bowl or all lava: no feedback
 - Fix: reachability check after each paint; status "There's no bowl" / "The bowl can't be reached" (this is also the spec's "maze it cannot solve" mission).
 - Test: `reachable(world)` unit test; message renders.
+- Fixed in bdc271d.
 
 ### QL-06 · Medium · Slips are invisible
 - Evidence: `gridworld.ts:46-59`.
 - Fix: `step` returns `slipped`; a brief skid on the puppy at slow speeds.
+- Fixed in bdc271d.
 
 ### QL-07 · Medium · Shared links don't reproduce the view
 - Evidence: `scene.tsx:31,48-60,91`, `model.ts:29-30` (final dials and board replayed; capped at 2000 tries; replay overwrites the saved count).
 - Fix: compact edit log (try number → tiles or dial change) replayed; or snapshot the 140-number score table quantised and resume from it. No silent cap.
 - Test: `episodes: 2500` gives a consistent tries count; log replay equals live run.
+- Fixed in bdc271d.
 
 ### QL-08 · Low · Repainting under the puppy carries the old try's score
 - Evidence: `src/engine/rl/q-learning.ts:131-137`.
 - Fix: also reset `reward` and `jumps`.
+- Fixed in bdc271d.
 
 ### QL-09 · Medium · Score arrows exaggerate tiny differences
 - Evidence: `scene.tsx:111-120`.
 - Fix: scale by absolute difference over the board-wide range; nothing below a threshold.
+- Fixed in bdc271d.
 
 ### QL-10 · Low · Reward line has no reference and a shifting scale
 - Evidence: `src/visuals/Chart.tsx:29`.
 - Fix: clamped scale with a faint "broke even" line.
+- Fixed in bdc271d.
 
 ### QL-11 · Low · Default speed is too fast to follow
 - Evidence: `model.ts:59` (0.5 ≈ 95 moves/s labelled "a quick run").
 - Fix: lower default; labels match real speeds.
+- Fixed in bdc271d.
 
 ### QL-12 · Low (suspected) · Shell re-renders ~60×/s while playing
 - Evidence: `scene.tsx:91`.
 - Fix: throttle `update({episodes})` to ~4/s plus on pause (with PLT-20).
+- Fixed in bdc271d.
 
 ### QL-13 · Medium · Keyboard painting gives no feedback (A11Y-12)
+- Fixed in 91e51f5 (A11Y-12); the lesson's keyboard paint test is in bdc271d.
 
 ### QL-14 · Low · Board and paint canvas block page scrolling on phones
 - Evidence: `Board.tsx:100`, `PaintCanvas.tsx:101` (`touch-none`).
 - Fix: on coarse pointers paint only after a short hold or in an explicit paint mode.
 - Test: at 375px a vertical swipe scrolls and paints nothing.
+- Fixed in bdc271d for `Board`; `PaintCanvas` (stacking-cells) is left to H3a and can copy the Board pattern.
 
 ### QL-15 · Low (suspected) · Dark theme: walls glare and look like arrows
 - Fix: dedicated wall tone for night.
+- Fixed in bdc271d.
 
 ### QL-16 · Low · Mission threshold and dial words disagree
 - Evidence: `missions.ts:6` (≥0.85) vs `controls.tsx:19` ("at once" from 0.67).
 - Fix: move the band to 0.85.
+- Fixed in bdc271d.
 
 ### QL-17 · Low · Spec gaps (prompt 7)
 - Missing: the "telescope" visual for how far ahead it cares; missions reward hacking (QL-03), never explore, unsolvable maze (QL-05); the heatmap fading in.
 - Fix: implement them.
+- Fixed in bdc271d.
 
 ### QL-18 · Low · Copy: "zero tries so far." starts lowercase (confirmed live)
 - Fix: sentence-case the number word at the start of a sentence (fix in `src/design/copy.ts` so every lesson benefits).
+- Fixed in bdc271d.
