@@ -52,11 +52,20 @@ export class Layer {
   }
 }
 
+/** One bend for every hidden layer, or one per hidden layer (input side first). */
+export type Activations = Activation | readonly Activation[];
+
+/** The bend hidden layer `index` uses (the last one listed repeats for any extra layers). */
+export function hiddenActivation(activation: Activations, index: number): Activation {
+  if (typeof activation === "string") return activation;
+  return activation[Math.min(index, activation.length - 1)] ?? "identity";
+}
+
 export type MlpShape = {
   /** Neurons per layer, inputs first: [2, 8, 8, 1]. */
   sizes: readonly number[];
-  /** Bend for every hidden layer. */
-  activation: Activation;
+  /** Bend for every hidden layer, or one per hidden layer. */
+  activation: Activations;
   /** Bend for the last layer; losses expect "identity" (they take raw scores). */
   output?: Activation;
 };
@@ -77,7 +86,7 @@ export class MLP {
           new Layer(
             sizes[index] ?? 0,
             size,
-            index === sizes.length - 2 ? output : activation,
+            index === sizes.length - 2 ? output : hiddenActivation(activation, index),
             random,
           ),
       );
