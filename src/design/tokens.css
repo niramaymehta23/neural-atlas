@@ -137,10 +137,10 @@
   }
 }
 
-/* On a phone a lesson's stage stays pinned at the top (up to 55% of the screen): whatever is
+/* On a phone a lesson's stage stays pinned at the top (up to 60% of the screen): whatever is
    scrolled into view, by focus or by find, lands below it rather than under it (LIVE-06). */
 @media (width < 48rem) {
   html:has([data-region="stage"]) {
-    scroll-padding-top: 56dvh;
+    scroll-padding-top: 61dvh;
   }
 }

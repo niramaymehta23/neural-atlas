@@ -252,7 +252,7 @@ export function ModuleShell({
         <div
           ref={stage}
           data-region="stage"
-          className="flex min-w-0 flex-col gap-3 max-md:min-h-(--stage-min) max-md:sticky max-md:top-[min(0px,calc(55dvh_-_var(--stage-h,0px)))] max-md:z-10 max-md:bg-paper max-md:pb-2"
+          className="flex min-w-0 flex-col gap-3 max-md:min-h-(--stage-min) max-md:sticky max-md:top-[min(0px,calc(60dvh_-_var(--stage-h,0px)))] max-md:z-10 max-md:bg-paper max-md:pb-2"
         >
           <section
             aria-label={platformCaptions.scene}
