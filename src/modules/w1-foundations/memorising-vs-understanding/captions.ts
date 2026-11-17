@@ -3,11 +3,11 @@ export const captions = {
   opening:
     "A student is getting ready for a big exam by doing past papers. The new exam will ask questions like the old ones, but never exactly the same ones.",
   story:
-    "With lots of cells the student can bend its answers to hit every past paper exactly, even the noisy ones. That is learning by heart, and it falls apart on questions it hasn’t seen.",
+    "With room for lots of wiggles the student can bend its answers to hit every past paper exactly, even the noisy ones. That is learning by heart, and it falls apart on questions it hasn’t seen.",
   compare: {
     label: "Compare your student with a much smaller one",
     leftLabel: "Your student",
-    rightLabel: "A student with two cells",
+    rightLabel: "A student with two wiggles",
   },
 };
 
@@ -34,9 +34,9 @@ export const words = {
   },
   sizes: { tiny: "tiny", small: "small", big: "big", huge: "huge" },
   cells: {
-    label: "How many cells it can memorise with",
-    one: "one cell",
-    describe: (count: string) => `${count} cells`,
+    label: "How much it can memorise",
+    one: "one wiggle",
+    describe: (count: string) => `${count} wiggles`,
   },
   questions: {
     label: "How many practice questions",
@@ -62,7 +62,7 @@ export const words = {
 
 export const missionWords = {
   goal: "Ace the practice, fail the real test",
-  hint: "Give the student lots of cells and only a few practice questions, then let it practise.",
+  hint: "Give the student lots of wiggles and only a few practice questions, then let it practise.",
   success:
     "The student wiggled its line through every past paper, noise and all. Between those points the wiggles go wild, so fresh questions land far from its answers.",
 };

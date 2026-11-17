@@ -78,7 +78,7 @@ export const missionWords = {
   goal: "Add one crazy dot and watch the best line tilt",
   hint: "Tap far below the line at one end of the field, then let it find the best line.",
   success:
-    "One dot far from the rest has a huge miss, and squared misses count it hugely, so the best line tilts towards it. A single silly measurement can pull the whole answer off.",
+    "One dot far from the rest has a huge miss, and the best line counts big misses extra hard, so it tilts towards that dot. A single silly measurement can pull the whole answer off.",
 };
 
 export const predictionWords = {

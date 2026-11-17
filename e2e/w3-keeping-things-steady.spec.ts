@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { runEnded } from "./runs";
 import { watch } from "./watch";
 
 /** Keeping things steady. Wording comes from src/modules/w3-neural-networks/keeping-things-steady/captions.ts. */
@@ -32,7 +33,7 @@ test("a link opens on the same view", async ({ page, context }) => {
   await open(page);
   await page.getByRole("switch", { name: "Keep signals calm" }).click();
   await dock(page).getByRole("button", { name: "Practise", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Play" })).toBeVisible({ timeout: 15_000 });
+  await runEnded(page);
   const said = await page.locator("[data-outcome]").textContent();
   const moment = await page.getByRole("slider", { name: "Moment" }).getAttribute("aria-valuetext");
   await page.getByRole("button", { name: "Copy a link to this view" }).click();

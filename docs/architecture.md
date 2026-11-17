@@ -499,6 +499,11 @@ Plan: `docs/06-autodiff-worlds/plan.md`. Nineteen lessons, each shaped like the 
 - **Tests that assumed World 1 was locked** now use World 4's "The pattern torch" and "Zooming out" as the locked
   examples, and HomeMap's built count comes from the catalog. The first suggested lesson for a new learner is now
   "Teach by showing".
+- **Lesson choices worth knowing**: Passing back the blame compares S-shaped cells with leaky cut-off cells
+  (a plain cut-off can go silent and muddy the rain). Memorising vs understanding asks how the exam score compares
+  with the past papers, because longer practice did not reliably make the exam worse. Where you start builds its own
+  fully matching start (every hidden cell and every answer weight the same), so the copies stay copies; dense
+  `same` starts copy each cell within a layer. `e2e/runs.ts` waits until a recorded run has played to its end.
 - **Checks**: `e2e/world-1.spec.ts` and `e2e/world-3.spec.ts` smoke every built lesson of the world (story first,
   real name held back, no errors, nothing sent elsewhere, no sideways spill at 320 px); `e2e/w1-<id>.spec.ts` and
   `e2e/w3-<id>.spec.ts` cover each lesson's interaction, mission and link; `e2e/a11y.spec.ts` covers every lesson.

@@ -24,7 +24,7 @@ test("opens on the story, then the student practises and is marked", async ({ pa
 test("a big student with few past papers aces them and fails the exam", async ({ page }) => {
   const { errors } = watch(page);
   await open(page);
-  await page.getByRole("slider", { name: "How many cells it can memorise with" }).focus();
+  await page.getByRole("slider", { name: "How much it can memorise" }).focus();
   await page.keyboard.press("End");
   await page.getByRole("slider", { name: "How many practice questions" }).focus();
   await page.keyboard.press("Home");
@@ -38,7 +38,7 @@ test("a big student with few past papers aces them and fails the exam", async ({
 test("a link opens on the same student", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await open(page);
-  const cells = page.getByRole("slider", { name: "How many cells it can memorise with" });
+  const cells = page.getByRole("slider", { name: "How much it can memorise" });
   await cells.focus();
   await page.keyboard.press("End");
   const value = await cells.getAttribute("aria-valuetext");
@@ -47,7 +47,8 @@ test("a link opens on the same student", async ({ page, context }) => {
 
   const fresh = await context.newPage();
   await open(fresh, new URL(page.url()).hash);
-  await expect(
-    fresh.getByRole("slider", { name: "How many cells it can memorise with" }),
-  ).toHaveAttribute("aria-valuetext", value!);
+  await expect(fresh.getByRole("slider", { name: "How much it can memorise" })).toHaveAttribute(
+    "aria-valuetext",
+    value!,
+  );
 });

@@ -1,12 +1,20 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { world1 } from "../src/catalog/world-1";
+import { world3 } from "../src/catalog/world-3";
 
 /**
  * Automated accessibility checks (A11Y-29): every kind of page, in day and night paper, at a
  * desktop width with normal motion and a 320px phone with reduced motion. WCAG 2.1 A and AA,
  * colour contrast included, so it catches A11Y-01..05 coming back.
  */
+/** Every built World 1 and World 3 lesson besides the headline ones (stage 06). */
+const WORLDS_1_AND_3 = [...world1.lessons, ...world3.lessons]
+  .filter(({ load, id }) => load && id !== "rolling-downhill" && id !== "stacking-cells")
+  .map(({ id }) => ({ path: `/learn/${id}`, ready: "[data-region=scene]" }));
+
 const PAGES = [
+  ...WORLDS_1_AND_3,
   { path: "/", ready: "h1" },
   { path: "/puzzle", ready: "[data-lesson], [role=status] p" },
   { path: "/learn/rolling-downhill", ready: "[data-region=scene]" },

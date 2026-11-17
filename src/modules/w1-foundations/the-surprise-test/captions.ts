@@ -37,8 +37,8 @@ export const words = {
   },
   cells: {
     label: "How bendy the learner is",
-    one: "one cell: a straight fence",
-    describe: (count: string) => `${count} cells: a bendier fence`,
+    one: "a straight fence",
+    describe: (count: string) => `a fence in ${count} pieces`,
   },
   peek: "Let it peek at the hidden answers",
   peeking: "It has peeked: it practised on the hidden dots too.",

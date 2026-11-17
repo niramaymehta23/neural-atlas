@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { runEnded } from "./runs";
 import { watch } from "./watch";
 
 /** Splitting into groups. Wording comes from src/modules/w1-foundations/splitting-into-groups/captions.ts. */
@@ -46,7 +47,7 @@ test("a link opens on the same fence", async ({ page, context }) => {
   await open(page);
   await page.getByRole("button", { name: "Two patches, mixed at the edge" }).click();
   await dock(page).getByRole("button", { name: "Put up a fence" }).click();
-  await expect(page.getByRole("button", { name: "Play" })).toBeVisible({ timeout: 10_000 });
+  await runEnded(page);
   const said = await page.locator("[data-right-side]").textContent();
   const moment = await page.getByRole("slider", { name: "Moment" }).getAttribute("aria-valuetext");
   await page.getByRole("button", { name: "Copy a link to this view" }).click();

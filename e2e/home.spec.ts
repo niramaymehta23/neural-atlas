@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { budget, recordPerf } from "./frames";
 import { watch } from "./watch";
 
@@ -11,6 +11,21 @@ async function openHome(page: Page, path = "/"): Promise<string[]> {
   await page.goto(path);
   await expect(page.locator("[data-star]")).toHaveCount(74);
   return errors;
+}
+
+/**
+ * Waits until a star has stopped gliding (after a filter the camera moves for a moment, longer
+ * on a busy machine), so a click lands on it. Its gentle float moves far less than this.
+ */
+async function settled(star: Locator) {
+  let last = await star.boundingBox();
+  await expect(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const now = await star.boundingBox();
+    const moved = last && now ? Math.hypot(now.x - last.x, now.y - last.y) : Infinity;
+    last = now;
+    expect(moved).toBeLessThan(2);
+  }).toPass({ timeout: 10_000 });
 }
 
 /** Saves progress straight into the site's IndexedDB, as if earlier visits had. */
@@ -85,7 +100,7 @@ test("a learned idea is announced as learned", async ({ page }) => {
     page.getByRole("link", { name: /Rolling downhill, You have learned this/ }),
   ).toBeAttached();
   await expect(
-    page.getByRole("link", { name: /Stacking cells, A good one to try next/ }),
+    page.getByRole("link", { name: /Teach by showing, A good one to try next/ }),
   ).toBeAttached();
 });
 
@@ -158,6 +173,7 @@ test(
 test("the picked group is still picked after a lesson and Back", async ({ page }) => {
   await openHome(page);
   await page.getByRole("radio", { name: "Learning from examples" }).click();
+  await settled(page.getByRole("link", { name: "Rolling downhill" }));
   await page.getByRole("link", { name: "Rolling downhill" }).click(steady);
   // Mid-flight the header (and its filter) cannot be used.
   await expect(page.locator("header")).toHaveAttribute("inert", "");
@@ -199,9 +215,11 @@ test("clicking a built idea flies in, with its lesson already fetched", async ({
 
 test("an idea still being drawn fades across instead of flying", async ({ page }) => {
   await openHome(page);
-  await page.getByRole("link", { name: "The pattern torch" }).click(steady);
+  // Zooming out sits clear of its neighbours, so the click lands on it and not on one in front.
+  await settled(page.getByRole("link", { name: "Zooming out" }));
+  await page.getByRole("link", { name: "Zooming out" }).click(steady);
   await expect(page.getByRole("main")).toHaveAttribute("data-leaving", "fade");
-  await page.waitForURL("**/learn/the-pattern-torch");
+  await page.waitForURL("**/learn/zooming-out");
 });
 
 test("a modifier-click on a star opens it in a new tab", async ({ page, context }) => {

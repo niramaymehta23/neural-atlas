@@ -82,7 +82,7 @@ export const words = {
     fit: "It picks the weights that make its guesses for the houses it learns from as close as they can be, all at once.",
     maths: "The maths",
     formula:
-      "price ≈ start + w₁ × size + w₂ × rooms + … The weights make the sum of the squared misses on the learning houses as small as possible (least squares).",
+      "price ≈ start + w₁ × size + w₂ × rooms + … The weights make the sum of the squared misses on the learning houses as small as possible.",
   },
 };
 

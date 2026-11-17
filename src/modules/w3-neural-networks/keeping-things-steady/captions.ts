@@ -75,7 +75,7 @@ export const words = {
     calm: "Calming takes each layer’s signals for one dot, moves them so they average zero, and resizes them so their typical size is one, before bending them. Every layer then starts from lively signals.",
     maths: "The maths",
     formula:
-      "For one dot, a layer’s totals t become (t − mean) ÷ √(spread² + 0.00001), then the bend tanh. This is layer normalisation without a learned size or shift.",
+      "For one dot, a layer’s totals t become (t − mean) ÷ √(spread² + 0.00001), then the bend tanh.",
   },
 };
 

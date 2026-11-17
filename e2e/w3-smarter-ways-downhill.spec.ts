@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { runEnded } from "./runs";
 import { watch } from "./watch";
 
 /** Smarter ways downhill. Wording comes from src/modules/w3-neural-networks/smarter-ways-downhill/captions.ts. */
@@ -33,7 +34,7 @@ test("a link opens on the same view", async ({ page, context }) => {
   await open(page);
   await page.getByRole("radio", { name: "Mountain pass" }).click();
   await dock(page).getByRole("button", { name: "Race them" }).click();
-  await expect(page.getByRole("button", { name: "Play" })).toBeVisible({ timeout: 15_000 });
+  await runEnded(page);
   const said = await page.locator("[data-race-result]").textContent();
   const moment = await page.getByRole("slider", { name: "Moment" }).getAttribute("aria-valuetext");
   await page.getByRole("button", { name: "Copy a link to this view" }).click();

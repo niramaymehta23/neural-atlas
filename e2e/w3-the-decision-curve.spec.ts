@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { runEnded } from "./runs";
 import { watch } from "./watch";
 
 /** The decision curve. Wording comes from src/modules/w3-neural-networks/the-decision-curve/captions.ts. */
@@ -37,7 +38,7 @@ test("a link opens on the same curve", async ({ page, context }) => {
   await open(page);
   await page.getByRole("radio", { name: "A hill" }).click();
   await dock(page).getByRole("button", { name: "Let it practise" }).click();
-  await expect(page.getByRole("button", { name: "Play" })).toBeVisible({ timeout: 15_000 });
+  await runEnded(page);
   const said = await page.locator("[data-how-close]").textContent();
   const moment = await page.getByRole("slider", { name: "Moment" }).getAttribute("aria-valuetext");
   await page.getByRole("button", { name: "Copy a link to this view" }).click();

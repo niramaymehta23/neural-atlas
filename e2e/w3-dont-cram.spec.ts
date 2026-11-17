@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { runEnded } from "./runs";
 import { watch } from "./watch";
 
 /** Don’t cram. Wording comes from src/modules/w3-neural-networks/dont-cram/captions.ts. */
@@ -35,7 +36,7 @@ test("a link opens on the same view", async ({ page, context }) => {
   await page.getByRole("slider", { name: "How big the team is" }).focus();
   await page.keyboard.press("End");
   await dock(page).getByRole("button", { name: "Practise", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Play" })).toBeVisible({ timeout: 15_000 });
+  await runEnded(page);
   const said = await page.locator("[data-scores]").textContent();
   const moment = await page.getByRole("slider", { name: "Moment" }).getAttribute("aria-valuetext");
   await page.getByRole("button", { name: "Copy a link to this view" }).click();

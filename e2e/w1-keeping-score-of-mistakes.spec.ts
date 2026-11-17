@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { runEnded } from "./runs";
 import { watch } from "./watch";
 
 /** Keeping score of mistakes. Wording comes from src/modules/w1-foundations/keeping-score-of-mistakes/captions.ts. */
@@ -34,15 +35,15 @@ test("a link opens on the same line", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await open(page);
   await dock(page).getByRole("button", { name: "Let the line learn" }).click();
-  await expect(page.getByRole("button", { name: "Play" })).toBeVisible({ timeout: 10_000 });
-  const line = await page.locator("[data-line]").getAttribute("data-line");
+  await runEnded(page);
+  const line = await page.locator("line[data-line]").getAttribute("data-line");
   const moment = await page.getByRole("slider", { name: "Moment" }).getAttribute("aria-valuetext");
   await page.getByRole("button", { name: "Copy a link to this view" }).click();
   await expect(page.locator("[data-share]").getByText(/Link copied/)).toBeVisible();
 
   const fresh = await context.newPage();
   await fresh.goto(`/learn/keeping-score-of-mistakes${new URL(page.url()).hash}`);
-  await expect(fresh.locator("[data-line]")).toHaveAttribute("data-line", line!, {
+  await expect(fresh.locator("line[data-line]")).toHaveAttribute("data-line", line!, {
     timeout: 15_000,
   });
   await expect(fresh.getByRole("slider", { name: "Moment" })).toHaveAttribute(
