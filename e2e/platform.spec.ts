@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { builtPath } from "./built";
 import { watch } from "./watch";
 
 const STORY = "Small steps settle the ball at the bottom; big ones overshoot.";
@@ -168,10 +169,7 @@ test("the daily puzzle picks today's mission from a built lesson", async ({ page
 
   await page.goto("/puzzle");
   const link = page.getByRole("link", { name: "Try it" });
-  await expect(link).toHaveAttribute(
-    "href",
-    /^\/learn\/(rolling-downhill|stacking-cells|who-is-looking-at-whom|scoring-every-move)#mission=/,
-  );
+  await expect(link).toHaveAttribute("href", builtPath("#mission="));
   await link.click();
   await expect(page.locator("[data-region=scene]")).toBeVisible();
 });

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { builtPath } from "./built";
 import { budget, recordPerf } from "./frames";
 import { watch } from "./watch";
 
@@ -84,9 +85,11 @@ test("a learned idea is announced as learned", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: /Rolling downhill, You have learned this/ }),
   ).toBeAttached();
-  await expect(
-    page.getByRole("link", { name: /Stacking cells, A good one to try next/ }),
-  ).toBeAttached();
+  // The suggestion moves on to another built idea.
+  const next = page.getByRole("link", { name: /A good one to try next/ });
+  await expect(next).toHaveCount(1);
+  await expect(next).not.toHaveAccessibleName(/Rolling downhill/);
+  await expect(next).toHaveAttribute("href", builtPath("$"));
 });
 
 test("the first Tab lands on the skip link, not a star", async ({ page }) => {
