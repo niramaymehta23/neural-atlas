@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { runEnded } from "./runs";
 import { watch } from "./watch";
 
 /**
@@ -135,6 +136,8 @@ test("a link opens on the same roll (DH-01)", async ({ page, context }) => {
     "aria-checked",
     "true",
   );
+  // The link replays the roll from its start; once it has played through it ends where it did.
+  await runEnded(fresh);
   await expect(fresh.getByRole("slider", { name: "Moment" })).toHaveAttribute(
     "aria-valuetext",
     ended!,
