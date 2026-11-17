@@ -2,7 +2,15 @@
 
 import { Billboard, Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState, type MouseEvent, type RefObject } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type RefObject,
+} from "react";
 import { DoubleSide, type Color, type Group } from "three";
 import { keepInside } from "./label-place";
 import { DIMMED, type Star } from "./layout";
@@ -52,7 +60,7 @@ function plainClick(event: MouseEvent): boolean {
  * keyboard reach it alike. The suggested idea wears a clay ring that breathes slowly; a learned
  * one carries a tick; one still being drawn is a hollow outline.
  */
-export function StarMark({
+export const StarMark = memo(function StarMark({
   star: { lesson, position },
   colour,
   ringColour,
@@ -72,6 +80,16 @@ export function StarMark({
   const bead = useRef<Group>(null);
   const labelOuter = useRef<HTMLDivElement>(null);
   const labelCard = useRef<HTMLDivElement>(null);
+  // Fit the label inside the map the moment it mounts, not a frame later: it never flashes
+  // half off screen, and on a slow (software-drawn) map it is in place as soon as it shows.
+  const placeLabel = useCallback(
+    (outer: HTMLDivElement | null) => {
+      labelOuter.current = outer;
+      if (outer && labelCard.current && overlay.current)
+        keepInside(outer, labelCard.current, overlay.current.getBoundingClientRect());
+    },
+    [overlay],
+  );
   // A finger cannot hover: the first tap opens the label, the second (or Open) steps inside.
   const pressed = useRef<{ touch: boolean; wasShown: boolean } | null>(null);
   const [tapped, setTapped] = useState(false);
@@ -190,11 +208,11 @@ export function StarMark({
             status={status}
             touched={tapped}
             onOpen={() => onChoose(lesson.id)}
-            outerRef={labelOuter}
+            outerRef={placeLabel}
             cardRef={labelCard}
           />
         </Html>
       )}
     </group>
   );
-}
+});
