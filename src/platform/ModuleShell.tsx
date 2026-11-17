@@ -27,6 +27,7 @@ import { ShareControl } from "./ShareControl";
 import { SiteNav } from "./SiteNav";
 import type { Snapshot } from "./snapshot/snapshot";
 import { useRestoredMoment } from "./use-restored-moment";
+import { useStageHeight } from "./use-stage-height";
 import { TimelineBar } from "./TimelineBar";
 
 type ModuleShellProps = {
@@ -91,12 +92,16 @@ export function ModuleShell({
   const [replay, setReplay] = useState<ReplayWindow | null>(null);
   const [comparing, setComparing] = useState(false);
   const [skippedGuess, setSkippedGuess] = useState(false);
+  // Where the card sits is settled when the lesson opens, so guessing does not move it (and
+  // take the keyboard focus with it); only skipping sends it below the dials.
+  const [askedFirst] = useState(() => !guessed);
   const [edits, setEdits] = useState(0);
   const [announcement, setAnnouncement] = useState("");
   /** True while a restored link's view is untouched: missions it already meets earn nothing. */
   const restoring = useRef(Boolean(restored));
   const wasLive = useRef(false);
   const cancelRestoredMoment = useRestoredMoment(timeline, restored);
+  const stage = useStageHeight<HTMLDivElement>();
 
   // A repeated message still changes the text, so screen readers say it again.
   const announce = useCallback(
@@ -200,6 +205,7 @@ export function ModuleShell({
   const compare = module.compare &&
     captions.compare && { alternative: module.compare, ...captions.compare };
   const guessFirst = !restored && !guessed && !skippedGuess;
+  const cardOnTop = !restored && askedFirst && !skippedGuess;
   const predictionSlot = (
     <PredictionSlot
       predictions={module.predictions}
@@ -242,7 +248,12 @@ export function ModuleShell({
       </header>
 
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_20rem]">
-        <div data-region="stage" className="flex min-w-0 flex-col gap-3">
+        {/* On a phone the stage stays pinned by its lower part while the dials scroll beneath. */}
+        <div
+          ref={stage}
+          data-region="stage"
+          className="flex min-w-0 flex-col gap-3 max-md:min-h-(--stage-min) max-md:sticky max-md:top-[min(0px,calc(55dvh_-_var(--stage-h,0px)))] max-md:z-10 max-md:bg-paper max-md:pb-2"
+        >
           <section
             aria-label={platformCaptions.scene}
             data-region="scene"
@@ -287,7 +298,7 @@ export function ModuleShell({
           data-region="dock"
           className="flex min-w-0 flex-col gap-4"
         >
-          {guessFirst && predictionSlot}
+          {cardOnTop && predictionSlot}
           <LessonErrorBoundary>
             <PaperCard className="flex flex-wrap justify-center gap-6">
               <Controls {...viewProps} />
@@ -309,7 +320,7 @@ export function ModuleShell({
               nextIdea={allDone ? nextIdea : null}
             />
           )}
-          {!guessFirst && predictionSlot}
+          {!cardOnTop && predictionSlot}
         </aside>
       </div>
 

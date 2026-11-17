@@ -26,8 +26,9 @@ test("stacking cells still trains without cross-origin isolation (ENG-06)", asyn
 test("a training worker that cannot load shows the lesson's problem caption (ENG-07)", async ({
   page,
 }) => {
-  // Next serves `new Worker(new URL("./worker.ts", …))` as /_next/static/media/worker.<hash>.ts.
-  await page.route("**/_next/static/media/worker.*", (route) =>
+  // Turbopack starts every worker through a bootstrap script (turbopack-worker-<hash>.js) that
+  // then loads /_next/static/media/worker.<hash>.ts; failing either keeps the worker from starting.
+  await page.route(/\/(turbopack-worker-[^/]+\.js|media\/worker\.[^/]+)$/, (route) =>
     route.fulfill({ status: 404, body: "" }),
   );
   await page.goto("/learn/stacking-cells");

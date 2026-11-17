@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 test("a click on the dial's arc sets its value, no drag needed (A11Y-09)", async ({ page }) => {
   await page.goto("/styleguide");
   const dial = page.getByRole("slider", { name: "How big a step" });
+  await dial.scrollIntoViewIfNeeded();
   const box = await dial.boundingBox();
   if (!box) throw new Error("dial not laid out");
   // 3 o'clock on the arc is five-sixths of the way round.

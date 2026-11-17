@@ -86,8 +86,9 @@ test("a mission fires once, replays its window, and its star survives a reload",
   await page.getByRole("button", { name: "Watch why it happened" }).click();
   const moment = page.getByRole("slider", { name: "Moment" });
   await expect(moment).toHaveAttribute("aria-valuetext", /Moment (one|two|three|four) of/);
-  // The window ends where it fired: the first huge step already lands past the rim.
-  await expect(moment).toHaveAttribute("aria-valuetext", "Moment two of five");
+  // The window ends where it fired (the first huge step already lands past the rim), then the
+  // timeline goes back to following live, as it was before the replay (PLT-19).
+  await expect(moment).toHaveAttribute("aria-valuetext", "Moment five of five");
   await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
 
   await page.reload();

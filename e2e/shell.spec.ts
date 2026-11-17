@@ -101,7 +101,9 @@ test.describe("lesson failures (PLT-04, PLT-13)", () => {
       firstLoad.has(new URL(route.request().url()).pathname) ? route.continue() : route.abort(),
     );
     await page.goto("/learn/rolling-downhill");
-    await expect(page.getByRole("alert")).toContainText("couldn’t load", { timeout: 15_000 });
+    await expect(page.getByRole("alert").filter({ hasText: "couldn’t load" })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
   });
 
@@ -116,9 +118,11 @@ test.describe("lesson failures (PLT-04, PLT-13)", () => {
       touched: false,
       momentEpoch: null,
     });
+    await page.goto("/styleguide"); // a hash change alone does not reopen a lesson
     await openFixture(page, `#s=${other}`);
     await expect(page.locator("[data-link-problem=lesson]")).toBeVisible();
     const future = await linkFor(page, { v: 9, id: "fixture-valley" });
+    await page.goto("/styleguide"); // a hash change alone does not reopen a lesson
     await openFixture(page, `#s=${future}`);
     await expect(page.locator("[data-link-problem=version]")).toBeVisible();
   });
@@ -135,6 +139,7 @@ test.describe("snapshot links (PLT-08, PLT-02)", () => {
       touched: true,
       momentEpoch: null,
     });
+    await page.goto("/styleguide"); // a hash change alone does not reopen a lesson
     await openFixture(page, `#s=${link}`);
     await expect(dial(page)).toHaveAttribute("aria-valuenow", "0.95");
     await page.waitForTimeout(500);
@@ -155,6 +160,7 @@ test.describe("snapshot links (PLT-08, PLT-02)", () => {
       touched: true,
       momentEpoch: null,
     });
+    await page.goto("/styleguide"); // a hash change alone does not reopen a lesson
     await openLesson(page, "stacking-cells", `#s=${wild}`);
     await expect(page.getByRole("slider", { name: "How many layers" })).toHaveAttribute(
       "aria-valuenow",
@@ -189,11 +195,15 @@ test.describe("the predict-then-reveal flow (PLT-28, LIVE-11)", () => {
     for (let i = 0; i < 3; i += 1) await start.click();
     await page.getByRole("button", { name: "Show me what happens" }).focus();
     await page.keyboard.press("Enter");
-    await expect(page.getByText("You guessed: Flying off")).toBeVisible();
-    const focusInside = await page.evaluate(
-      () => document.activeElement?.closest("[aria-label='Make a guess']") !== null,
-    );
-    expect(focusInside).toBe(true);
+    await expect(page.getByText("You guessed: Flying off", { exact: true })).toBeVisible();
+    // Focus moves to the question on the next frame.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.activeElement?.closest("[aria-label='Make a guess']") !== null,
+        ),
+      )
+      .toBe(true);
   });
 
   test("compare can be switched on and off again and again", async ({ page }) => {
@@ -232,14 +242,21 @@ test.describe("lesson layout (LIVE-06, LIVE-07, LIVE-08)", () => {
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await openLesson(page, "rolling-downhill");
-    await page.locator("[data-region=dock] [role=slider]").first().scrollIntoViewIfNeeded();
+    // Scroll until the last dial is in view: the stage is pinned above it.
+    await page.locator("[data-region=dock] [role=slider]").last().scrollIntoViewIfNeeded();
     const inView = (selector: string) =>
       page.locator(selector).evaluate((element) => {
         const box = element.getBoundingClientRect();
         return box.bottom > 0 && box.top < window.innerHeight;
       });
     expect(await inView("[data-region=scene]")).toBe(true);
-    expect(await inView("[data-region=stage] [role=slider][aria-label=Moment]")).toBe(true);
+    const moment = page.locator("[data-region=stage]").getByRole("slider", { name: "Moment" });
+    expect(
+      await moment.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        return box.bottom > 0 && box.top < window.innerHeight;
+      }),
+    ).toBe(true);
   });
 
   for (const width of [1280, 375]) {
@@ -251,17 +268,14 @@ test.describe("lesson layout (LIVE-06, LIVE-07, LIVE-08)", () => {
         if (await skip.isVisible()) await skip.click();
         const button = page.locator("[data-region=dock]").getByRole("button", { name: start });
         await button.scrollIntoViewIfNeeded();
+        // The button renames itself once pressed, so follow the element, not its name.
+        const pressed = (await button.elementHandle())!;
         const before = await page.evaluate(() => window.scrollY);
-        const top = (await button.boundingBox())!.y;
-        await button.click();
+        const top = (await pressed.boundingBox())!.y;
+        await pressed.click();
         await page.waitForTimeout(1200);
         expect(await page.evaluate(() => window.scrollY)).toBe(before);
-        const after = (await page
-          .locator("[data-region=dock]")
-          .getByRole("button")
-          .first()
-          .boundingBox())!;
-        expect(Math.abs((await button.boundingBox())?.y ?? after.y) - top).toBeLessThan(8);
+        expect(Math.abs((await pressed.boundingBox())!.y - top)).toBeLessThan(8);
       });
     }
   }
@@ -274,9 +288,9 @@ test.describe("theme (A11Y-06)", () => {
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("night");
-    await expect(page.getByRole("group", { name: "Page colour" })).toBeVisible();
+    await expect(page.getByRole("radiogroup", { name: "Page colour" })).toBeVisible();
     await openLesson(page, "rolling-downhill");
-    const picker = page.getByRole("group", { name: "Page colour" });
+    const picker = page.getByRole("radiogroup", { name: "Page colour" });
     await picker.getByRole("radio", { name: "Day" }).click();
     expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("ivory");
     await page.reload({ waitUntil: "domcontentloaded" });
