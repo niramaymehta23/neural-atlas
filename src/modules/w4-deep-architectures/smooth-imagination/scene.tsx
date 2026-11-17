@@ -203,11 +203,22 @@ function Mosaic({
     onMove((clientX - rect.left) / rect.width, (clientY - rect.top) / rect.height);
   };
   const { ref, handlers } = useHoldDrag<HTMLDivElement>({ onDrag: moveTo, onTap: moveTo });
+  // Arrow presses step from the newest spot, not the one this render drew: a held key repeats
+  // faster than the page redraws, and every press must still count.
+  const spot = useRef({ x: state.x, y: state.y });
+  useEffect(() => {
+    spot.current = { x: state.x, y: state.y };
+  }, [state.x, state.y]);
   const onKeyDown = (event: KeyboardEvent) => {
     const arrow = ARROWS[event.key];
     if (!arrow) return;
     event.preventDefault();
-    onMove(state.x + arrow[0] * STEP, state.y + arrow[1] * STEP);
+    const next = {
+      x: Math.min(1, Math.max(0, spot.current.x + arrow[0] * STEP)),
+      y: Math.min(1, Math.max(0, spot.current.y + arrow[1] * STEP)),
+    };
+    spot.current = next;
+    onMove(next.x, next.y);
   };
   return (
     <figure className="flex flex-col gap-1">

@@ -216,11 +216,12 @@ test("clicking a built idea flies in, with its lesson already fetched", async ({
 
 test("an idea still being drawn fades across instead of flying", async ({ page }) => {
   await openHome(page);
-  // Chopping text into pieces sits clear of its neighbours, so the click lands on it.
-  await settled(page.getByRole("link", { name: "Chopping text into pieces" }));
-  await page.getByRole("link", { name: "Chopping text into pieces" }).click(steady);
+  // Bigger and bigger sits clear of its neighbours (nothing is drawn over its middle), so the
+  // click lands on it and not on one in front.
+  await settled(page.getByRole("link", { name: "Bigger and bigger" }));
+  await page.getByRole("link", { name: "Bigger and bigger" }).click(steady);
   await expect(page.getByRole("main")).toHaveAttribute("data-leaving", "fade");
-  await page.waitForURL("**/learn/chopping-text-into-pieces");
+  await page.waitForURL("**/learn/bigger-and-bigger");
 });
 
 test("a modifier-click on a star opens it in a new tab", async ({ page, context }) => {

@@ -149,18 +149,25 @@ function PaintablePicture({
   };
   const { ref, handlers } = useHoldDrag<HTMLDivElement>({ onDrag: paintAt, onTap: paintAt });
   const painted = useMemo(() => [...steerOf(state.paint)], [state.paint]);
+  // Keys move from the newest cursor, not the one this render drew: a held key repeats faster
+  // than the page redraws, and every press must still count.
+  const newest = useRef(cursor);
+  const moveCursor = (next: { column: number; row: number } | null) => {
+    newest.current = next;
+    setCursor(next);
+  };
   const onKeyDown = (event: KeyboardEvent) => {
     const arrow = ARROWS[event.key];
-    const at = cursor ?? { column: SIDE / 2, row: SIDE / 2 };
+    const at = newest.current ?? { column: SIDE / 2, row: SIDE / 2 };
     if (arrow) {
       event.preventDefault();
-      setCursor({
+      moveCursor({
         column: Math.min(SIDE - 1, Math.max(0, at.column + arrow[0])),
         row: Math.min(SIDE - 1, Math.max(0, at.row + arrow[1])),
       });
     } else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      setCursor(at);
+      moveCursor(at);
       onPaint(dab(at.column, at.row));
     }
   };
@@ -177,7 +184,7 @@ function PaintablePicture({
         aria-label={words.picture.label}
         aria-roledescription={words.picture.kind}
         onKeyDown={onKeyDown}
-        onBlur={() => setCursor(null)}
+        onBlur={() => moveCursor(null)}
         data-painted={painted.length}
         className="relative aspect-square w-full max-w-sm cursor-crosshair touch-pan-y select-none"
       >

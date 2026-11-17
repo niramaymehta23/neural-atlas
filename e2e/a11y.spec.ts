@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { world1 } from "../src/catalog/world-1";
 import { world3 } from "../src/catalog/world-3";
 import { world4 } from "../src/catalog/world-4";
+import { gpuTagFor } from "./gpu";
 
 /**
  * Automated accessibility checks (A11Y-29): every kind of page, in day and night paper, at a
@@ -46,24 +47,28 @@ for (const theme of ["ivory", "night"] as const) {
   for (const setup of SETUPS) {
     test.describe(`${theme}, ${setup.name}`, () => {
       for (const { path, ready } of PAGES) {
-        test(`${path} has no accessibility violations`, async ({ page }) => {
-          await page.setViewportSize({ width: setup.width, height: setup.height });
-          await page.emulateMedia({ reducedMotion: setup.motion });
-          await setTheme(page, theme);
-          await page.goto(path);
-          await expect(page.locator(ready).first()).toBeVisible({ timeout: 20_000 });
-          expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe(theme);
-          // Let entrances settle so contrast is measured on the resting colours.
-          await page.waitForTimeout(600);
-          const results = await new AxeBuilder({ page })
-            .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-            .analyze();
-          const summary = results.violations.map(({ id, nodes }) => ({
-            id,
-            targets: nodes.slice(0, 5).map(({ target }) => target.join(" ")),
-          }));
-          expect(summary).toEqual([]);
-        });
+        test(
+          `${path} has no accessibility violations`,
+          { tag: gpuTagFor(path) },
+          async ({ page }) => {
+            await page.setViewportSize({ width: setup.width, height: setup.height });
+            await page.emulateMedia({ reducedMotion: setup.motion });
+            await setTheme(page, theme);
+            await page.goto(path);
+            await expect(page.locator(ready).first()).toBeVisible({ timeout: 20_000 });
+            expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe(theme);
+            // Let entrances settle so contrast is measured on the resting colours.
+            await page.waitForTimeout(600);
+            const results = await new AxeBuilder({ page })
+              .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+              .analyze();
+            const summary = results.violations.map(({ id, nodes }) => ({
+              id,
+              targets: nodes.slice(0, 5).map(({ target }) => target.join(" ")),
+            }));
+            expect(summary).toEqual([]);
+          },
+        );
       }
     });
   }

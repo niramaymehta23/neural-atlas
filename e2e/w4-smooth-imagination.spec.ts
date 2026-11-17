@@ -25,6 +25,12 @@ test("glides with the arrow keys, and finds nonsense in the untidy map's corner"
   await expect(page.locator("[data-arriving=false]")).toBeVisible({ timeout: 20_000 });
   await dock(page).getByRole("button", { name: "Show me what happens" }).click({ timeout: 20_000 });
   await expect(dock(page).getByText("Spot on.")).toBeVisible();
+  // The reveal moves focus to the question a frame later; wait for it before taking focus away.
+  await expect(
+    dock(page).getByRole("heading", {
+      name: "If the map is not kept tidy at all, will every spot on it still be a face?",
+    }),
+  ).toBeFocused();
   await map(page).focus();
   for (let press = 0; press < 20; press += 1) {
     await page.keyboard.press("ArrowLeft");

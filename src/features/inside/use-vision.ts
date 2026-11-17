@@ -76,9 +76,15 @@ export type LiveSeen = {
 };
 
 /**
- * The camera picture read over and over while `on`: one picture at a time, the next taken as soon
- * as the model has answered the last, so the answers keep up with the camera as fast as the device
- * allows. A failure stops the loop until `retry`.
+ * At most this many camera pictures are read a second: enough for the maps to follow the camera
+ * smoothly (the lesson promises 15 or more), without keeping the device's chip busy flat out.
+ */
+export const LIVE_RATE = 20;
+
+/**
+ * The camera picture read over and over while `on`: one picture at a time, the next taken once
+ * the model has answered the last and no sooner than LIVE_RATE allows. A failure stops the loop
+ * until `retry`.
  */
 export function useLiveSeen(
   grab: () => Uint8ClampedArray | null,
@@ -96,11 +102,13 @@ export function useLiveSeen(
     if (!on) return;
     let live = true;
     let busy = false;
-    let frame = requestAnimationFrame(function step() {
+    let started = -Infinity;
+    let frame = requestAnimationFrame(function step(now) {
       if (!live) return;
-      const picture = busy ? null : grab();
+      const picture = busy || now - started < 1000 / LIVE_RATE ? null : grab();
       if (picture) {
         busy = true;
+        started = now;
         reader.see(picture.slice(), { maps, features }).then(
           (seen) => {
             if (!live) return;
