@@ -16,6 +16,7 @@ jobs:
   checks:
     name: Format, lint, types, unit tests, model checksums
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -33,6 +34,7 @@ jobs:
   build:
     name: Static export (size and duplicate check)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -47,7 +49,10 @@ jobs:
           key: next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
       # `build` ends with scripts/check-build.ts: no file over 24 MiB, nothing large shipped twice.
+      # Seconds locally and about a minute here. Tailwind once scanned the 21 MB model for class names
+      # and took minutes (scripts/tailwind-sources.test.ts guards that), so a slow build fails fast.
       - run: pnpm build
+        timeout-minutes: 5
       - uses: actions/upload-artifact@v7
         with:
           name: site
@@ -59,6 +64,7 @@ jobs:
     name: End-to-end (functional, then perf alone)
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       PERF_PROFILE: ci
     steps:
@@ -98,6 +104,7 @@ jobs:
     # Same-repository pushes and pull requests only: forks never see the secrets.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       deployments: write
@@ -131,6 +138,7 @@ jobs:
     needs: deploy
     if: needs.deploy.outputs.url != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

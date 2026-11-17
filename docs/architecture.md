@@ -301,6 +301,11 @@ fetched cross-origin at runtime. Size limits, caching and the deploy are in "Hos
   26 MB WebGPU-capable asyncify build. `next.config.ts` aliases `onnxruntime-web/webgpu` to its external-wasm
   entry so the bundler emits no second copy. The export is about 45 MB, most of it the 21 MB model and the
   14 MB runtime.
+- **Tailwind sources**: `src/app/globals.css` imports Tailwind with `source("../")`, so class names are
+  found in `src/` only. Automatic detection read every tracked file from the project root: the ONNX model
+  alone took ~3 minutes (the CSS step was 2.9 min of a 3-minute build, and it timed out in CI once), and the
+  tokenizer's words became candidate classes. `scripts/tailwind-sources.test.ts` fails if Tailwind would scan
+  anything outside `src/` or take over 5 s; the CI build step is limited to 5 minutes.
 - **ONNX runtime copy**: `scripts/copy-runtime.ts` (before `dev` and `build`) copies by content hash into
   `public/models/ort-<version>/` and fails when the installed onnxruntime-web is not `RUNTIME_VERSION`
   (bump it in `runtime.ts` when Transformers.js moves) or a file is missing.
