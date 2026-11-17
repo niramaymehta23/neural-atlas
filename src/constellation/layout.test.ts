@@ -1,5 +1,5 @@
 import { lessons } from "@/catalog";
-import { floatOffset, layoutConstellation, worldCentre } from "./layout";
+import { floatOffset, layoutConstellation, partitionLinks, worldCentre } from "./layout";
 
 const { stars, links } = layoutConstellation(lessons);
 const distance = (a: readonly number[], b: readonly number[]) =>
@@ -36,5 +36,23 @@ describe("floatOffset", () => {
   it("bobs gently and differently per world", () => {
     for (let t = 0; t < 10; t += 0.5) expect(Math.abs(floatOffset(1, t))).toBeLessThanOrEqual(0.05);
     expect(floatOffset(1, 2)).not.toBeCloseTo(floatOffset(2, 2));
+  });
+});
+
+describe("partitionLinks", () => {
+  it("keeps every line at full strength when no group is picked", () => {
+    const { chosen, other } = partitionLinks(stars, links, null);
+    expect(chosen).toHaveLength(links.length);
+    expect(other).toHaveLength(0);
+  });
+
+  it("dims every line that leaves the picked group", () => {
+    const { chosen, other } = partitionLinks(stars, links, 3);
+    const world = (index: number) => stars[index]?.lesson.world;
+    expect(chosen.length).toBeGreaterThan(0);
+    expect(other.length).toBeGreaterThan(0);
+    expect(chosen.length + other.length).toBe(links.length);
+    for (const { from, to } of chosen) expect([world(from), world(to)]).toEqual([3, 3]);
+    for (const { from, to } of other) expect(world(from) === 3 && world(to) === 3).toBe(false);
   });
 });

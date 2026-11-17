@@ -38,4 +38,33 @@ describe("catalog", () => {
     }
     expect(lessons.filter(({ prerequisites }) => prerequisites.length === 0)).toHaveLength(1);
   });
+
+  it("keeps learner fields free of symbols and jargon", () => {
+    for (const { id, title, idea, playWith } of lessons) {
+      for (const field of [title, idea, playWith]) {
+        expect({ id, field }).not.toEqual({ id, field: expect.stringContaining("=") });
+        expect({ id, field }).not.toEqual({ id, field: expect.stringMatching(/neural network/i) });
+      }
+    }
+  });
+
+  it("lists no prerequisite that another prerequisite already leads to", () => {
+    const reach = (id: string, seen = new Set<string>()): Set<string> => {
+      for (const next of lessonById(id)?.prerequisites ?? []) {
+        if (!seen.has(next)) {
+          seen.add(next);
+          reach(next, seen);
+        }
+      }
+      return seen;
+    };
+    const redundant = lessons.flatMap(({ id, prerequisites }) =>
+      prerequisites
+        .filter((prerequisite) =>
+          prerequisites.some((other) => other !== prerequisite && reach(other).has(prerequisite)),
+        )
+        .map((prerequisite) => `${id} → ${prerequisite}`),
+    );
+    expect(redundant).toEqual([]);
+  });
 });

@@ -1,21 +1,27 @@
 "use client";
 
-import { Html } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useRef, type RefObject } from "react";
-import type { Color, Group } from "three";
-import { constellationCaptions as captions } from "./captions";
-import type { Star } from "./layout";
+import { Billboard, Html } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useRef, useState, type MouseEvent, type RefObject } from "react";
+import { DoubleSide, type Color, type Group } from "three";
+import { keepInside } from "./label-place";
+import { DIMMED, type Star } from "./layout";
+import { StarLabel } from "./StarLabel";
+import { starName, starStatus } from "./status";
 
 type StarMarkProps = {
   star: Star;
   colour: Color;
   ringColour: Color;
+  /** The thin line an idea that is still being drawn is outlined in. */
+  outlineColour: Color;
   learned: boolean;
   suggested: boolean;
+  /** Its lesson exists; otherwise the star is a hollow outline. */
+  built: boolean;
   /** Another group is picked in the filter: the star fades back and cannot be chosen. */
   dimmed: boolean;
-  /** Its paper label is open (pointer over it or keyboard focus on it). */
+  /** Its paper label is open (pointer over it, keyboard focus on it, or a first tap). */
   shown: boolean;
   still: boolean;
   /** Where the star links live, laid over the canvas. */
@@ -25,19 +31,35 @@ type StarMarkProps = {
 };
 
 const RADIUS = 0.07;
-const DIMMED = 0.2;
 const PULSE = { size: 0.18, seconds: 2.4 };
+/** How much a bead swells while its label is open. */
+export const BEAD_GROW = 1.3;
+/** Share of the remaining way the bead's size moves each frame: a soft spring. */
+const GROW_STEP = 0.2;
+
+/** The size a bead heads for. */
+export function beadScale(shown: boolean): number {
+  return shown ? BEAD_GROW : 1;
+}
+
+/** A plain left click; anything else (new tab, new window, middle button) is the browser's. */
+function plainClick(event: MouseEvent): boolean {
+  return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+}
 
 /**
  * One idea: a matte bead casting a soft shadow, with a real link laid over it so pointer and
- * keyboard reach it alike. The suggested idea wears a clay ring that breathes slowly.
+ * keyboard reach it alike. The suggested idea wears a clay ring that breathes slowly; a learned
+ * one carries a tick; one still being drawn is a hollow outline.
  */
 export function StarMark({
   star: { lesson, position },
   colour,
   ringColour,
+  outlineColour,
   learned,
   suggested,
+  built,
   dimmed,
   shown,
   still,
@@ -45,26 +67,64 @@ export function StarMark({
   onShow,
   onChoose,
 }: StarMarkProps) {
+  const invalidate = useThree((state) => state.invalidate);
   const ring = useRef<Group>(null);
+  const bead = useRef<Group>(null);
+  const labelOuter = useRef<HTMLDivElement>(null);
+  const labelCard = useRef<HTMLDivElement>(null);
+  // A finger cannot hover: the first tap opens the label, the second (or Open) steps inside.
+  const pressed = useRef<{ touch: boolean; wasShown: boolean } | null>(null);
+  const [tapped, setTapped] = useState(false);
+  const status = starStatus({ learned, suggested, built });
+  const open = shown && !dimmed;
+
+  useEffect(() => invalidate(), [open, invalidate]);
 
   useFrame(({ clock }) => {
-    if (!ring.current || still) return;
-    const phase = (clock.elapsedTime / PULSE.seconds) * Math.PI * 2;
-    ring.current.scale.setScalar(1 + PULSE.size * (0.5 + 0.5 * Math.sin(phase)));
+    if (ring.current && !still) {
+      const phase = (clock.elapsedTime / PULSE.seconds) * Math.PI * 2;
+      ring.current.scale.setScalar(1 + PULSE.size * (0.5 + 0.5 * Math.sin(phase)));
+    }
+    if (bead.current) {
+      const goal = beadScale(open);
+      const now = bead.current.scale.x;
+      const next = still || Math.abs(goal - now) < 0.005 ? goal : now + (goal - now) * GROW_STEP;
+      bead.current.scale.setScalar(next);
+      if (next !== goal) invalidate();
+    }
+    if (open && labelOuter.current && labelCard.current && overlay.current) {
+      keepInside(labelOuter.current, labelCard.current, overlay.current.getBoundingClientRect());
+    }
   });
 
   return (
     <group position={position}>
-      <mesh>
-        <sphereGeometry args={[learned ? RADIUS * 1.15 : RADIUS, 24, 16]} />
-        <meshStandardMaterial
-          color={colour}
-          roughness={0.9}
-          metalness={0}
-          transparent={dimmed}
-          opacity={dimmed ? DIMMED : 1}
-        />
-      </mesh>
+      <group ref={bead}>
+        {built ? (
+          <mesh>
+            <sphereGeometry args={[learned ? RADIUS * 1.15 : RADIUS, 24, 16]} />
+            <meshStandardMaterial
+              color={colour}
+              roughness={0.9}
+              metalness={0}
+              transparent={dimmed}
+              opacity={dimmed ? DIMMED : 1}
+            />
+          </mesh>
+        ) : (
+          <Billboard>
+            <mesh>
+              <ringGeometry args={[RADIUS * 0.72, RADIUS, 32]} />
+              <meshBasicMaterial
+                color={outlineColour}
+                side={DoubleSide}
+                transparent
+                opacity={dimmed ? DIMMED : 1}
+              />
+            </mesh>
+          </Billboard>
+        )}
+      </group>
       {suggested && !dimmed && (
         <group ref={ring} rotation={[-Math.PI / 2, 0, 0]}>
           <mesh>
@@ -77,34 +137,62 @@ export function StarMark({
         <Html portal={overlay} center zIndexRange={[10, 0]}>
           <a
             href={`/learn/${lesson.id}`}
-            aria-label={lesson.title}
+            aria-label={starName(lesson.title, status)}
             data-star={lesson.id}
-            className="pointer-events-auto block size-7 rounded-pill"
-            onMouseEnter={() => onShow(lesson.id)}
-            onMouseLeave={() => onShow(null)}
+            data-status={status ?? undefined}
+            className="pointer-events-auto flex size-7 items-center justify-center rounded-pill"
+            onPointerEnter={(event) => {
+              if (event.pointerType === "touch") return;
+              setTapped(false);
+              onShow(lesson.id);
+            }}
+            onPointerLeave={(event) => event.pointerType !== "touch" && onShow(null)}
+            onPointerDown={(event) => {
+              pressed.current = { touch: event.pointerType === "touch", wasShown: shown };
+            }}
             onFocus={() => onShow(lesson.id)}
-            onBlur={() => onShow(null)}
+            onBlur={() => {
+              setTapped(false);
+              onShow(null);
+            }}
             onClick={(event) => {
+              if (!plainClick(event)) return;
               event.preventDefault();
+              const press = pressed.current;
+              pressed.current = null;
+              if (press?.touch && !press.wasShown) {
+                setTapped(true);
+                onShow(lesson.id);
+                return;
+              }
               onChoose(lesson.id);
             }}
-          />
+          >
+            {learned && (
+              <svg aria-hidden viewBox="0 0 12 12" className="size-3 text-paper">
+                <path
+                  d="M2.5 6.5l2.3 2.3 4.7-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+          </a>
         </Html>
       )}
-      {shown && !dimmed && (
+      {open && (
         <Html portal={overlay} zIndexRange={[30, 20]} pointerEvents="none" position={[0, 0.1, 0]}>
-          <div
-            role="tooltip"
-            className="w-60 -translate-x-1/2 -translate-y-full rounded-control border border-hairline bg-card px-3 py-2 text-ink shadow-lifted"
-          >
-            <p className="font-serif text-base">{lesson.title}</p>
-            <p className="text-sm text-ink-soft">{lesson.idea}</p>
-            {(learned || suggested) && (
-              <p className="mt-1 text-xs text-accent-ink">
-                {learned ? captions.learned : captions.next}
-              </p>
-            )}
-          </div>
+          <StarLabel
+            lesson={lesson}
+            status={status}
+            touched={tapped}
+            onOpen={() => onChoose(lesson.id)}
+            outerRef={labelOuter}
+            cardRef={labelCard}
+          />
         </Html>
       )}
     </group>

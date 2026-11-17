@@ -49,3 +49,22 @@ export function layoutConstellation(lessons: readonly Lesson[]): { stars: Star[]
 export function floatOffset(world: WorldNumber, seconds: number): number {
   return FLOAT.height * Math.sin((seconds / FLOAT.seconds) * Math.PI * 2 + world);
 }
+
+/** Opacity of the stars and lines of the groups not picked in the filter. */
+export const DIMMED = 0.2;
+
+/**
+ * Splits the lines into those inside the picked group (drawn at full strength) and the rest
+ * (dimmed). With no group picked every line is chosen.
+ */
+export function partitionLinks(
+  stars: readonly Star[],
+  links: readonly Link[],
+  world: WorldNumber | null,
+): { chosen: Link[]; other: Link[] } {
+  const inWorld = (index: number) => world === null || stars[index]?.lesson.world === world;
+  const chosen: Link[] = [];
+  const other: Link[] = [];
+  for (const link of links) (inWorld(link.from) && inWorld(link.to) ? chosen : other).push(link);
+  return { chosen, other };
+}

@@ -52,9 +52,22 @@ describe("nextSuggested", () => {
     expect(nextSuggested(lessons, progressOf({ a: done, c: done }))).toBe("d");
   });
 
-  it("falls back to curriculum order when nothing ready is built", () => {
+  it("never suggests a lesson that is still being drawn", () => {
     const unbuilt = lessons.map(({ id, prerequisites }) => ({ id, prerequisites }));
-    expect(nextSuggested(unbuilt, progressOf({ a: done }))).toBe("b");
+    expect(nextSuggested(unbuilt, progressOf({ a: done }))).toBeNull();
+  });
+
+  it("returns null once every built lesson is mastered, though unbuilt ones remain", () => {
+    expect(nextSuggested(lessons, progressOf({ a: done, c: done, d: done }))).toBeNull();
+  });
+
+  it("takes plain data with any truthy load marker", () => {
+    const plain = lessons.map(({ id, prerequisites, load }) => ({
+      id,
+      prerequisites,
+      load: !!load,
+    }));
+    expect(nextSuggested(plain, progressOf({ a: done }))).toBe("c");
   });
 
   it("waits for every built prerequisite", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { ContactShadows } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Color, SRGBColorSpace, type Group } from "three";
 import { learnedTone, linkTone, worldTone } from "@/design/encodings";
@@ -11,7 +11,8 @@ import type { WorldNumber } from "@/platform/contract";
 import type { Vec3 } from "@/scene3d/CameraRig";
 import { SoftStage } from "@/scene3d/SoftStage";
 import { constellationCaptions as captions } from "./captions";
-import { floatOffset, worldCentre, type Link, type Star } from "./layout";
+import { startFloating } from "./floating";
+import { DIMMED, floatOffset, partitionLinks, worldCentre, type Link, type Star } from "./layout";
 import { Links } from "./Links";
 import { StarMark } from "./StarMark";
 
@@ -19,6 +20,8 @@ type ConstellationSceneProps = {
   stars: readonly Star[];
   links: readonly Link[];
   learned: ReadonlySet<string>;
+  /** Ideas whose lesson exists; the rest are still being drawn. */
+  built: ReadonlySet<string>;
   suggested: string | null;
   /** The group picked in the filter, or null for all of them. */
   world: WorldNumber | null;
@@ -27,6 +30,8 @@ type ConstellationSceneProps = {
   /** The learner pointed at or focused an idea (a good moment to fetch its lesson). */
   onPoint: (id: string) => void;
   onChoose: (id: string) => void;
+  /** Shown instead of the map where 3D cannot run (no WebGL, or it failed). */
+  fallback: ReactNode;
 };
 
 const WORLDS: readonly WorldNumber[] = [1, 2, 3, 4, 5, 6];
@@ -41,13 +46,33 @@ const offset = ([x, y, z]: Vec3, [dx, dy, dz]: Vec3, scale = 1): Vec3 => [
   z + dz * scale,
 ];
 
+/** How far the map leans away from the pointer, for a touch of depth. */
+const PARALLAX = 0.05;
+/** Share of the remaining lean taken each frame. */
+const LEAN_STEP = 0.1;
+const INK = "var(--color-ink)";
+
 /**
- * Keeps frames coming while the map floats (the stage only draws on demand). It stops once a
- * flight starts: the camera glide draws its own frames, and the lesson then loads on a quiet page.
+ * Keeps frames coming while the map floats (the stage only draws on demand), about 30 a second
+ * and only while the learner is around. It stops once a flight starts: the camera glide draws
+ * its own frames, and the lesson then loads on a quiet page.
  */
 function KeepFloating() {
-  useFrame((state) => state.invalidate());
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => startFloating(invalidate), [invalidate]);
   return null;
+}
+
+/** Leans the whole map a little away from the pointer. Off under reduced motion. */
+function Parallax({ still, children }: { still: boolean; children: ReactNode }) {
+  const group = useRef<Group>(null);
+  useFrame(({ pointer }) => {
+    if (!group.current || still) return;
+    const lean = group.current.position;
+    lean.x += (-pointer.x * PARALLAX - lean.x) * LEAN_STEP;
+    lean.y += (-pointer.y * PARALLAX - lean.y) * LEAN_STEP;
+  });
+  return <group ref={group}>{children}</group>;
 }
 
 /** One world's group, bobbing slowly as a whole. */
@@ -93,11 +118,13 @@ export function ConstellationScene({
   stars,
   links,
   learned,
+  built,
   suggested,
   world,
   flyingTo,
   onPoint,
   onChoose,
+  fallback,
 }: ConstellationSceneProps) {
   const still = useReducedMotion();
   // Star links render into the overlay once it exists (the canvas is role="img", so not in there).
@@ -119,45 +146,61 @@ export function ConstellationScene({
     setShown(id);
     if (id) onPoint(id);
   };
-  const tones = useResolvedColours([linkTone, learnedTone, ...WORLDS.map(worldTone)]);
-  const [link, clay, ...tints] = useMemo(
+  const tones = useResolvedColours([INK, linkTone, learnedTone, ...WORLDS.map(worldTone)]);
+  const [ink, link, clay, ...tints] = useMemo(
     () => tones.map(([r, g, b]) => new Color().setRGB(r / 255, g / 255, b / 255, SRGBColorSpace)),
     [tones],
   );
+  const lines = useMemo(() => partitionLinks(stars, links, world), [stars, links, world]);
 
   return (
     <div className="relative h-full w-full">
-      {portal && aspect !== null && link && clay && (
+      {portal && aspect !== null && ink && link && clay && (
         <SoftStage
           label={captions.map}
           camera={framing(stars, world, flyingTo, aspect)}
           className="h-full w-full"
+          fallback={fallback}
         >
           {!still && !flyingTo && <KeepFloating />}
-          {WORLDS.map((group) => (
-            <Drift key={group} world={group} still={still}>
-              {stars
-                .filter(({ lesson }) => lesson.world === group)
-                .map((star) => (
-                  <StarMark
-                    key={star.lesson.id}
-                    star={star}
-                    colour={learned.has(star.lesson.id) ? clay : (tints[group - 1] ?? link)}
-                    ringColour={clay}
-                    learned={learned.has(star.lesson.id)}
-                    suggested={star.lesson.id === suggested}
-                    dimmed={world !== null && world !== group}
-                    shown={shown === star.lesson.id}
-                    still={still}
-                    overlay={portal}
-                    onShow={show}
-                    onChoose={onChoose}
-                  />
-                ))}
-            </Drift>
-          ))}
-          <Links stars={stars} links={links} colour={link} still={still} />
-          <ContactShadows scale={[10, 8]} blur={2.4} far={1.2} opacity={0.32} resolution={512} />
+          <Parallax still={still || flyingTo !== null}>
+            {WORLDS.map((group) => (
+              <Drift key={group} world={group} still={still}>
+                {stars
+                  .filter(({ lesson }) => lesson.world === group)
+                  .map((star) => (
+                    <StarMark
+                      key={star.lesson.id}
+                      star={star}
+                      colour={learned.has(star.lesson.id) ? clay : (tints[group - 1] ?? link)}
+                      ringColour={clay}
+                      outlineColour={link}
+                      learned={learned.has(star.lesson.id)}
+                      suggested={star.lesson.id === suggested}
+                      built={built.has(star.lesson.id)}
+                      dimmed={world !== null && world !== group}
+                      shown={shown === star.lesson.id}
+                      still={still}
+                      overlay={portal}
+                      onShow={show}
+                      onChoose={onChoose}
+                    />
+                  ))}
+              </Drift>
+            ))}
+            <Links stars={stars} links={lines.chosen} colour={link} opacity={0.85} still={still} />
+            <Links stars={stars} links={lines.other} colour={link} opacity={DIMMED} still={still} />
+          </Parallax>
+          {/* Drawn once: the bob is too small to move a soft shadow, and redrawing it costs. */}
+          <ContactShadows
+            frames={1}
+            color={ink}
+            scale={[10, 8]}
+            blur={2.4}
+            far={1.2}
+            opacity={0.32}
+            resolution={512}
+          />
         </SoftStage>
       )}
       <nav

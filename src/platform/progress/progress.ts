@@ -19,22 +19,24 @@ export function starCount(progress: Progress): number {
 }
 
 /**
- * The lesson to suggest next: the first one in curriculum order that is not mastered and whose
- * prerequisites are all mastered, preferring lessons that are built. An unbuilt prerequisite
- * cannot be mastered yet, so it does not hold back the lessons after it. Null once everything is
- * mastered.
+ * The lesson to suggest next: the first built one in curriculum order that is not mastered and
+ * whose prerequisites are all mastered. An unbuilt prerequisite cannot be mastered yet, so it
+ * does not hold back the lessons after it. Null once every built lesson is mastered (an unbuilt
+ * one would only open a "still being drawn" page). `load` marks a built lesson; any truthy value
+ * will do, so plain data from the server works too.
  */
 export function nextSuggested(
-  lessons: readonly Pick<Lesson, "id" | "prerequisites" | "load">[],
+  lessons: readonly (Pick<Lesson, "id" | "prerequisites"> & { load?: unknown })[],
   progress: Progress,
 ): string | null {
   const built = new Set(lessons.filter(({ load }) => load).map(({ id }) => id));
   const mastered = (id: string) => isMastered(progress.lessons[id]);
   const met = (id: string) => mastered(id) || !built.has(id);
-  const ready = lessons.filter(
-    ({ id, prerequisites }) => !mastered(id) && prerequisites.every(met),
+  return (
+    lessons.find(
+      ({ id, prerequisites }) => built.has(id) && !mastered(id) && prerequisites.every(met),
+    )?.id ?? null
   );
-  return (ready.find(({ load }) => load) ?? ready[0])?.id ?? null;
 }
 
 /** One lesson's record, coerced field by field so one bad value never loses the rest. */

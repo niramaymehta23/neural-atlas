@@ -1,18 +1,32 @@
+"use client";
+
 import Link from "next/link";
 import { PaperCard } from "@/ui/PaperCard";
 import { platformCaptions } from "./captions";
 import type { Lesson } from "./contract";
+import { nextSuggested, useProgress } from "./progress/progress";
 
 type LockedLessonProps = {
   lesson: Pick<Lesson, "title" | "idea" | "playWith">;
   prerequisites: readonly Pick<Lesson, "id" | "title">[];
+  /** The lessons that are built, as plain data (their loaders stay on the server). */
+  built: readonly Pick<Lesson, "id" | "title" | "prerequisites">[];
 };
 
 const words = platformCaptions.locked;
 const LINK = "text-accent-ink underline-offset-4 hover:underline";
 
-/** The page an unbuilt lesson shows: its everyday name and idea, and what to try first. */
-export function LockedLesson({ lesson, prerequisites }: LockedLessonProps) {
+/**
+ * The page an unbuilt lesson shows: its everyday name and idea, what to try first, and a built
+ * lesson the learner can open right now (the one the map would suggest).
+ */
+export function LockedLesson({ lesson, prerequisites, built }: LockedLessonProps) {
+  const progress = useProgress((saved) => saved);
+  const readyId = nextSuggested(
+    built.map((entry) => ({ ...entry, load: true })),
+    progress,
+  );
+  const ready = built.find(({ id }) => id === readyId);
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-4 py-12">
       <p className="self-start rounded-pill border border-hairline bg-inset px-3 py-1 text-sm text-ink-soft">
@@ -37,6 +51,14 @@ export function LockedLesson({ lesson, prerequisites }: LockedLessonProps) {
               </li>
             ))}
           </ul>
+        </nav>
+      )}
+      {ready && (
+        <nav aria-label={words.ready} className="flex flex-col gap-2">
+          <p className="text-sm text-ink-soft">{words.ready}</p>
+          <Link href={`/learn/${ready.id}`} className={`self-start ${LINK}`}>
+            {ready.title}
+          </Link>
         </nav>
       )}
       <Link href="/" className={`self-start text-sm ${LINK}`}>
