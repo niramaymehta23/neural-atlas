@@ -1,5 +1,10 @@
 import type { Reading } from "./attention";
-import { AttentionReader, type AttentionPort } from "./attention-client";
+import {
+  AttentionReader,
+  FIRST_LOAD_TIMEOUT_MS,
+  READ_TIMEOUT_MS,
+  type AttentionPort,
+} from "./attention-client";
 import type { AttentionCommand, AttentionEvent } from "./protocol";
 
 function fakeWorker(answer: (sentence: string) => AttentionEvent["type"]) {
@@ -7,6 +12,7 @@ function fakeWorker(answer: (sentence: string) => AttentionEvent["type"]) {
   let starts = 0;
   const port: AttentionPort = {
     onmessage: null,
+    terminate() {},
     postMessage(command) {
       sent.push(command);
       const reading: Reading = {
@@ -54,7 +60,7 @@ describe("AttentionReader", () => {
 
   it("fails waiting readings when the worker cannot start, and starts afresh next time", async () => {
     let starts = 0;
-    const silent: AttentionPort = { onmessage: null, postMessage() {} };
+    const silent: AttentionPort = { onmessage: null, postMessage() {}, terminate: vi.fn() };
     const reader = new AttentionReader(() => {
       starts += 1;
       return silent;
@@ -62,7 +68,48 @@ describe("AttentionReader", () => {
     const waiting = reader.read("a cat");
     silent.onerror?.(new Event("error"));
     await expect(waiting).rejects.toThrow();
+    expect(silent.terminate).toHaveBeenCalledOnce();
     void reader.read("a cat").catch(() => {});
     expect(starts).toBe(2);
+  });
+
+  describe("timeouts", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it("gives up on a first load that never finishes and ends that worker", async () => {
+      const ports: AttentionPort[] = [];
+      const reader = new AttentionReader(() => {
+        const port: AttentionPort = { onmessage: null, postMessage() {}, terminate: vi.fn() };
+        ports.push(port);
+        return port;
+      });
+      const waiting = reader.read("a cat");
+      const settled = expect(waiting).rejects.toThrow("took too long");
+      vi.advanceTimersByTime(FIRST_LOAD_TIMEOUT_MS - 1);
+      expect(ports[0]!.terminate).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      await settled;
+      expect(ports[0]!.terminate).toHaveBeenCalledOnce();
+      void reader.read("a cat").catch(() => {});
+      expect(ports).toHaveLength(2);
+    });
+
+    it("gives a loaded reader a shorter wait per reading", async () => {
+      let answer = true;
+      const worker = fakeWorker(() => "reading");
+      const reader = new AttentionReader(() => {
+        const port = worker.connect();
+        const post = port.postMessage.bind(port);
+        port.postMessage = (command) => answer && post(command);
+        return port;
+      });
+      await reader.read("a cat");
+      answer = false;
+      const waiting = reader.read("a dog");
+      const settled = expect(waiting).rejects.toThrow("took too long");
+      vi.advanceTimersByTime(READ_TIMEOUT_MS);
+      await settled;
+    });
   });
 });

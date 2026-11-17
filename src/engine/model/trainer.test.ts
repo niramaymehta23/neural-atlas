@@ -2,7 +2,7 @@
 import { createRandom } from "../random";
 import { parameterCount } from "./backends/backend";
 import { createLiveBuffer, readLive } from "./live";
-import { ModelEngine, type WorkerPort } from "./model-engine";
+import { ModelEngine, READY_TIMEOUT_MS, type WorkerPort } from "./model-engine";
 import type {
   BackendKind,
   Command,
@@ -139,6 +139,28 @@ describe("trainer", () => {
     expect(events).toEqual([{ type: "error", message: "The model is not set up yet." }]);
   });
 
+  it("posts throttled live copies without shared memory, ending on the newest epoch", async () => {
+    const events: Event[] = [];
+    const trainer = createTrainer((event) => events.push(event));
+    const data = spiral(120, 1);
+    await trainer.handle({
+      type: "init",
+      backend: "autodiff",
+      model: MODEL,
+      data,
+      train: TRAIN,
+      live: null,
+    });
+    const started = performance.now();
+    await trainer.handle({ type: "step", epochs: 40 });
+    const elapsed = performance.now() - started;
+    const live = () => events.flatMap((event) => (event.type === "live" ? [event] : []));
+    await vi.waitFor(() => expect(live().at(-1)?.epoch).toBe(40));
+    expect(live().length).toBeLessThanOrEqual(Math.ceil(elapsed / 16) + 2);
+    const last = events.flatMap((event) => (event.type === "snapshot" ? [event.snapshot] : []));
+    expect(live().at(-1)!.params).toEqual(last.at(-1)!.params);
+  });
+
   it("trains the same network with TensorFlow.js (CPU here)", async () => {
     const model: ModelSpec = {
       sizes: [2, 8, 3],
@@ -196,6 +218,105 @@ describe("ModelEngine", () => {
     expect(snapshots.map(({ epoch }) => epoch)).toEqual([5, 10]);
     expect(engine.readLive()?.params).toEqual(snapshots[1]!.params);
     engine.dispose();
+  });
+
+  it("reads live frames without SharedArrayBuffer (no cross-origin isolation)", async () => {
+    vi.stubGlobal("SharedArrayBuffer", undefined);
+    try {
+      const snapshots: Snapshot[] = [];
+      const engine = new ModelEngine(
+        {
+          backend: "autodiff",
+          model: MODEL,
+          data: spiral(80, 4),
+          train: TRAIN,
+          onSnapshot: (s) => snapshots.push(s),
+        },
+        inProcess,
+      );
+      await engine.ready;
+      expect(engine.readLive()).toBeNull();
+      engine.step(10);
+      await vi.waitFor(() => expect(engine.readLive()?.epoch).toBe(10));
+      expect(engine.readLive()?.params).toEqual(snapshots.at(-1)!.params);
+      engine.dispose();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  /** A worker whose script never loads: it never answers. */
+  function silentPort(): WorkerPort {
+    return { onmessage: null, postMessage: () => {}, terminate: vi.fn() };
+  }
+
+  it("fails ready and pending predictions when the worker cannot start", async () => {
+    const errors: string[] = [];
+    const port = silentPort();
+    const engine = new ModelEngine(
+      {
+        backend: "autodiff",
+        model: MODEL,
+        data: spiral(20, 1),
+        train: TRAIN,
+        onError: (m) => errors.push(m),
+      },
+      () => port,
+    );
+    const waiting = engine.predict(new Float32Array([0, 0]));
+    port.onerror?.();
+    await expect(engine.ready).rejects.toThrow("could not start");
+    await expect(waiting).rejects.toThrow("could not start");
+    expect(errors).toHaveLength(1);
+    port.onmessageerror?.();
+    expect(errors).toHaveLength(2);
+    engine.dispose();
+  });
+
+  it("reports a worker that cannot be created through ready and onError", async () => {
+    const errors: string[] = [];
+    const engine = new ModelEngine(
+      {
+        backend: "autodiff",
+        model: MODEL,
+        data: spiral(20, 1),
+        train: TRAIN,
+        onError: (m) => errors.push(m),
+      },
+      () => {
+        throw new Error("no workers here");
+      },
+    );
+    await expect(engine.ready).rejects.toThrow("no workers here");
+    expect(errors).toEqual(["no workers here"]);
+    engine.dispose();
+  });
+
+  it("gives up on a worker that never says it is ready", async () => {
+    vi.useFakeTimers();
+    try {
+      const errors: string[] = [];
+      const engine = new ModelEngine(
+        {
+          backend: "autodiff",
+          model: MODEL,
+          data: spiral(20, 1),
+          train: TRAIN,
+          onError: (m) => errors.push(m),
+        },
+        silentPort,
+      );
+      const waiting = engine.predict(new Float32Array([0, 0]));
+      vi.advanceTimersByTime(READY_TIMEOUT_MS - 1);
+      expect(errors).toEqual([]);
+      vi.advanceTimersByTime(1);
+      await expect(engine.ready).rejects.toThrow("did not start");
+      await expect(waiting).rejects.toThrow("did not start");
+      expect(errors).toHaveLength(1);
+      engine.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("settles predictions when the worker reports an error or closes", async () => {

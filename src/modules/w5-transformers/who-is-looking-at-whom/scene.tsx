@@ -21,11 +21,15 @@ type Props = ModuleViewProps<LookingState, LookingFrame>;
 const SETTLE_MS = 250;
 const MAX_LETTERS = 90;
 
-type Loaded = { sentence: string; reading: Reading } | { sentence: string; failed: true };
+type Loaded = { sentence: string; reading: Reading };
 
-/** The sentence's reading, asked for once typing settles; the model loads on first use. */
+/**
+ * The sentence's reading, asked for once typing settles; the model loads on first use. A reader
+ * that fails or times out is handed to the lesson's error boundary (thrown from the scene).
+ */
 function useReading(sentence: string) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [failure, setFailure] = useState<Error | null>(null);
   useEffect(() => {
     let current = true;
     const timer = setTimeout(() => {
@@ -33,7 +37,8 @@ function useReading(sentence: string) {
         .read(sentence)
         .then(
           (reading) => current && setLoaded({ sentence, reading }),
-          () => current && setLoaded({ sentence, failed: true }),
+          (error: unknown) =>
+            current && setFailure(error instanceof Error ? error : new Error(String(error))),
         );
     }, SETTLE_MS);
     return () => {
@@ -41,13 +46,13 @@ function useReading(sentence: string) {
       clearTimeout(timer);
     };
   }, [sentence]);
-  return loaded;
+  return { loaded, failure };
 }
 
 /** Type a sentence, then watch who looks at whom; drag words to re-route the threads. */
 export function LookingScene({ state, update, timeline, side }: Props) {
-  const loaded = useReading(state.sentence);
-  const reading = loaded && "reading" in loaded ? loaded.reading : null;
+  const { loaded, failure } = useReading(state.sentence);
+  const reading = loaded?.reading ?? null;
   const threads = useMemo(() => (reading ? threadsFor(reading, state) : null), [reading, state]);
 
   // Every reading the learner sees is recorded, so missions and guesses can check it.
@@ -58,6 +63,7 @@ export function LookingScene({ state, update, timeline, side }: Props) {
     timeline.record(frameFor(reading, { ...state, sentence: loaded.sentence }, readings.current));
   }, [reading, loaded, state, timeline]);
 
+  if (failure) throw failure;
   const editable = side === "main";
   return (
     <div className="flex grow flex-col gap-4" data-testid="looking" data-ready={String(!!threads)}>
@@ -93,7 +99,7 @@ export function LookingScene({ state, update, timeline, side }: Props) {
         </>
       ) : (
         <p role="status" className="py-16 text-center text-ink-soft">
-          {loaded && "failed" in loaded ? words.failed : words.waking}
+          {words.waking}
         </p>
       )}
     </div>
