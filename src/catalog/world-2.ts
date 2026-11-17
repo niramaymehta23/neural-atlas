@@ -11,6 +11,8 @@ export const world2: WorldEntry = {
       idea: "You're probably like the people near you",
       playWith: "Tap a dot; ripples reach the neighbours who vote",
       prerequisites: ["splitting-into-groups"],
+      load: () =>
+        import("@/modules/w2-classic-ml/ask-the-neighbours").then(({ definition }) => definition),
     },
     {
       id: "twenty-questions",
@@ -19,6 +21,8 @@ export const world2: WorldEntry = {
       idea: "Ask yes/no questions until you know",
       playWith: "Each question slices the map smaller",
       prerequisites: ["splitting-into-groups"],
+      load: () =>
+        import("@/modules/w2-classic-ml/twenty-questions").then(({ definition }) => definition),
     },
     {
       id: "wisdom-of-the-crowd",
@@ -27,6 +31,8 @@ export const world2: WorldEntry = {
       idea: "Many small guessers beat one clever one",
       playWith: "A forest of little trees votes",
       prerequisites: ["twenty-questions", "stubborn-vs-jumpy"],
+      load: () =>
+        import("@/modules/w2-classic-ml/wisdom-of-the-crowd").then(({ definition }) => definition),
     },
     {
       id: "the-mistake-relay",
