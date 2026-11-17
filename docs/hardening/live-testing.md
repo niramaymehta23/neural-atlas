@@ -16,8 +16,8 @@ Tested on the static build of main 5a37387 at 1024×768, 375×812 (phone) and wi
 | LIVE-10 | Timeline `aria-valuetext` "Moment 49 of 49" with `aria-valuenow` 70 | below |
 | LIVE-11 | The guess card sits below the fold under the start button | below |
 | LIVE-12 | Walkers indistinct and stacked; valley framing | DH-08 (fixed in 0dc22eb) |
-| LIVE-13 | Attention sentence overflows at 1024px | A11Y-19, ATT-11 |
-| LIVE-14 | "zero tries so far." lowercase | QL-18 |
+| LIVE-13 | Attention sentence overflows at 1024px | A11Y-19, ATT-11 (fixed in 7956125) |
+| LIVE-14 | "zero tries so far." lowercase | QL-18 (fixed in bdc271d) |
 | LIVE-15 | "Blue / Green" paint toggle unlabeled; odd mission wording | A11Y-08, MLP-10 (MLP-10 fixed in b3dc27d) |
 | LIVE-16 | Puzzle: no date, no solved state, no way back | PLT-23, NAV-02 |
 | LIVE-17 | Walker legend items are buttons that do nothing | A11Y-20 |

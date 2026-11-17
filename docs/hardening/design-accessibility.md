@@ -117,6 +117,7 @@ Contrast ratios were computed from the token values (day: paper #FAF9F5, card #F
 - Fix: size slots from measured chip widths and fit the default sentence without scrolling at ≥768px; give arcs headroom.
 - Test: a 12-word sentence with long words: no two `[data-word]` boxes intersect, also with text-spacing overrides; default sentence has no horizontal scroll at 1024px.
 - Not fixed in H2: left to H3 with ATT-11.
+- Fixed in 7956125.
 
 ## A11Y-20 · Medium · HoverNote is unreachable on touch; walker legend buttons do nothing
 - Evidence: `src/ui/HoverNote.tsx:16-27`, `rolling-downhill/scene.tsx:15,81-96`. Walkers are ink/sage/grey (sage vs grey ΔE 4.8 for colour-blind learners).

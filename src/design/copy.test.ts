@@ -1,4 +1,4 @@
-import { count, outOf } from "./copy";
+import { count, outOf, sentenceStart } from "./copy";
 
 describe("outOf", () => {
   it("words a share as a count out of a total", () => {
@@ -24,5 +24,14 @@ describe("count", () => {
     expect(count(12_400)).toBe("about 12 thousand");
     expect(count(3_000_000)).toBe("3 million");
     expect(count(-2)).toBe("minus two");
+  });
+});
+
+describe("sentenceStart (QL-18)", () => {
+  it("capitalises a counted number that opens a sentence", () => {
+    expect(`${sentenceStart(count(0))} tries so far.`).toBe("Zero tries so far.");
+    expect(sentenceStart(count(12_400))).toBe("About 12 thousand");
+    expect(sentenceStart("42")).toBe("42");
+    expect(sentenceStart("")).toBe("");
   });
 });

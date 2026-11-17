@@ -9,6 +9,7 @@ export function ScoringDrawer() {
       <h3 className="font-serif text-lg">{drawer.mechanics}</h3>
       <p>{drawer.scores}</p>
       <p>{drawer.dials}</p>
+      <p>{drawer.treats}</p>
       <h3 className="font-serif text-lg">{drawer.maths}</h3>
       <p>{drawer.formula}</p>
     </div>

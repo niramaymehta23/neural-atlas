@@ -388,6 +388,39 @@ live-testing, ENG-06/07/12).
   `e2e/primitives.spec.ts`, plus the home tests in `e2e/home.spec.ts`. Dev dependencies added: `@axe-core/playwright`,
   `fake-indexeddb`.
 
+## Lessons hand-over (H3b: attention and Q-learning)
+
+What later lessons copy. Items and their tests are in `docs/hardening/lessons.md` (ATT-*, QL-*), ENG-13, A11Y-19 and
+LIVE-13/14.
+
+- **Attention reader** (`engine/pretrained/`): `attention-session.ts` loads the model once and retries only a failed
+  load (`ReaderFailure` says whether loading or reading failed); `createProgress` turns the runtime fetch and the model's
+  `progress_callback` into one rising fraction, reported on every arrival (a file sent without its size still
+  counts as arriving, so it is not taken for a stall); a fully arrived model gets a longer setup wait. `AttentionReader` keeps an LRU memory capped by bytes, times out a stalled
+  load (reset by progress) and a slow read, and `retain()` returns a release: the worker ends after 60 s with no user.
+  Words, not tokenizer pieces, are what the learner sees: `wordThreads`/`blendThreads` fold pieces into words, and
+  `MOST_WORDS`/`MOST_LETTERS` bound a sentence. Tests run the real model in Node (`testing/node-model.ts`, with
+  `// @vitest-environment node`); `scripts/record-attention-fixture.ts` re-records `testing/example-reading.json`.
+- **Answers that do not move with the dials**: a guess's answer is computed from a fixed blend (all depths, all
+  readers), never from the dials the learner is turning.
+- **Layouts that fit**: `who-is-looking-at-whom/layout.ts` lays words in a row when their measured widths fit and in a
+  column otherwise; overlap is checked in e2e with `expect.poll` because chips spring into place.
+- **Touch that scrolls**: dragging starts only after a long press (threads) or a 300 ms hold (`Board`'s
+  `PAINT_HOLD_MS`); a quick tap still acts, and a swipe scrolls the page. A non-passive `touchmove` listener blocks
+  scrolling only once a hold has armed. e2e drives real touches through CDP (`Input.dispatchTouchEvent`).
+- **Q-learning runs that replay exactly**: the runner is seeded, steps one move at a time (`advance(1)`), and frames come
+  from the runner's own world and settings (`tryFrame`), so a run does not depend on how moves were batched. The lesson
+  keeps an edit log (`model.ts`: `withEdit`, `replay`) of every board and dial change at the move it happened; a link
+  replays it to the saved move. Live saves are throttled to `SYNC_MS` and flushed on pause.
+- **Scrubbed views**: any edit to what is "now" calls `timeline.goLive()` first.
+- **Shared visuals (additive props)**: `Chart` takes a fixed `range` and a faint `baseline`; `Board` takes `skid` and draws
+  the learner as an ink puppy (`data-piece="puppy"`). Encodings: walls are half ink (calm at night) with level "brick"
+  marks, treats are sand so they never look like the value tint. `design/copy.ts` gained `sentenceStart` for counts
+  that open a sentence.
+- **Checks**: `e2e/attention.spec.ts` and `e2e/scoring.spec.ts`; unit tests beside each lesson
+  (`looking.test.ts`, `threads.test.tsx`, `scene.test.tsx`, `scoring.test.tsx`, `hardening.test.tsx`) and engine tests in
+  `engine/pretrained/*.test.ts` and `engine/rl/gridworld.test.ts`.
+
 ## Lessons hand-over (H3a: Rolling downhill, Stacking cells, the training engine)
 
 Items and their tests are in `docs/hardening/lessons.md` (DH-01..08, MLP-01..10) and `engines-ci-hosting.md`
