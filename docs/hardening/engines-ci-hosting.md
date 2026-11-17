@@ -73,6 +73,7 @@
 - Fix: accumulate loss on the GPU and read once per epoch; write live params at most every ~16 ms; on device loss re-init on WebGL; recreate Adam on LR change.
 - Proof: epochs/second before and after; `configure` changes the Adam step.
 - Fixed in fbfff76.
+- Follow-up, fixed in 698aade: under heavy load the TF.js e2e stayed at epoch 0. Cause: WebGL checks each new shader program synchronously, so the worker froze while a swamped graphics process compiled (over 30 s with 4–8 browsers), and each epoch then waited on 7 device reads in a row (~0.8 s each). Fix: the model's programs are compiled ahead without blocking (compile-only mode, parallel compile, shape uniforms) plus one real read; a device not ready within 5 s is passed over; parameters come back in one read; three slow reads in a row (over 1 s each) move training to the next device, as a lost device does. Proof: the e2e passed 8/8 and 12/12 run in parallel (0/8 before); unit tests for passing over a device, the deadline and the slow-read rule.
 
 ## ENG-12 · Medium · 3D has no WebGL fallback; replaced geometry leaks
 - Evidence: `src/scene3d/SoftStage.tsx:22` (R3F throws without WebGL), `LossLandscape.tsx:57-86` (geometry never disposed).

@@ -448,6 +448,12 @@ Items and their tests are in `docs/hardening/lessons.md` (DH-01..08, MLP-01..10)
   (REPO-18). The epoch loss is summed on the device and read once; parameters are read at most every 16 ms. On WebGPU
   device loss it rebuilds on WebGL (then CPU) from the last parameters. `configure` changes Adam's step by recreating
   it with its averages (TF.js optimisers answer `instanceof` by duck typing, so branch on `kind`).
+  WebGL shader programs are compiled ahead without blocking (`compileAhead`), because WebGL's synchronous
+  compile check froze the worker for over 30 s on a busy machine; a device not ready in `GPU_READY_MS` (5 s), or
+  one whose reads are slow `SLOW_READS` times in a row, is left for the next device (the CPU is quick for these
+  models). Keep device reads few: parameters come back in one read.
+- **After merging H3b**: QL-14's PaintCanvas half was already done here (`touch-pan-y`, a 250 ms hold before a
+  finger paints, then a non-passive `touchmove` that blocks scrolling only while painting; H3b's Board waits 300 ms).
 - **Platform additions (minimal)**: `Mission.replay` may give `moment(frame)` (the epoch to centre the replay on) and
   `framesPerSecond` (a slower replay); `Prediction.fresh` makes a guess placed while a run is on screen wait for the
   next run before it can be revealed. `LossLandscape` gained `ghosts` (see-through markers), `rim` (a dark outline on
