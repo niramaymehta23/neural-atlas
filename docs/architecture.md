@@ -313,8 +313,8 @@ fetched cross-origin at runtime. Size limits, caching and the deploy are in "Hos
   model folder against the SHA-256 lines in its README; `scripts/export-attention-model.py` with
   `scripts/requirements-export.txt` (Python 3.12) and a pinned Hugging Face revision rebuilds the files byte for
   byte. Licences: `attention-minilm-v1/LICENSE` and `NOTICE` (Apache-2.0), `onnxruntime-web.LICENSE.txt` and
-  `onnxruntime-web.ThirdPartyNotices.txt` (MIT, the npm package ships none). The repository's own licence is
-  the owner's choice and still to come.
+  `onnxruntime-web.ThirdPartyNotices.txt` (MIT, the npm package ships none). The repository's own code is MIT
+  (`LICENSE`).
 - **Workers**: three kinds, not one. The training `ModelEngine` worker (one per engine, so a compare split
   runs two), the attention reader's worker (shared, lazy) and ONNX runtime's own threads if ever enabled.
 - **CI jobs** (`.github/workflows/ci.yml`): `checks` (format, lint, types, unit tests, model checksums),

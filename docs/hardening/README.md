@@ -37,4 +37,4 @@ H1 and H2 can run at the same time; they share no files except `docs/architectur
 
 1. **Host** — Cloudflare Pages or Netlify (both honour `_headers`; Vercel needs extra config; GitHub Pages can't run the attention and training lessons). Connecting the account needs you.
 2. **Night mode default** — the spec says ivory by default. A11Y-06 makes the site follow the OS setting when the learner hasn't chosen. Say if you'd rather keep ivory as the default and only add the switch.
-3. **Licence for the repo** — REPO-19 needs a LICENSE file; which one is your call (MIT is common for open teaching sites).
+3. **Licence for the repo** — decided: MIT (`LICENSE`). Bundled third-party files keep their own licences (see `public/models/`).

@@ -114,7 +114,7 @@
 - Fix: remove `d3`, `@types/d3`; depend on `tfjs-core`, `tfjs-layers`, `tfjs-backend-webgl`, `tfjs-backend-cpu` (and webgpu).
 
 ## REPO-19 · Low · 21 MB model in plain git; no licence
-- **Status:** Fixed in fd27c88 except the repo LICENSE (owner's choice). Git LFS not used (needs the client and GitHub LFS quota); the model is guarded by checksums instead (public/models/README.md).
+- **Status:** Fixed in fd27c88; repo LICENSE (MIT, owner decision) added afterwards. Git LFS not used (needs the client and GitHub LFS quota); the model is guarded by checksums instead (public/models/README.md).
 - Evidence (verified): no LICENSE file; model README names Apache-2.0 but the licence text isn't shipped; fonts come from Google Fonts at build time.
 - Fix: track `*.onnx` with Git LFS (or fetch from a pinned release with a checksum in CI); add `public/models/attention-minilm/LICENSE` (Apache-2.0); add a repo LICENSE (owner chooses which); optionally `next/font/local` with the OFL files for offline builds.
 
