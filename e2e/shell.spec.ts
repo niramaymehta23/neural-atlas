@@ -270,8 +270,21 @@ test.describe("lesson layout (LIVE-06, LIVE-07, LIVE-08)", () => {
         await button.scrollIntoViewIfNeeded();
         // The button renames itself once pressed, so follow the element, not its name.
         const pressed = (await button.elementHandle())!;
-        const before = await page.evaluate(() => window.scrollY);
-        const top = (await pressed.boundingBox())!.y;
+        // Start from a page at rest: skipping the guess folds its card away, which takes longer
+        // on a busy machine, and the measurement must not include that.
+        const at = async () => [
+          await page.evaluate(() => window.scrollY),
+          (await pressed.boundingBox())!.y,
+        ];
+        let last = await at();
+        await expect(async () => {
+          await page.waitForTimeout(250);
+          const now = await at();
+          const still = now[0] === last[0] && now[1] === last[1];
+          last = now;
+          expect(still).toBe(true);
+        }).toPass({ timeout: 10_000 });
+        const [before, top] = last as [number, number];
         await pressed.click();
         await page.waitForTimeout(1200);
         expect(await page.evaluate(() => window.scrollY)).toBe(before);
