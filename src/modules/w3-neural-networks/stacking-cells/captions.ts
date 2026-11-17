@@ -61,7 +61,7 @@ export const words = {
       "A second layer does the same with the first layer’s answers, so its fences are made of fences. That is how curves appear.",
     maths: "The maths",
     formula:
-      "One cell: answer = bend(weight₁ × left–right + weight₂ × up–down + nudge). The last cell’s answer becomes a chance between 0 and 1 of the green flower.",
+      "One cell: answer = bend(weight₁ × left–right + weight₂ × up–down + nudge). The last cell’s answer becomes a chance between 0 and 1 of a tulip.",
   },
 };
 

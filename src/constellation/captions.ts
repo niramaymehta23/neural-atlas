@@ -1,4 +1,4 @@
-/** Every learner-facing word on the home map, here so check-captions can read them. */
+/** Every learner-facing word on the home map, kept here so they stay reviewable. */
 export const constellationCaptions = {
   heading: "Neural Atlas",
   welcome:

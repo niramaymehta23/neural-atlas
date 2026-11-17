@@ -311,7 +311,8 @@ live-testing, ENG-06/07/12).
   (pass `vertical={false}` to keep a wrapping row); HoverNote opens on tap; Dial takes arc taps; SoftStage takes a
   `fallback` for no WebGL (home: the lesson list; the valley: `ValleyMap`).
 - **Words**: `src/captions-scan.test.ts` fails on JSX text, spoken attributes or page metadata written outside captions
-  files (styleguide excluded).
+  files (styleguide excluded). Every learner-facing string is reviewed by hand against the "smart 12-year-old" test:
+  no jargon, no formulas or raw numbers on the main screen, the real term only as the end tag.
 - **Checks**: `e2e/shell.spec.ts` (navigation, failures, links, guess flow, layout, theme, palette, touch),
   `e2e/a11y.spec.ts` (axe: 9 pages × day/night × 1280/320 with reduced motion), `e2e/engine-failures.spec.ts`,
   `e2e/primitives.spec.ts`, plus the home tests in `e2e/home.spec.ts`. Dev dependencies added: `@axe-core/playwright`,

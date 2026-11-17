@@ -134,9 +134,9 @@ Contrast ratios were computed from the token values (day: paper #FAF9F5, card #F
 - Fix: ring on the knob; template in `uiCaptions.compare.valuetext`.
 - Fixed in 91e51f5.
 
-## A11Y-23 · Low · Learner-facing strings escape check-captions
+## A11Y-23 · Low · Learner-facing strings live outside captions files
 - Evidence: `src/design/copy.ts:6-42`, `CompareSplit.tsx:73`, `src/app/layout.tsx:9-10`, `src/app/puzzle/page.tsx:4`, `src/app/learn/[moduleId]/page.tsx:16`, `CommandPalette.tsx:27-28`.
-- Fix: move them into captions files (or add `src/design/copy.ts` to SOURCES); a lint/vitest scan bans JSX text and literal `aria-*`/`title`/metadata strings outside captions files.
+- Fix: move them into captions files, where every learner-facing string is reviewed by hand against the "smart 12-year-old" test (no jargon, no formulas or raw numbers on the main screen, the real term only as the end tag); a lint/vitest scan bans JSX text and literal `aria-*`/`title`/metadata strings outside captions files.
 - Fixed in b958e20.
 
 ## A11Y-24 · Low · Clay used on untouchable things

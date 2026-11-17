@@ -39,8 +39,8 @@ export type ModuleViewProps<S extends ModuleState, F extends TimelineFrame = Tim
 };
 
 /**
- * The words the shell shows. They live in the module's captions.ts, which check-captions reads
- * whole: put every other learner-facing word there too (dial names, `describe` words, buttons,
+ * The words the shell shows. They live in the module's captions.ts, where every word is reviewed
+ * by hand: put every other learner-facing word there too (dial names, `describe` words, buttons,
  * scene labels, drawer text) as further exports, and import them in the components.
  */
 export type ModuleCaptions = {
@@ -121,7 +121,7 @@ export function defineModule<S extends ModuleState, F extends TimelineFrame = Ti
 
 export type WorldNumber = 1 | 2 | 3 | 4 | 5 | 6;
 
-/** One lesson's metadata. Field names match the keys check-captions skips or reads. */
+/** One lesson's metadata. Its words are learner-facing, except `realTerm`, shown only as the end tag. */
 export type LessonEntry = {
   /** Everyday-name slug, used in /learn/[id]. */
   id: string;

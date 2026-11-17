@@ -4,7 +4,7 @@ import { join, relative } from "node:path";
 import ts from "typescript";
 
 /**
- * Learner-facing words live in captions files, where check-captions can read them (A11Y-23).
+ * Learner-facing words live in captions files, where they stay reviewable (A11Y-23).
  * This scan fails on words written straight into components: JSX text, and literal strings in
  * spoken attributes (aria-label, title, placeholder, alt) or page metadata.
  */

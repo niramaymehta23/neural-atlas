@@ -1,4 +1,4 @@
-/** Every learner-facing word in the ui primitives, here so check-captions can read them. */
+/** Every learner-facing word in the ui primitives, kept here so they stay reviewable. */
 export const uiCaptions = {
   palette: {
     title: "Find an idea",
