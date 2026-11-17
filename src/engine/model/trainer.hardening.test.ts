@@ -1,7 +1,15 @@
 // @vitest-environment node
 import { createRandom } from "../random";
 import { parameterCount } from "./backends/backend";
-import { createTfjsBackend, type WatchDevice } from "./backends/tfjs";
+import {
+  createTfjsBackend,
+  pickDevice,
+  slowDeviceWatch,
+  SLOW_READ_MS,
+  SLOW_READS,
+  within,
+  type WatchDevice,
+} from "./backends/tfjs";
 import { createLiveBuffer, readLive } from "./live";
 import { ModelEngine, type WorkerPort } from "./model-engine";
 import type { Command, Event, ModelSpec, Samples, Snapshot, TrainSettings } from "./protocol";
@@ -249,6 +257,37 @@ describe("TensorFlow.js backend (ENG-11)", () => {
     expect(backend.name).toBe("tfjs-cpu");
     backend.dispose();
   }, 20_000);
+
+  it("passes over a device that cannot get its programs ready in time, so the worker never freezes", async () => {
+    // A busy graphics process: the first device's programs never finish compiling.
+    let asked = 0;
+    const prepare = () => {
+      asked += 1;
+      return asked === 1 ? new Promise<boolean>(() => {}) : Promise.resolve(true);
+    };
+    const started = performance.now();
+    expect(await pickDevice(["cpu", "cpu"], prepare, 50)).toBe("cpu");
+    expect(asked).toBe(2);
+    expect(performance.now() - started).toBeLessThan(2_000);
+    await expect(pickDevice(["cpu"], () => Promise.resolve(false), 50)).rejects.toThrow();
+  });
+
+  it("leaves a device that keeps answering slowly, but not one that was slow once", () => {
+    const watch = slowDeviceWatch();
+    const slowRead = SLOW_READ_MS + 1;
+    for (let read = 1; read < SLOW_READS; read += 1) expect(watch.took(slowRead)).toBe(false);
+    expect(watch.took(5)).toBe(false); // a quick read starts the count again
+    for (let read = 1; read < SLOW_READS; read += 1) expect(watch.took(slowRead)).toBe(false);
+    expect(watch.took(slowRead)).toBe(true);
+    watch.reset();
+    expect(watch.took(slowRead)).toBe(false);
+  });
+
+  it("gives up waiting on a promise at its deadline, or when it fails", async () => {
+    expect(await within(new Promise<number>(() => {}), 10, -1)).toBe(-1);
+    expect(await within(Promise.resolve(4), 1_000, -1)).toBe(4);
+    expect(await within(Promise.reject(new Error("lost")), 1_000, -1)).toBe(-1);
+  });
 });
 
 describe("ModelEngine after dispose (MLP-06)", () => {

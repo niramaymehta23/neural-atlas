@@ -5,6 +5,14 @@
  *
  * The graphics card is asked for numbers as rarely as possible: an epoch's mistakes are added up
  * on the card and read once, and the trainer reads parameters at most once a frame (ENG-11).
+ *
+ * WebGL checks each new shader program synchronously, which blocks the whole worker until the
+ * graphics process has compiled it: on a busy machine that took longer than 30 s, with the
+ * worker frozen meanwhile. So the model's programs are compiled ahead, without waiting on each
+ * (compile-only mode and the parallel-compile extension), and a device that cannot get them
+ * ready within GPU_READY_MS is passed over for the next one (the CPU is quick for these models).
+ * A device that turns slow later (SLOW_READS reads in a row each over SLOW_READ_MS, as when
+ * other programs swamp the graphics card) is left the same way a lost device is.
  */
 import "@tensorflow/tfjs-backend-cpu";
 import "@tensorflow/tfjs-backend-webgl";
@@ -19,6 +27,47 @@ import type { Backend } from "./backend";
 const PREFERENCE = ["webgpu", "webgl", "cpu"] as const;
 export type Device = (typeof PREFERENCE)[number];
 
+/** How long a device may take to get the model's shader programs ready before it is passed over. */
+export const GPU_READY_MS = 5_000;
+/** A read from the device slower than this counts as slow (a free device answers in ~20 ms). */
+export const SLOW_READ_MS = 1_000;
+/** This many slow reads in a row and training moves to the next device. */
+export const SLOW_READS = 3;
+
+/** Takes each read's time in ms; true once SLOW_READS reads in a row were slow. */
+export function slowDeviceWatch() {
+  let inARow = 0;
+  return {
+    took(ms: number) {
+      inARow = ms > SLOW_READ_MS ? inARow + 1 : 0;
+      return inARow >= SLOW_READS;
+    },
+    reset() {
+      inARow = 0;
+    },
+  };
+}
+
+/** Gets `device` ready to run the model; false when it cannot be ready in time. */
+export type PrepareDevice = (device: Device) => Promise<boolean>;
+
+/** Resolves to the promise's value, or to `fallback` once `ms` have passed. */
+export function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise<T>((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(fallback);
+      },
+    );
+  });
+}
+
 /** Calls `onLost` once if the graphics device under `device` goes away (a WebGPU device can). */
 export type WatchDevice = (device: Device, onLost: () => void) => void;
 
@@ -28,7 +77,14 @@ const watchWebGpu: WatchDevice = (device, onLost) => {
   void backend.device?.lost?.then(onLost);
 };
 
-async function pickDevice(devices: readonly Device[]): Promise<Device> {
+/**
+ * The first device in `devices` that starts and gets ready in time. Exported for its tests.
+ */
+export async function pickDevice(
+  devices: readonly Device[],
+  prepare: PrepareDevice,
+  readyMs = GPU_READY_MS,
+): Promise<Device> {
   if (devices.includes("webgpu")) {
     try {
       await import("@tensorflow/tfjs-backend-webgpu");
@@ -40,7 +96,7 @@ async function pickDevice(devices: readonly Device[]): Promise<Device> {
     try {
       if (await tf.setBackend(name)) {
         await tf.ready();
-        return name;
+        if (await within(prepare(name), readyMs, false)) return name;
       }
     } catch {
       // This device is missing here; try the next one.
@@ -53,6 +109,19 @@ function optimiserFor({ kind, learningRate, momentum = 0.9, beta1, beta2 }: Opti
   if (kind === "sgd") return tf.train.sgd(learningRate);
   if (kind === "momentum") return tf.train.momentum(learningRate, momentum);
   return tf.train.adam(learningRate, beta1, beta2);
+}
+
+/** The model's mistake for a batch, as one number on the device. */
+function lossFor(loss: ModelSpec["loss"], outputWidth: number) {
+  return (scores: tf.Tensor, targets: tf.Tensor) =>
+    loss === "softmaxCrossEntropy"
+      ? tf.losses.softmaxCrossEntropy(
+          tf.oneHot(tf.cast(targets, "int32") as tf.Tensor1D, outputWidth),
+          scores,
+        )
+      : loss === "binaryCrossEntropy"
+        ? tf.losses.sigmoidCrossEntropy(targets, scores)
+        : tf.losses.meanSquaredError(targets, scores);
 }
 
 type Activation = ReturnType<typeof hiddenActivation>;
@@ -81,13 +150,72 @@ function buildModel({ sizes, activation }: ModelSpec, seed: number) {
   return model;
 }
 
+/** What the WebGL backend offers for compiling programs without waiting on each one. */
+type ParallelCompile = {
+  checkCompileCompletionAsync(): Promise<boolean[]>;
+  getUniformLocations(): void;
+};
+
+/** Row counts the programs are compiled for: one, a few, a batch, and a big field of spots. */
+const AHEAD_ROWS = [1, 7, 1000];
+
+/**
+ * Compiles every shader program the model's predictions and training steps need, on a
+ * throwaway copy, without blocking on any of them; resolves once they are all ready.
+ */
+async function compileAhead(spec: ModelSpec, train: TrainSettings): Promise<boolean> {
+  const backend = tf.backend() as unknown as Partial<ParallelCompile>;
+  if (!backend.checkCompileCompletionAsync || !backend.getUniformLocations) return true;
+  // Programs that take their shapes as inputs serve every batch and field size alike.
+  tf.env().set("WEBGL_USE_SHAPES_UNIFORMS", true);
+  const width = spec.sizes[0] ?? 1;
+  const outputs = spec.sizes.at(-1) ?? 1;
+  const lossOf = lossFor(spec.loss, outputs);
+  const model = buildModel(spec, train.seed);
+  const optimiser = optimiserFor(train.optimiser);
+  const flags = tf.env().getFlags();
+  const saved = { compileOnly: flags.ENGINE_COMPILE_ONLY, cpuForward: flags.WEBGL_CPU_FORWARD };
+  try {
+    // Nothing runs: programs are only compiled. Every op goes to the device, so all are covered.
+    tf.env().set("ENGINE_COMPILE_ONLY", true);
+    tf.env().set("WEBGL_CPU_FORWARD", false);
+    for (const rows of [...AHEAD_ROWS, train.batchSize]) {
+      tf.tidy(() => {
+        const inputs = tf.zeros([rows, width]);
+        const targets =
+          spec.loss === "softmaxCrossEntropy" ? tf.zeros([rows]) : tf.zeros([rows, outputs]);
+        model.predict(inputs);
+        optimiser.minimize(() => lossOf(model.apply(inputs) as tf.Tensor, targets) as tf.Scalar);
+        // The epoch's running total of mistakes.
+        tf.add(tf.scalar(0), tf.scalar(0));
+      });
+    }
+  } finally {
+    tf.env().set("ENGINE_COMPILE_ONLY", saved.compileOnly ?? false);
+    tf.env().set("WEBGL_CPU_FORWARD", saved.cpuForward ?? true);
+    optimiser.dispose();
+    model.dispose();
+  }
+  await backend.checkCompileCompletionAsync();
+  backend.getUniformLocations();
+  // One real answer, read back: the device must be able to reply, not only compile.
+  const probe = buildModel(spec, train.seed);
+  const answer = tf.tidy(() => probe.predict(tf.zeros([1, width])) as tf.Tensor);
+  await answer.data();
+  answer.dispose();
+  probe.dispose();
+  return true;
+}
+
 export async function createTfjsBackend(
   spec: ModelSpec,
   train: TrainSettings,
   devices: readonly Device[] = PREFERENCE,
   watch: WatchDevice = watchWebGpu,
+  prepare: PrepareDevice = (device) =>
+    device === "webgl" ? compileAhead(spec, train) : Promise.resolve(true),
 ): Promise<Backend> {
-  let device = await pickDevice(devices);
+  let device = await pickDevice(devices, prepare);
   const { sizes, loss } = spec;
   const inputWidth = sizes[0] ?? 1;
   const outputWidth = sizes.at(-1) ?? 1;
@@ -97,6 +225,15 @@ export async function createTfjsBackend(
   /** The newest parameters read or written, to carry over to another device. */
   let kept: Float64Array | null = null;
   let lost = false;
+  const slow = slowDeviceWatch();
+
+  /** Reads `tensor` from the device, noting whether the device has become too slow to keep. */
+  const read = async (tensor: tf.Tensor) => {
+    const started = performance.now();
+    const values = await tensor.data();
+    if (slow.took(performance.now() - started) && device !== "cpu") lost = true;
+    return values;
+  };
 
   const dense = () => model.layers.filter((layer) => layer.getClassName() === "Dense");
   const onLost = () => {
@@ -104,20 +241,25 @@ export async function createTfjsBackend(
   };
   watch(device, onLost);
 
+  /**
+   * Every parameter in one read from the device: each read waits for the device to catch up,
+   * which on a busy machine takes most of a second, so one read beats one per weight array.
+   */
   const readParameters = async () => {
-    const out: number[] = [];
-    for (const layer of dense()) {
-      const [kernel, bias] = layer.getWeights();
-      const [rows = 0, columns = 0] = kernel?.shape ?? [];
-      const weights = (await kernel?.data()) ?? new Float32Array();
-      const biases = (await bias?.data()) ?? new Float32Array();
-      for (let neuron = 0; neuron < columns; neuron += 1) {
-        for (let input = 0; input < rows; input += 1)
-          out.push(weights[input * columns + neuron] ?? 0);
-        out.push(biases[neuron] ?? 0);
-      }
-    }
-    kept = Float64Array.from(out);
+    const layers = dense().map((layer) => layer.getWeights());
+    const all = tf.tidy(() =>
+      tf.concat(
+        layers.flatMap(([kernel, bias]) =>
+          kernel && bias
+            ? [tf.reshape(tf.transpose(tf.concat([kernel, tf.expandDims(bias, 0)])), [-1])]
+            : [],
+        ),
+      ),
+    );
+    const values = await read(all);
+    all.dispose();
+    // Each layer arrives neuron by neuron: its weights from every input, then its bias.
+    kept = Float64Array.from(values);
     return kept.slice();
   };
 
@@ -144,25 +286,18 @@ export async function createTfjsBackend(
    */
   const recover = async () => {
     lost = false;
+    slow.reset();
     const remaining = PREFERENCE.slice(PREFERENCE.indexOf(device) + 1).filter((name) =>
       devices.includes(name),
     );
-    device = await pickDevice(remaining.length > 0 ? remaining : ["cpu"]);
+    device = await pickDevice(remaining.length > 0 ? remaining : ["cpu"], prepare);
     model = buildModel(spec, train.seed);
     optimiser = optimiserFor(settings);
     if (kept) await writeParameters(kept);
     watch(device, onLost);
   };
 
-  const lossOf = (scores: tf.Tensor, targets: tf.Tensor) =>
-    loss === "softmaxCrossEntropy"
-      ? tf.losses.softmaxCrossEntropy(
-          tf.oneHot(tf.cast(targets, "int32") as tf.Tensor1D, outputWidth),
-          scores,
-        )
-      : loss === "binaryCrossEntropy"
-        ? tf.losses.sigmoidCrossEntropy(targets, scores)
-        : tf.losses.meanSquaredError(targets, scores);
+  const lossOf = lossFor(loss, outputWidth);
 
   const gather = (source: Float32Array, width: number, batch: readonly number[]) => {
     const out = new Float32Array(batch.length * width);
@@ -200,7 +335,7 @@ export async function createTfjsBackend(
       tf.dispose([inputs, targets]);
       batches += 1;
     }
-    const sum = (await total.data())[0] ?? 0;
+    const sum = (await read(total))[0] ?? 0;
     total.dispose();
     return batches === 0 ? 0 : sum / batches;
   };
@@ -223,7 +358,7 @@ export async function createTfjsBackend(
       const out = tf.tidy(
         () => model.predict(tf.tensor2d(inputs, [count, inputWidth])) as tf.Tensor,
       ) as tf.Tensor;
-      const values = (await out.data()) as Float32Array;
+      const values = (await read(out)) as Float32Array;
       out.dispose();
       return values;
     },
