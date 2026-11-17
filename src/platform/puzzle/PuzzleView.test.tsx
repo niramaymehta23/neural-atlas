@@ -9,7 +9,7 @@ const missions = ["one", "two", "three", "four", "five", "six"].map((id) => ({
   id,
   goal: `Goal ${id}`,
 }));
-const module = { ...valleyModule, missions } as unknown as LessonModule;
+const definition = { ...valleyModule, missions } as unknown as LessonModule;
 const lesson: Lesson = {
   id: "puzzle-lesson",
   world: 1,
@@ -18,7 +18,7 @@ const lesson: Lesson = {
   idea: "idea",
   playWith: "play",
   prerequisites: [],
-  load: async () => module,
+  load: async () => definition,
 };
 
 const goalShown = () => screen.getByRole("region", { name: "Mission" }).textContent ?? "";

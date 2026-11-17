@@ -161,7 +161,8 @@ const config = [
   {
     // Next.js and tool configs require default exports.
     files: [
-      "src/app/**/{page,layout,not-found,error,loading,template,default}.tsx",
+      "src/app/**/{page,layout,not-found,error,global-error,loading,template,default}.tsx",
+      "src/app/{sitemap,robots}.ts",
       "*.config.{ts,mjs}",
     ],
     rules: { "import/no-default-export": "off" },
