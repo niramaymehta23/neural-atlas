@@ -81,6 +81,8 @@ export const world2: WorldEntry = {
       idea: "Simplify while keeping the shape",
       playWith: "Turn a 3D cloud to find the most useful shadow",
       prerequisites: ["what-the-machine-sees"],
+      load: () =>
+        import("@/modules/w2-classic-ml/the-best-shadow").then(({ definition }) => definition),
     },
     {
       id: "a-map-of-everything",
@@ -89,6 +91,8 @@ export const world2: WorldEntry = {
       idea: "Draw a map where similar things sit together",
       playWith: "A messy cloud settles into islands",
       prerequisites: ["the-best-shadow", "finding-natural-groups"],
+      load: () =>
+        import("@/modules/w2-classic-ml/a-map-of-everything").then(({ definition }) => definition),
     },
     {
       id: "is-99-percent-actually-good",
