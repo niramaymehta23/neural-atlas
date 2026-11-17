@@ -38,11 +38,13 @@
 - Evidence: `src/engine/model/live.ts:13` (`new SharedArrayBuffer`), thrown in `useEffect` (`stacking-cells/scene.tsx:56`, `TrainingLab.tsx:54`); nothing checks `crossOriginIsolated`.
 - Fix: when not isolated, `ModelEngine` uses a plain buffer and the worker posts a `live` copy at most once per ~16 ms; `readLive()` keeps the same API. Plus the error boundaries in PLT-04 and `src/app/learn/[moduleId]/error.tsx` with "this lesson could not start".
 - Proof: vitest with `SharedArrayBuffer` undefined still yields `readLive()` frames; an e2e project serving without headers trains stacking-cells.
+- Fixed in e6abe74.
 
 ## ENG-07 · High · Worker failures never reach the UI; promises can hang forever
 - Evidence: `src/engine/model/model-engine.ts:62-74` (no `onerror`/`onmessageerror`); no consumer passes `onError` (`stacking-cells/scene.tsx:56-70`, `TrainingLab.tsx:54-60`); `src/engine/pretrained/attention-client.ts:35-49` (no timeout; `onerror` doesn't terminate the old worker).
 - Fix: port error handlers that fail `ready`, settle pending calls and call `onError`; 20 s `ready` timeout; an `error` field in the lesson view with a plain caption and "Try again"; attention: 60 s first-load and 10 s per-read timeouts, terminate the old port.
 - Proof: fake port `onerror` rejects `ready` and pending `predict`; attention load timeout; e2e routes the worker script to 404 and sees the caption.
+- Fixed in e6abe74.
 
 ## ENG-08 · High · An empty garden makes the trainer spin and flood the main thread
 - Evidence: `stacking-cells/model.ts:9,49` (`plant("own")` returns `[]`), `src/engine/model/backends/autodiff.ts:50` (loss 0 instantly), `trainer.ts:80`; `batchSize <= 0` loops forever (`autodiff.ts:39`, `tfjs.ts:86`).
@@ -68,6 +70,7 @@
 - Evidence: `src/scene3d/SoftStage.tsx:22` (R3F throws without WebGL), `LossLandscape.tsx:57-86` (geometry never disposed).
 - Fix: error boundary around SoftStage with a static fallback (home uses the NAV-06 lesson list; the valley a static 2D contour); `useEffect(() => () => geometry.dispose(), [geometry])`; listen for `webglcontextlost`.
 - Proof: e2e with WebGL disabled: home lists 74 ideas and a link opens a lesson.
+- Fixed in 91e51f5, 56c41fb.
 
 ## ENG-13 · Low · The attention worker lives for the whole session
 - Evidence: `attention-client.ts:72-77`, `attention-worker.ts:52`.

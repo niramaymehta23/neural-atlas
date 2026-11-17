@@ -26,23 +26,28 @@ Tested on the static build of main 5a37387 at 1024×768, 375×812 (phone) and wi
 - Problem: below 768px the order is scene → dials → mission → guess → (gap) → timeline → drawer, so scrubbing or turning a dial hides the thing that changes.
 - Fix: on narrow screens keep the timeline directly under the scene, and make the scene sticky (top, ~45vh) while the dial card scrolls under it; remove the blank gap above the timeline.
 - Test: at 375×812 the scene and the timeline are both in view after scrolling to the dials.
+- Fixed in fd0b009, 37be776.
 
 ## LIVE-07 · Medium · Scene card stretches to the right column's height
 - Evidence: `src/platform/ModuleShell.tsx:162` grid uses default `align-items: stretch`.
 - Fix: `items-start` on the grid (or let the scene grow to fill it on purpose).
 - Test: at 1280px the scene section is no taller than its content plus padding.
+- Fixed in 040feeb.
 
 ## LIVE-08 · Medium · The page jumps down after pressing the start button
 - Seen on "Let them roll" (scrollY 0 → 290) and "Let it practise" (0 → 582). No code calls `scrollIntoView` or `focus()`; the likely cause is layout shift above the focused button (the tap hint is removed, the caption and timeline ghost appear) combined with scroll anchoring.
 - Fix: measure with a `layout-shift` PerformanceObserver; reserve space for the caption and hint so nothing above the dock changes height; if needed `overflow-anchor: none` on the shell.
 - Test: e2e presses each lesson's start button and asserts `scrollY` is unchanged and cumulative layout shift < 0.05.
+- Fixed in 040feeb, fd0b009.
 
 ## LIVE-10 · Low · Timeline value and spoken text disagree
 - Evidence: `src/ui/TimelineScrubber.tsx:87-123`.
 - Fix: derive both from one value (`shown = Math.min(position, last)`), and set `aria-valuenow` on the Thumb explicitly if Radix lags.
 - Test: re-render length 50 → 71: valuetext and valuenow agree.
+- Fixed in 91e51f5.
 
 ## LIVE-11 · Medium · The guess comes after the start button
 - Problem: in every lesson the "Make a guess" card is below the mission card, under the fold; learners press start first and the predict-then-reveal moment is lost.
 - Fix: in ModuleShell, until the learner has guessed (or skipped), show the guess card above the dock's start button with "Guess first, then press start"; the start button stays usable but the guess is offered first. Combines with PLT-09 (lock after the outcome is visible).
 - Test: on first load the guess card precedes the start button in DOM and visual order.
+- Fixed in 040feeb.
