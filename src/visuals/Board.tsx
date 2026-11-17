@@ -1,7 +1,15 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useId, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { tileMark, tileTone, valueMark, type TileKind } from "@/design/encodings";
 import { useSpring } from "@/design/motion";
 
@@ -20,8 +28,10 @@ type BoardProps = {
   columns: number;
   /** Row by row, `columns` per row. */
   tiles: readonly TileKind[];
-  /** Where the learner stands. */
+  /** Where the learner (a puppy) stands. */
   piece?: { row: number; column: number };
+  /** The learner just slid sideways: it skids for a moment. */
+  skid?: boolean;
   /** Plain description, such as "A small garden with a bone in the far corner". */
   label: string;
   /** Colours for floor squares (a value tint), by square; others keep their kind's tone. */
@@ -40,12 +50,26 @@ type BoardProps = {
 export const CELL = 48;
 const GAP = 4;
 const TILE = CELL - GAP;
+/** On a touch screen painting starts after a short hold, so a swipe scrolls the page instead. */
+export const PAINT_HOLD_MS = 300;
+/** A finger that moves this far before the hold is scrolling. */
+const SCROLL_SLOP = 8;
+
+type Stroke = {
+  pointer: number;
+  clientX: number;
+  clientY: number;
+  /** Painting: at once for a mouse, after the hold for a finger. */
+  armed: boolean;
+  timer: ReturnType<typeof setTimeout> | null;
+};
 
 /** A cosy board-game grid (RL worlds stay 2D). The learner hops between squares with a spring. */
 export function Board({
   columns,
   tiles,
   piece,
+  skid = false,
   label,
   floorTones,
   floorValues,
@@ -57,6 +81,8 @@ export function Board({
   const transition = useSpring("settle");
   const instructionsId = useId();
   const [cursor, setCursor] = useState<number | null>(null);
+  const svg = useRef<SVGSVGElement>(null);
+  const stroke = useRef<Stroke | null>(null);
   const rows = Math.ceil(tiles.length / columns);
   const centre = (index: number) => index * CELL + CELL / 2;
   const width = columns * CELL + GAP;
@@ -65,19 +91,34 @@ export function Board({
   const x = (index: number) => (index % columns) * CELL;
   const y = (index: number) => Math.floor(index / columns) * CELL;
 
-  const squareAt = (event: PointerEvent<SVGSVGElement>) => {
-    const box = event.currentTarget.getBoundingClientRect();
-    if (box.width === 0) return null;
+  const squareAt = (event: { clientX: number; clientY: number }) => {
+    const box = svg.current?.getBoundingClientRect();
+    if (!box || box.width === 0) return null;
     const column = Math.floor((((event.clientX - box.left) / box.width) * width - GAP) / CELL);
     const row = Math.floor((((event.clientY - box.top) / box.height) * height - GAP) / CELL);
     return column < 0 || column >= columns || row < 0 || row >= rows
       ? null
       : row * columns + column;
   };
-  const paint = (event: PointerEvent<SVGSVGElement>) => {
+  const paint = (event: { clientX: number; clientY: number }) => {
     const index = squareAt(event);
     if (index !== null) onPaint?.(index);
   };
+  const endStroke = () => {
+    if (stroke.current?.timer) clearTimeout(stroke.current.timer);
+    stroke.current = null;
+  };
+
+  // Once a finger has held long enough to paint, moving it paints instead of scrolling.
+  useEffect(() => {
+    const element = svg.current;
+    if (!element || !onPaint) return;
+    const hold = (event: TouchEvent) => {
+      if (stroke.current?.armed) event.preventDefault();
+    };
+    element.addEventListener("touchmove", hold, { passive: false });
+    return () => element.removeEventListener("touchmove", hold);
+  }, [onPaint]);
   const onKeyDown = (event: KeyboardEvent) => {
     const at = cursor ?? home;
     const moves: Record<string, number> = {
@@ -105,12 +146,43 @@ export function Board({
     onFocus: () => setCursor((at) => at ?? home),
     onBlur: () => setCursor(null),
     onPointerDown: (event: PointerEvent<SVGSVGElement>) => {
-      event.currentTarget.setPointerCapture(event.pointerId);
-      paint(event);
+      endStroke();
+      const target = event.currentTarget;
+      const pointer = event.pointerId;
+      const started: Stroke = {
+        pointer,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        armed: event.pointerType === "mouse",
+        timer: null,
+      };
+      stroke.current = started;
+      if (started.armed) {
+        target.setPointerCapture?.(pointer);
+        paint(event);
+        return;
+      }
+      started.timer = setTimeout(() => {
+        started.armed = true;
+        started.timer = null;
+        if (target.isConnected) target.setPointerCapture?.(pointer);
+        paint(started);
+      }, PAINT_HOLD_MS);
     },
     onPointerMove: (event: PointerEvent<SVGSVGElement>) => {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) paint(event);
+      const now = stroke.current;
+      if (!now || now.pointer !== event.pointerId) return;
+      if (now.armed) paint(event);
+      else if (Math.hypot(event.clientX - now.clientX, event.clientY - now.clientY) > SCROLL_SLOP)
+        endStroke();
     },
+    onPointerUp: () => {
+      const now = stroke.current;
+      endStroke();
+      // A quick tap that never moved paints the square it touched.
+      if (now && !now.armed) paint(now);
+    },
+    onPointerCancel: endStroke,
   };
   const cursorKind = cursor === null ? undefined : tiles[cursor];
   const spoken =
@@ -121,10 +193,11 @@ export function Board({
   return (
     <div className={className}>
       <svg
+        ref={svg}
         role="img"
         aria-label={label}
         viewBox={`${-GAP} ${-GAP} ${width} ${height}`}
-        className={`block h-auto w-full ${onPaint ? "cursor-crosshair touch-none focus-visible:outline-none" : ""}`}
+        className={`block h-auto w-full ${onPaint ? "cursor-crosshair touch-manipulation select-none focus-visible:outline-none" : ""}`}
         {...painting}
       >
         {tiles.map((kind, index) => (
@@ -166,14 +239,20 @@ export function Board({
             </g>
           ))}
         {piece && (
-          <motion.circle
-            r={CELL / 4}
-            fill="var(--color-accent)"
+          <motion.g
+            data-piece="puppy"
+            data-skid={skid || undefined}
             pointerEvents="none"
             initial={false}
-            animate={{ cx: centre(piece.column) - GAP / 2, cy: centre(piece.row) - GAP / 2 }}
+            animate={{
+              x: centre(piece.column) - GAP / 2,
+              y: centre(piece.row) - GAP / 2,
+              rotate: skid ? 14 : 0,
+            }}
             transition={transition}
-          />
+          >
+            <Puppy skid={skid} />
+          </motion.g>
         )}
         {cursor !== null && (
           <g data-cursor pointerEvents="none" fill="none">
@@ -209,5 +288,41 @@ export function Board({
         </>
       )}
     </div>
+  );
+}
+
+/** The learner: a small puppy's head in ink, so it reads without colour (A11Y-24). */
+function Puppy({ skid }: { skid: boolean }) {
+  return (
+    <>
+      {skid && (
+        <g data-skid-marks stroke="var(--color-ink-soft)" strokeWidth={1.5} strokeLinecap="round">
+          <line x1={-17} y1={-5} x2={-12} y2={-5} />
+          <line x1={-19} y1={0} x2={-13} y2={0} />
+          <line x1={-17} y1={5} x2={-12} y2={5} />
+        </g>
+      )}
+      <ellipse
+        cx={-8}
+        cy={-3}
+        rx={3.5}
+        ry={6.5}
+        transform="rotate(20 -8 -3)"
+        fill="var(--color-ink-soft)"
+      />
+      <ellipse
+        cx={8}
+        cy={-3}
+        rx={3.5}
+        ry={6.5}
+        transform="rotate(-20 8 -3)"
+        fill="var(--color-ink-soft)"
+      />
+      <circle r={8.5} cy={1} fill="var(--color-ink)" />
+      <ellipse cx={0} cy={5} rx={4} ry={3} fill="var(--color-card)" />
+      <circle cx={0} cy={3.6} r={1.4} fill="var(--color-ink)" />
+      <circle cx={-3.2} cy={-1} r={1.3} fill="var(--color-card)" />
+      <circle cx={3.2} cy={-1} r={1.3} fill="var(--color-card)" />
+    </>
   );
 }

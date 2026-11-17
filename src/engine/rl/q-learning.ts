@@ -65,6 +65,13 @@ export type QRunner = {
   /** Where the learner stands now. */
   readonly position: number;
   readonly episodes: number;
+  /** Moves taken so far, every try counted: a shared link replays the run to this move. */
+  readonly moves: number;
+  /** Whether the latest move slid sideways. */
+  readonly slipped: boolean;
+  /** The board and settings in force now. */
+  readonly world: World;
+  readonly settings: LearnerSettings;
   /** A repainted board: the scores are kept, a learner standing on a new wall starts over. */
   setWorld(world: World): void;
   configure(settings: LearnerSettings): void;
@@ -80,6 +87,8 @@ export function createQRunner(world: World, settings: LearnerSettings, seed: num
   let reward = 0;
   let jumps = 0;
   let episodes = 0;
+  let moves = 0;
+  let slipped = false;
 
   function choose(cell: number): number {
     if (random.next() < options.curiosity) return random.int(MOVE_COUNT);
@@ -102,11 +111,13 @@ export function createQRunner(world: World, settings: LearnerSettings, seed: num
   }
 
   return {
-    advance(moves) {
+    advance(count) {
       const finished: Episode[] = [];
-      for (let taken = 0; taken < moves; taken += 1) {
+      for (let taken = 0; taken < count; taken += 1) {
         const move = choose(position);
         const outcome = step(current, position, move, random);
+        moves += 1;
+        slipped = outcome.slipped;
         const target = outcome.done
           ? outcome.reward
           : outcome.reward + options.lookAhead * squareValue(q, outcome.next);
@@ -128,11 +139,26 @@ export function createQRunner(world: World, settings: LearnerSettings, seed: num
     get episodes() {
       return episodes;
     },
+    get moves() {
+      return moves;
+    },
+    get slipped() {
+      return slipped;
+    },
+    get world() {
+      return current;
+    },
+    get settings() {
+      return options;
+    },
     setWorld(world) {
       current = world;
+      // Repainted under the learner: this try starts over, its score and jumps with it.
       if (world.tiles[position] === "wall" || isEnd(world.tiles[position])) {
         position = world.start;
         path = [position];
+        reward = 0;
+        jumps = 0;
       }
     },
     configure(next) {

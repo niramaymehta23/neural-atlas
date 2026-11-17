@@ -12,6 +12,10 @@ type ChartProps = {
   label: string;
   /** Index to mark (the timeline's current moment). */
   marker?: number;
+  /** A fixed scale, so the line does not jump as values arrive (values outside are the caller's to clamp). */
+  range?: { min: number; max: number };
+  /** A value drawn as a faint reference line, such as breaking even. */
+  baseline?: number;
   width?: number;
   height?: number;
   className?: string;
@@ -22,11 +26,17 @@ export function Chart({
   series,
   label,
   marker,
+  range: fixed,
+  baseline,
   width = 320,
   height = 120,
   className = "",
 }: ChartProps) {
-  const range = extent(series.flatMap(({ values }) => values));
+  const range = fixed ?? extent(series.flatMap(({ values }) => values));
+  const baselineY =
+    baseline === undefined
+      ? null
+      : height - ((baseline - range.min) / (range.max - range.min || 1)) * height;
   const longest = Math.max(1, ...series.map(({ values }) => values.length));
   const step = longest > 1 ? width / (longest - 1) : 0;
   return (
@@ -45,6 +55,19 @@ export function Chart({
         stroke="var(--color-hairline)"
         vectorEffect="non-scaling-stroke"
       />
+      {baselineY !== null && (
+        <line
+          data-baseline
+          x1={0}
+          y1={baselineY}
+          x2={width}
+          y2={baselineY}
+          stroke="var(--color-ink-soft)"
+          strokeOpacity={0.5}
+          strokeDasharray="2 4"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
       {series.map(({ values, ghost }, index) => (
         <path
           key={index}

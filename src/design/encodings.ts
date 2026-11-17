@@ -112,13 +112,15 @@ export const linkTone = "color-mix(in oklab, var(--color-ink-soft) 55%, var(--co
 export type TileKind = "floor" | "wall" | "goal" | "trap" | "coin";
 const TILE_TONES: Record<TileKind, string> = {
   floor: "var(--color-card)",
-  wall: "var(--color-ink-soft)",
+  // Half ink, so a wall is a calm mid tone in either theme rather than glaring at night (QL-15).
+  wall: "color-mix(in oklab, var(--color-ink-soft) 45%, var(--color-card))",
   goal: "var(--color-good)",
   trap: "var(--color-bad)",
-  coin: "color-mix(in oklab, var(--color-good) 40%, var(--color-card))",
+  // Sand, not sage, so a treat never looks like a square the puppy has learned is good (QL-03).
+  coin: "color-mix(in oklab, var(--color-sand) 70%, var(--color-card))",
 };
 
-/** Board squares: the goal is good, a coin a little good, a trap is bad, walls are plain ink. */
+/** Board squares: the goal is good, a trap is bad, a treat is sand, walls are muted ink. */
 export function tileTone(kind: TileKind): string {
   return TILE_TONES[kind];
 }
@@ -136,7 +138,8 @@ const TILE_MARK_PATHS: Record<TileMark, string> = {
   bowl: "M0.25 0.48 H0.75 Q0.72 0.74 0.5 0.74 Q0.28 0.74 0.25 0.48 Z",
   lava: "M0.24 0.42 Q0.37 0.3 0.5 0.42 T0.76 0.42 M0.24 0.62 Q0.37 0.5 0.5 0.62 T0.76 0.62",
   treat: "M0.5 0.3 L0.68 0.5 L0.5 0.7 L0.32 0.5 Z",
-  hatch: "M0.2 0.5 L0.5 0.2 M0.2 0.8 L0.8 0.2 M0.5 0.8 L0.8 0.5",
+  // Bricks: level lines only, so a wall never reads as a score arrow (QL-15).
+  hatch: "M0.2 0.35 H0.8 M0.2 0.5 H0.8 M0.2 0.65 H0.8 M0.4 0.35 V0.5 M0.6 0.5 V0.65",
 };
 
 export function tileMark(kind: TileKind): { name: TileMark; path: string } | null {

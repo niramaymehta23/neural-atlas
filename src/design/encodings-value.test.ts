@@ -1,8 +1,10 @@
 import { tileTone, valueTone } from "./encodings";
 
 describe("encodings added for the scoring board", () => {
-  it("gives a treat square a little of the goal's goodness", () => {
-    expect(tileTone("coin")).toContain("var(--color-good)");
+  it("keeps treats and walls out of the value tints", () => {
+    expect(tileTone("coin")).toContain("var(--color-sand)");
+    expect(tileTone("coin")).not.toContain("var(--color-good)");
+    expect(tileTone("wall")).toContain("var(--color-card)");
   });
 
   it("tints a square by how good it is to stand on", () => {
