@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { lessons } from "../src/catalog";
+import { builtPath } from "./built";
 
 /**
  * H2 hardening: site navigation, the lesson shell's layout and guards, links, error pages,
@@ -11,13 +11,7 @@ const LESSONS = [
   { id: "stacking-cells", start: "Let it learn" },
   { id: "scoring-every-move", start: "Let it practise" },
 ] as const;
-/** Any lesson that is built: its link ends in one of their ids. */
-const BUILT = new RegExp(
-  `/learn/(${lessons
-    .filter(({ load }) => load)
-    .map(({ id }) => id)
-    .join("|")})$`,
-);
+const BUILT = builtPath("$");
 
 const dial = (page: Page) => page.getByRole("slider", { name: "How big a step" });
 

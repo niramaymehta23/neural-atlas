@@ -507,3 +507,36 @@ Plan: `docs/06-autodiff-worlds/plan.md`. Nineteen lessons, each shaped like the 
 - **Checks**: `e2e/world-1.spec.ts` and `e2e/world-3.spec.ts` smoke every built lesson of the world (story first,
   real name held back, no errors, nothing sent elsewhere, no sideways spill at 320 px); `e2e/w1-<id>.spec.ts` and
   `e2e/w3-<id>.spec.ts` cover each lesson's interaction, mission and link; `e2e/a11y.spec.ts` covers every lesson.
+
+## World 2 hand-over (stage 07)
+
+- **The ten lessons** live in `src/modules/w2-classic-ml/<id>/`, with the same file shape as the headline lessons,
+  and are wired in `src/catalog/world-2.ts`: ask-the-neighbours (k-NN), twenty-questions (tree), wisdom-of-the-crowd
+  (forest), the-mistake-relay (boosting), the-widest-road (SVM), the-spam-detective (naive Bayes),
+  finding-natural-groups (k-means), the-best-shadow (PCA), a-map-of-everything (t-SNE) and
+  is-99-percent-actually-good (accuracy, recall, precision, ROC).
+- **Engine** (`src/engine/ml/`): pure, seeded and checked against hand-worked fixtures. `knn`, `tree` (CART with
+  Gini), `forest`, `boost` (log-loss relay), `svm` (SMO with flat, bowl and bumps kernels; `lampPosts` are the
+  support vectors), `bayes`, `kmeans`, `pca` (Jacobi on 3 × 3), `metrics`, and `tsne` with its worker
+  (`tsne-protocol`, `tsne-host`, `tsne-worker`, `tsne-client`). `field.ts` turns any classifier into a
+  DecisionField grid. Ties are broken the same way every time (see each file's comment), so links replay exactly.
+- **Shared kit** (`src/features/classic/`, used by two or more lessons): `garden.ts` (presets with noise picked so
+  that cramming shows on new dots, `newDots` for the "new dots" score, link parsing that caps and clamps),
+  `ClassicGarden` (DataKit's PaintCanvas over a DecisionField, with `overlay` under the dots and `above` over
+  them), `GardenPicker`, `BrushPicker`, `ScoreLines`, `DrawerText`, `paintWords`, and `memo.ts` (`rememberLast`,
+  a one-entry cache so a render never refits a model).
+- **What trains**: the relay, the magnets and the map record frames on the timeline (`trains: true`). Each keeps
+  its progress in state (`runners`, `moves`, `steps`) and rebuilds its run from it with the same seed; a changed
+  setting starts a new run, so the old one stays as the ghost. The map runs in its own worker and records every
+  tenth step; a link redraws it to the saved step and never starts it running. Worker failures are thrown from the
+  scene to the lesson's error boundary. `mapConnection.connect` lets tests connect an in-process host.
+- **Limits worth knowing**: group shapes and tones exist for three groups only, so k-means stops at three magnets.
+  The PCA cloud is drawn as an SVG projection (`scene3d` is reserved). The t-SNE "islands" measure is the
+  Clark–Evans `spacing()` over the hull area: noise with two or three neighbours drops below 0.55 after about 500
+  steps; an even spread sits near 1.
+- **Shared changes**: none to `src/ui`, `src/platform`, `src/design` or `src/visuals`. The home map tests
+  (`src/constellation/HomeMap*.test.tsx`) now read the built lessons from the catalog instead of naming four, so
+  a newly built lesson needs no edit there.
+- **Checks**: a unit test per lesson (missions, guesses, link clamping, `describe`, and the timeline for the
+  lessons that train), engine tests per algorithm, and `e2e/world-2.spec.ts` (every lesson opens on its story with
+  the real name held back and no errors or outside requests, every mission can be earned from the keyboard or a tap, and a thousand-point map pauses at once while it settles).

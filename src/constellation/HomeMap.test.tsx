@@ -9,6 +9,9 @@ import { setPaletteOpen } from "@/ui/palette-store";
 import type { ConstellationScene } from "./ConstellationScene";
 import { HomeMap } from "./HomeMap";
 
+/** Every lesson with a module, read from the catalog so a newly built lesson needs no edit here. */
+const builtIds = lessons.filter(({ load }) => load).map(({ id }) => id);
+
 const router = vi.hoisted(() => ({ push: vi.fn(), prefetch: vi.fn() }));
 const scene = vi.hoisted(() => ({
   props: null as ComponentProps<typeof ConstellationScene> | null,
@@ -54,7 +57,7 @@ describe("HomeMap", () => {
     await screen.findByText("choose");
     expect(scene.props?.built.has("rolling-downhill")).toBe(true);
     expect(scene.props?.built.has("the-pattern-torch")).toBe(false);
-    expect(scene.props?.built.size).toBe(lessons.filter(({ load }) => load).length);
+    expect(scene.props?.built.size).toBe(builtIds.length);
   });
 
   it("lists every idea as plain links before the map arrives", () => {
@@ -164,7 +167,7 @@ describe("HomeMap", () => {
 
   it("suggests nothing, and says more is coming, once every built idea is learned", async () => {
     const done = { visited: true, missions: ["m"], predicted: true };
-    const built = lessons.filter(({ load }) => load).map(({ id }) => id);
+    const built = builtIds;
     render(<HomeMap />);
     await screen.findByText("choose");
     act(() =>

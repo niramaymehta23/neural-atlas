@@ -11,6 +11,8 @@ export const world2: WorldEntry = {
       idea: "You're probably like the people near you",
       playWith: "Tap a dot; ripples reach the neighbours who vote",
       prerequisites: ["splitting-into-groups"],
+      load: () =>
+        import("@/modules/w2-classic-ml/ask-the-neighbours").then(({ definition }) => definition),
     },
     {
       id: "twenty-questions",
@@ -19,6 +21,8 @@ export const world2: WorldEntry = {
       idea: "Ask yes/no questions until you know",
       playWith: "Each question slices the map smaller",
       prerequisites: ["splitting-into-groups"],
+      load: () =>
+        import("@/modules/w2-classic-ml/twenty-questions").then(({ definition }) => definition),
     },
     {
       id: "wisdom-of-the-crowd",
@@ -27,6 +31,8 @@ export const world2: WorldEntry = {
       idea: "Many small guessers beat one clever one",
       playWith: "A forest of little trees votes",
       prerequisites: ["twenty-questions", "stubborn-vs-jumpy"],
+      load: () =>
+        import("@/modules/w2-classic-ml/wisdom-of-the-crowd").then(({ definition }) => definition),
     },
     {
       id: "the-mistake-relay",
@@ -35,6 +41,8 @@ export const world2: WorldEntry = {
       idea: "Each helper fixes what the last got wrong",
       playWith: "Mistakes glow; the next runner chases them",
       prerequisites: ["wisdom-of-the-crowd", "rolling-downhill"],
+      load: () =>
+        import("@/modules/w2-classic-ml/the-mistake-relay").then(({ definition }) => definition),
     },
     {
       id: "the-widest-road",
@@ -43,6 +51,8 @@ export const world2: WorldEntry = {
       idea: "Separate groups with the widest road; lift tangled dots into the air to split them",
       playWith: 'Widen a road held up by a few "lamp-post" dots',
       prerequisites: ["splitting-into-groups"],
+      load: () =>
+        import("@/modules/w2-classic-ml/the-widest-road").then(({ definition }) => definition),
     },
     {
       id: "the-spam-detective",
@@ -51,6 +61,8 @@ export const world2: WorldEntry = {
       idea: "Add up clues to judge a message",
       playWith: "Words light up as spam or not-spam clues",
       prerequisites: ["how-sure-is-it"],
+      load: () =>
+        import("@/modules/w2-classic-ml/the-spam-detective").then(({ definition }) => definition),
     },
     {
       id: "finding-natural-groups",
@@ -59,6 +71,10 @@ export const world2: WorldEntry = {
       idea: "Group things that sit close, with no labels",
       playWith: "Magnets pull dots into groups",
       prerequisites: ["what-the-machine-sees"],
+      load: () =>
+        import("@/modules/w2-classic-ml/finding-natural-groups").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "the-best-shadow",
@@ -67,6 +83,8 @@ export const world2: WorldEntry = {
       idea: "Simplify while keeping the shape",
       playWith: "Turn a 3D cloud to find the most useful shadow",
       prerequisites: ["what-the-machine-sees"],
+      load: () =>
+        import("@/modules/w2-classic-ml/the-best-shadow").then(({ definition }) => definition),
     },
     {
       id: "a-map-of-everything",
@@ -75,6 +93,8 @@ export const world2: WorldEntry = {
       idea: "Draw a map where similar things sit together",
       playWith: "A messy cloud settles into islands",
       prerequisites: ["the-best-shadow", "finding-natural-groups"],
+      load: () =>
+        import("@/modules/w2-classic-ml/a-map-of-everything").then(({ definition }) => definition),
     },
     {
       id: "is-99-percent-actually-good",
@@ -83,6 +103,10 @@ export const world2: WorldEntry = {
       idea: "A score can lie",
       playWith: "A sorting machine drops guesses into right and wrong boxes",
       prerequisites: ["the-surprise-test", "how-sure-is-it"],
+      load: () =>
+        import("@/modules/w2-classic-ml/is-99-percent-actually-good").then(
+          ({ definition }) => definition,
+        ),
     },
   ],
 };
