@@ -133,13 +133,19 @@ test.describe("each World 2 mission can be earned", () => {
     await earnsStar(page, "Gradient boosting");
   });
 
-  test("the widest road: a lifted ground splits the ring", async ({ page }) => {
-    const { errors } = watch(page);
+  test("the widest road: pulling up a lamp post moves the road", async ({ page }) => {
     await page.goto("/learn/the-widest-road");
-    await page.getByRole("button", { name: "A village inside a ring" }).click();
-    await page.getByRole("radio", { name: "Lift the middle" }).click();
-    await expect(page.locator("[data-post]").first()).toBeAttached();
-    expect(errors).toEqual([]);
+    const post = page.locator("[data-post] circle").first();
+    const x = Number(await post.getAttribute("cx"));
+    const y = Number(await post.getAttribute("cy"));
+    await page.getByRole("radio", { name: "Pull a home up" }).click();
+    const valley = page.getByRole("application");
+    const box = await valley.boundingBox();
+    if (!box) throw new Error("the valley is not drawn");
+    await valley.click({
+      position: { x: ((x + 1) / 2) * box.width, y: ((1 - y) / 2) * box.height },
+    });
+    await earnsStar(page, "Support vector machine");
   });
 
   test("the spam detective: spammy words hide among friendly ones", async ({ page }) => {
