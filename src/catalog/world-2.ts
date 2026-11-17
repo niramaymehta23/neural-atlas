@@ -41,6 +41,8 @@ export const world2: WorldEntry = {
       idea: "Each helper fixes what the last got wrong",
       playWith: "Mistakes glow; the next runner chases them",
       prerequisites: ["wisdom-of-the-crowd", "rolling-downhill"],
+      load: () =>
+        import("@/modules/w2-classic-ml/the-mistake-relay").then(({ definition }) => definition),
     },
     {
       id: "the-widest-road",
@@ -49,6 +51,8 @@ export const world2: WorldEntry = {
       idea: "Separate groups with the widest road; lift tangled dots into the air to split them",
       playWith: 'Widen a road held up by a few "lamp-post" dots',
       prerequisites: ["splitting-into-groups"],
+      load: () =>
+        import("@/modules/w2-classic-ml/the-widest-road").then(({ definition }) => definition),
     },
     {
       id: "the-spam-detective",
