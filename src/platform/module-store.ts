@@ -31,15 +31,16 @@ export function createModuleStore<S extends ModuleState>(initialState: S): Modul
   const { getState, setState } = store;
   return {
     ...store,
-    update: (change) => {
-      const { state } = getState();
+    update: (change, { touch = true } = {}) => {
+      const { state, touched } = getState();
       const next = typeof change === "function" ? change(state) : change;
-      setState({ state: { ...state, ...next }, touched: true });
+      setState({ state: { ...state, ...next }, touched: touched || touch });
     },
+    // A guess is not a touch of the scene: the story caption waits for the scene itself.
     guess: (id, choice) => {
       const { guesses } = getState();
       if (guesses[id]?.revealed) return;
-      setState({ guesses: { ...guesses, [id]: { choice, revealed: false } }, touched: true });
+      setState({ guesses: { ...guesses, [id]: { choice, revealed: false } } });
     },
     reveal: (id, answer) => {
       const { guesses } = getState();

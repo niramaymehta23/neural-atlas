@@ -46,4 +46,29 @@ describe("stacking cells", () => {
     expect(prediction.answer(ring, frame(150, 0.55))).toBe("no");
     expect(prediction.answer(state({ garden: "ring" }), frame(150, 0.1))).toBeNull();
   });
+
+  it("clamps a hand-made link's dials and garden to what the scene can draw (PLT-02)", () => {
+    const initial = definition.initialState as CellsState;
+    const parsed = definition.parseState?.(
+      {
+        ...initial,
+        layers: 100000,
+        cells: -3,
+        step: 9,
+        points: Array(5000).fill(initial.points[0]),
+      },
+      initial,
+    ) as CellsState;
+    expect(parsed).toMatchObject({ layers: 4, cells: 1, step: 1 });
+    expect(parsed.points.length).toBeLessThanOrEqual(600);
+  });
+
+  it("starts from the learner's own network (PLT-22)", () => {
+    const initial = definition.initialState as CellsState;
+    const opened = definition.initialFrom?.(
+      { hidden: [4, 4], activation: "tanh", convolution: false },
+      initial,
+    ) as CellsState;
+    expect(opened).toMatchObject({ layers: 2, cells: 4 });
+  });
 });
