@@ -30,30 +30,6 @@ jobs:
       - run: pnpm test
       - run: pnpm check-model
 
-  captions:
-    name: Smart 12-year-old caption check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # Without the secret: a warning on pull requests, a failure on main (see the script's header).
-      - run: pnpm check-captions
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
-      # New verdicts belong in the committed lock file; keep this run's copy to commit by hand.
-      - if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: captions-lock
-          path: captions.lock.json
-          if-no-files-found: ignore
-
   build:
     name: Static export (size and duplicate check)
     runs-on: ubuntu-latest
@@ -118,7 +94,7 @@ jobs:
 
   deploy:
     name: Deploy to Cloudflare Pages
-    needs: [checks, captions, e2e]
+    needs: [checks, e2e]
     # Same-repository pushes and pull requests only: forks never see the secrets.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest

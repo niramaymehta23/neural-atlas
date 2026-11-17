@@ -18,7 +18,7 @@
 - Proof: force-fail the fps test; the other four still run.
 
 ## CI-03 · High · The caption gate has never passed in CI
-- **Status:** Fixed in fd27c88 (script and job). Still needs the owner's `GEMINI_API_KEY` secret: until then PRs warn and pass, pushes to main fail.
+- **Status:** Replaced: Gemini check removed by owner decision. `scripts/check-captions.ts`, its tests, fixture and lock file and the CI job are gone; the session that writes a string reviews it against "would a smart 12-year-old follow this?".
 - Evidence: `.github/workflows/ci.yml:25-28`, `scripts/check-captions.ts:37-38,90-108,136-147`. Run 43899694531: "GEMINI_API_KEY is required in CI". On stage 04/05 runs it never ran (it sits after e2e), so their strings are unchecked.
 - Fix:
   - Its own job, parallel with build. With no secret: `::warning::` and pass on PRs; fail only on push to main.
@@ -26,7 +26,6 @@
   - `AbortSignal.timeout(30_000)`, 3 retries with backoff on 429/5xx, a short delay between batches.
   - Model from `vars.GEMINI_MODEL` (default `gemini-2.5-flash`), clear message on 404.
 - Proof: unit tests for 429-then-200, timeout, cache hit sends nothing, no key on a PR exits 0 with a warning.
-- Owner action: add the `GEMINI_API_KEY` repository secret, then fix any strings it rejects (expect the drawer formulas to be flagged).
 
 ## CI-04 · Medium · CI keeps no evidence and has no caching
 - **Status:** Fixed in fd27c88.

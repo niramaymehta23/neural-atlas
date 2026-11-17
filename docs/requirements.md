@@ -64,7 +64,7 @@ The look is warm, calm and friendly, inspired by Claude's design language: soft 
 3. **No formulas by default.** The maths view exists only as a hidden "peek under the hood" drawer for the curious.
 4. **No raw numbers unless they mean something to a person.** Show "98 out of 100 right" not "0.98 accuracy".
 5. **One idea per screen.** If a screen needs two captions, it is two screens.
-6. **The 12-year-old test.** Every caption is checked with Gemini against "would a smart 12-year-old follow this?" before shipping.
+6. **The 12-year-old test.** Before shipping, the session that writes a caption reviews it against "would a smart 12-year-old follow this?" (a review, not an automated check).
 
 **Rule of thumb:** if an effect does not explain something or confirm an action, cut it. Calm beats flashy.
 
@@ -450,7 +450,7 @@ Primary interaction: ["YOU PLAY WITH" COLUMN], built as a live, manipulable scen
 Reuse these library features: [LIST FROM THE FEATURE LIBRARY].
 Include: predict-then-reveal moment; at least two ScrubbableNumbers; timeline scrubbing if anything trains; compare split if a setting has a clear alternative; Intuition / Mechanics / Maths depth levels.
 Mission: [BREAK-IT MISSION] with a success replay and caption.
-Plain-language rules: everyday lesson name, the real term only as a small tag at the end, no formulas or raw numbers on the main screen, every caption passes the "smart 12-year-old" test. Visual rules: follow the warm design tokens, 2D unless depth is the idea; every colour, speed or thickness must mean something; spring motion; 60 fps while training (work in a Web Worker).
+Plain-language rules: everyday lesson name, the real term only as a small tag at the end, no formulas or raw numbers on the main screen, every caption is reviewed by the session that writes it against "would a smart 12-year-old follow this?". Visual rules: follow the warm design tokens, 2D unless depth is the idea; every colour, speed or thickness must mean something; spring motion; 60 fps while training (work in a Web Worker).
 Finally register the module with its prerequisites so it appears in the constellation.
 ```
 

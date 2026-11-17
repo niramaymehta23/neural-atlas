@@ -17,7 +17,7 @@ By severity: 1 blocker, 22 high, 69 medium, 47 low. A few entries are cross-refe
 
 - An item is done when its test exists and passes, and the full done-command passes: `pnpm install --frozen-lockfile && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm e2e && pnpm format:check`.
 - Fix the cause, not the symptom: no loosened thresholds, skipped tests or `// eslint-disable` to get green.
-- Learner-facing words go in captions files and through check-captions.
+- Learner-facing words go in captions files, and the fixing session reviews them against "would a smart 12-year-old follow this?" (no automated check).
 - Mark each item fixed in its file with the commit that fixed it, so this folder stays the record.
 - Spec gaps (DH-07, MLP-07, ATT-19, QL-17, NAV-20) are built, not deferred, unless the owner says otherwise.
 
@@ -35,7 +35,6 @@ H1 and H2 can run at the same time; they share no files except `docs/architectur
 
 ## Decisions for the owner
 
-1. **Gemini key** — add the `GEMINI_API_KEY` repository secret (GitHub → Settings → Secrets and variables → Actions). Until then the caption check skips on PRs (after CI-03) and cannot pass on main.
-2. **Host** — Cloudflare Pages or Netlify (both honour `_headers`; Vercel needs extra config; GitHub Pages can't run the attention and training lessons). Connecting the account needs you.
-3. **Night mode default** — the spec says ivory by default. A11Y-06 makes the site follow the OS setting when the learner hasn't chosen. Say if you'd rather keep ivory as the default and only add the switch.
-4. **Licence for the repo** — REPO-19 needs a LICENSE file; which one is your call (MIT is common for open teaching sites).
+1. **Host** — Cloudflare Pages or Netlify (both honour `_headers`; Vercel needs extra config; GitHub Pages can't run the attention and training lessons). Connecting the account needs you.
+2. **Night mode default** — the spec says ivory by default. A11Y-06 makes the site follow the OS setting when the learner hasn't chosen. Say if you'd rather keep ivory as the default and only add the switch.
+3. **Licence for the repo** — REPO-19 needs a LICENSE file; which one is your call (MIT is common for open teaching sites).

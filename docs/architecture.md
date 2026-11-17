@@ -12,8 +12,7 @@ neural-atlas/
 │   ├── models/                   self-hosted pretrained weights, lazy-loaded per module
 │   └── _headers                  COOP/COEP headers (SharedArrayBuffer) for static hosting
 ├── e2e/                          Playwright: platform flows + one smoke spec per world
-├── scripts/
-│   └── check-captions.ts         "smart 12-year-old" test of every learner-facing string (Gemini)
+├── scripts/                      build, serve and check scripts (copy-runtime, check-build, check-model, serve-static)
 └── src/
     ├── app/                      Next.js routes only; thin pages that compose layers below
     │   ├── layout.tsx            fonts, theme, global providers, command palette
@@ -93,8 +92,9 @@ Imports flow one way; ESLint (`eslint-plugin-boundaries`) fails the build on a v
   ~300 lines are a smell to split by responsibility, not by line count.
 - **Tests** are colocated (`*.test.ts`, Vitest). Engine maths is tested against numerical references;
   UI is tested through behaviour, not structure. Each world has a Playwright smoke spec.
-- **Plain language is enforced, not hoped for.** Every learner-facing string lives in a module's
-  `captions.ts`, `missions.ts` or the catalog, so `scripts/check-captions.ts` can test all of it. No jargon in
+- **Plain language is reviewed, not hoped for.** Every learner-facing string lives in a module's
+  `captions.ts`, `missions.ts`, `predictions.ts` or the catalog, so it is all in a few files that are easy to
+  review. No jargon in
   titles, buttons or missions; numbers reach the screen only through `design/copy.ts`.
 - **2D by default.** `scene3d/` is imported only by the home map, the downhill landscape and idea-space
   flights; everything else draws with `visuals/`.
@@ -117,7 +117,8 @@ Every curriculum module (split specs refer to this as **DoD**) must:
 8. Keep 60 fps on the reference laptop while training (training in the worker).
 9. Round-trip through a snapshot link to the same view.
 10. Pass its world's Playwright smoke test (opens, responds to one interaction, mission predicate fires).
-11. Pass `check-captions` for every string it adds.
+11. Have every string it adds reviewed, by the session that writes it, against "would a smart 12-year-old
+    follow this?" (a review, not an automated or model check).
 
 ## Hosting constraint
 
@@ -140,13 +141,10 @@ fetched cross-origin at runtime. Size limits, caching and the deploy are in "Hos
 - Colour, font, easing and spring literals are lint-banned outside `src/design`; use token classes
   (`bg-paper`, `text-ink`, `bg-accent`) or `var(--…)`. Motion via `useSpring` / `useReducedMotion` from
   `src/design/motion.ts`; tests mock with `mockReducedMotion`.
-- `check-captions` reads module `captions.ts` / `missions.ts` / `predictions.ts`, `src/catalog/*.ts`,
-  `src/ui/captions.ts`, `src/platform/captions.ts` and `src/constellation/captions.ts`, skipping keys `id`, `realTerm`, `term`, `prerequisites`,
-  `world` and the code keys `load`, `when`, `answer`. Verdicts are cached in `captions.lock.json` (see
-  "Hosting and CI").
-
-## Engines hand-over (from stage 02)
-
+- Learner-facing words live only in module `captions.ts` / `missions.ts` / `predictions.ts`, `src/catalog/*.ts`,
+  `src/ui/captions.ts`, `src/platform/captions.ts` and `src/constellation/captions.ts`, so the "smart
+  12-year-old" review covers a handful of files. There is no automated caption check (the Gemini check was
+  removed by owner decision).
 - **Autodiff** (`engine/autodiff`): `Value`, `Neuron`/`Layer`/`MLP` (`call` builds a graph, `predict` is the fast
   no-learning pass), losses take raw scores (`binaryCrossEntropy` from a logit, `softmaxCrossEntropy`, `meanSquared`),
   `createOptimiser({ kind: "sgd" | "momentum" | "adam", learningRate })` steps any `{ data, grad }`, so a ball on
@@ -195,8 +193,8 @@ fetched cross-origin at runtime. Size limits, caching and the deploy are in "Hos
   training scene must rebuild its recorded frames from state (same seed, same run) after mount; the shell seeks to
   the saved moment as soon as it has been recorded.
 - **Words**: `captions.ts` exports `{ opening, story, compare? }` for the shell plus every other learner-facing
-  word the module shows (dial names, `describe` words, buttons, scene labels, drawer text); check-captions reads all
-  of its exports. `missions.ts`: `{ id, goal, hint?, success, replay: { before, after }, when(state, newestFrame) }`;
+  word the module shows (dial names, `describe` words, buttons, scene labels, drawer text), so the 12-year-old
+  review sees all of it. `missions.ts`: `{ id, goal, hint?, success, replay: { before, after }, when(state, newestFrame) }`;
   `predictions.ts`: `{ id, question, choices: { id, label }[], answer(state, frame) → choice id | null }` (null keeps
   the reveal waiting; the answer at the reveal is stored with the guess). `platform/fixture/` is the worked example.
 - **Catalog**: to switch a lesson on, add to its entry in `catalog/world-N.ts`
@@ -315,16 +313,12 @@ fetched cross-origin at runtime. Size limits, caching and the deploy are in "Hos
 - **Workers**: three kinds, not one. The training `ModelEngine` worker (one per engine, so a compare split
   runs two), the attention reader's worker (shared, lazy) and ONNX runtime's own threads if ever enabled.
 - **CI jobs** (`.github/workflows/ci.yml`): `checks` (format, lint, types, unit tests, model checksums),
-  `captions`, `build` (export plus size check, `.next/cache` cached, `out/` uploaded) and `e2e` (on the built
+  `build` (export plus size check, `.next/cache` cached, `out/` uploaded) and `e2e` (on the built
   `out/`) run in parallel where they can; then `deploy` and `smoke`. Actions are the Node 24 majors;
   `permissions: contents: read`; one run per branch (pull requests cancel the older run). Failed e2e runs
   upload `playwright-report/` and `test-results/`; every run uploads `test-results/perf/`.
-- **Caption check**: `captions.lock.json` maps a hash of prompt and string to the verdict, reason, model and
-  date. Only strings missing from it are sent to Gemini (30 s timeout, three retries with backoff on timeouts,
-  429 and 5xx, a pause between batches); a full run drops verdicts for strings that are gone. Without
-  `GEMINI_API_KEY` and with unrated strings it warns and passes on pull requests and fails on pushes to `main`.
-  The model is the `GEMINI_MODEL` repository variable (default `gemini-2.5-flash`). Run it locally with the key
-  and commit the updated lock file; CI keeps each run's copy as the `captions-lock` artifact.
+- **No caption check in CI**: the Gemini "smart 12-year-old" check was removed by owner decision; the session
+  that writes a string reviews it. CI calls no model or outside API.
 - **End-to-end projects** (`playwright.config.ts`): `functional` is everything not tagged `@perf`, in parallel,
   one retry on CI. `perf` is the `@perf` tests (60 fps while training, 200 wiggling edges, the morphing
   boundary, threads after a cached reload, the home glide and first paint), one worker, after `functional`, so
