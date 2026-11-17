@@ -1,7 +1,9 @@
 // @vitest-environment node
 /**
- * The real model, run in Node from the files the site serves: the learner's words line up with
- * its pieces, and the recorded fixture the lesson tests use still matches what it does.
+ * The real model, run in Node from the files the site serves and on the browser's own runtime
+ * (onnxruntime-web's WebAssembly build, the same on every processor): the learner's words line up
+ * with its pieces, and the recorded fixture the lesson tests use (looking.test.ts checks the
+ * guess's answer on it) still matches what it does, to the last few digits.
  */
 import { readFile } from "node:fs/promises";
 import { loadReading, type StoredReading } from "./testing/fixture";
