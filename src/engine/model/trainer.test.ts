@@ -50,14 +50,14 @@ function harness(backend: BackendKind = "autodiff", model = MODEL, data = spiral
 }
 
 describe("trainer", () => {
-  it("learns the spiral and posts a snapshot every few epochs", async () => {
+  it("learns the spiral and posts a snapshot every few epochs, starting untrained", async () => {
     const { send, snapshots, events, init } = harness();
     await init;
     expect(events[0]).toEqual({ type: "ready", backend: "autodiff" });
     await send({ type: "step", epochs: 60 });
     const losses = snapshots().map(({ loss }) => loss);
     expect(snapshots().map(({ epoch }) => epoch)).toEqual(
-      Array.from({ length: 12 }, (_, index) => (index + 1) * 5),
+      Array.from({ length: 13 }, (_, index) => index * 5),
     );
     expect(losses.at(-1)).toBeLessThan(losses[0]! * 0.6);
   });
@@ -74,10 +74,11 @@ describe("trainer", () => {
     expect(a.at(-1)!.params).toEqual(b.at(-1)!.params);
   });
 
-  it("writes every epoch to shared memory", async () => {
+  it("writes the untrained model and then the newest epoch to shared memory", async () => {
     const { send, live, snapshots, init } = harness();
     await init;
-    expect(readLive(live)).toBeNull();
+    expect(readLive(live)?.epoch).toBe(0);
+    expect(readLive(live)?.params).toEqual(snapshots()[0]!.params);
     await send({ type: "step", epochs: 7 });
     const frame = readLive(live)!;
     expect(frame.epoch).toBe(7);
@@ -118,7 +119,7 @@ describe("trainer", () => {
     const { send, snapshots, events, init } = harness();
     await init;
     await send({ type: "step", epochs: 10 });
-    const early = snapshots()[0]!;
+    const early = snapshots()[1]!;
     const grid = new Float32Array([0.1, 0.2, -0.5, 0.4]);
     await send({ type: "restore", snapshot: early });
     await send({ type: "predict", id: 1, inputs: grid });
@@ -215,8 +216,8 @@ describe("ModelEngine", () => {
     engine.step(10);
     const outputs = await engine.predict(new Float32Array([0, 0, 0.5, 0.5, -0.5, 0.2]));
     expect(outputs).toHaveLength(3);
-    expect(snapshots.map(({ epoch }) => epoch)).toEqual([5, 10]);
-    expect(engine.readLive()?.params).toEqual(snapshots[1]!.params);
+    expect(snapshots.map(({ epoch }) => epoch)).toEqual([0, 5, 10]);
+    expect(engine.readLive()?.params).toEqual(snapshots.at(-1)!.params);
     engine.dispose();
   });
 
@@ -235,7 +236,6 @@ describe("ModelEngine", () => {
         inProcess,
       );
       await engine.ready;
-      expect(engine.readLive()).toBeNull();
       engine.step(10);
       await vi.waitFor(() => expect(engine.readLive()?.epoch).toBe(10));
       expect(engine.readLive()?.params).toEqual(snapshots.at(-1)!.params);

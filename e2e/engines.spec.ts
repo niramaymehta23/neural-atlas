@@ -65,10 +65,11 @@ test("scrubs back to a recorded moment, replays it, and races a ghost", async ({
   await moment.focus();
   await page.keyboard.press("Home");
   await expect(lab(page)).toHaveAttribute("data-live", "false");
-  await expect(lab(page)).toHaveAttribute("data-epoch", "2");
+  // The first recorded moment is the untrained start, epoch 0 (MLP-08).
+  await expect(lab(page)).toHaveAttribute("data-epoch", "0");
   await expect(moment).toHaveAttribute("aria-valuetext", /^Moment one of /);
   await page.keyboard.press("ArrowRight");
-  await expect(lab(page)).toHaveAttribute("data-epoch", "4");
+  await expect(lab(page)).toHaveAttribute("data-epoch", "2");
 
   await expect(page.getByRole("button", { name: "Practise" })).toBeVisible();
 

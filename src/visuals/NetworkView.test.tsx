@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { thickness, weightTone } from "@/design/encodings";
 import { mockReducedMotion } from "@/design/reduced-motion.mock";
 import { layoutEdges, layoutNeurons } from "./network-layout";
@@ -58,5 +59,50 @@ describe("NetworkView", () => {
     expect(lines[1]).toHaveAttribute("stroke-dasharray");
     expect(lines[2]).not.toHaveAttribute("stroke-dasharray");
     expect(lines[2]).not.toHaveAttribute("stroke-opacity");
+  });
+});
+
+describe("NetworkView while learning (MLP-07)", () => {
+  it("sends the moving dots backwards, as busy as each thread's change", () => {
+    mockReducedMotion(true);
+    const { container } = render(
+      <NetworkView
+        sizes={[2, 1]}
+        params={[1, 1, 0]}
+        label="Two inputs"
+        flowing
+        backward
+        flowActivity={[0.2, 0.9]}
+      />,
+    );
+    const [first, second] = container.querySelectorAll("[data-still] line");
+    const edges = layoutEdges(layoutNeurons([2, 1], 480, 300), [1, 1, 0]);
+    // Backwards: each dot starts at the cell and runs to the input.
+    expect(Number(first?.getAttribute("x1"))).toBe(edges[0]!.to[0]);
+    expect(Number(first?.getAttribute("x2"))).toBe(edges[0]!.from[0]);
+    expect(Number(first?.getAttribute("data-activity"))).toBe(0.2);
+    expect(Number(second?.getAttribute("data-activity"))).toBe(0.9);
+  });
+
+  it("makes each hidden cell a button that shows it, by pointer, focus or tap", async () => {
+    const user = userEvent.setup();
+    const onCell = vi.fn();
+    render(
+      <NetworkView
+        sizes={[2, 3, 2, 1]}
+        params={null}
+        label="A team"
+        cellLabel={({ layer, cell }) => `Cell ${cell + 1} of layer ${layer + 1}`}
+        onCell={onCell}
+      />,
+    );
+    const cells = screen.getAllByRole("button");
+    expect(cells).toHaveLength(5);
+    await user.hover(screen.getByRole("button", { name: "Cell 2 of layer 1" }));
+    expect(onCell).toHaveBeenLastCalledWith({ layer: 0, cell: 1 });
+    await user.unhover(screen.getByRole("button", { name: "Cell 2 of layer 1" }));
+    expect(onCell).toHaveBeenLastCalledWith(null);
+    await user.click(screen.getByRole("button", { name: "Cell 1 of layer 2" }));
+    expect(onCell).toHaveBeenLastCalledWith({ layer: 1, cell: 0 });
   });
 });

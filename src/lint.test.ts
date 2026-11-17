@@ -32,7 +32,10 @@ describe("layer boundaries", () => {
       mkdirSync(join(root, ...parts), { recursive: true });
       writeFileSync(join(root, file), "export const probe = 1;\nexport type Probe = number;\n");
     }
-  });
+    // The first lint loads the whole typed project; do it once here, not inside the first test,
+    // so a busy machine never times that test out.
+    return eslint.lintText("export {};\n", { filePath: "src/ui/Warmup.tsx" }).then(() => undefined);
+  }, 60_000);
   afterAll(() => {
     for (const file of Object.values(probes)) rmSync(join(root, file), { force: true });
     for (const dir of created.reverse()) rmSync(dir, { recursive: true, force: true });

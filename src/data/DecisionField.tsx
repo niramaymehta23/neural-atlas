@@ -40,7 +40,9 @@ export function DecisionField({
 
   useEffect(() => {
     const context = canvas.current?.getContext("2d");
-    if (!context || !outputs) return;
+    if (!context) return;
+    // No opinion yet (a new team, try or garden): no old fences left behind (MLP-02).
+    if (!outputs) return context.clearRect(0, 0, resolution, resolution);
     const start = performance.now();
     const image = context.createImageData(resolution, resolution);
     paintField(image.data, outputs, groups, tables);

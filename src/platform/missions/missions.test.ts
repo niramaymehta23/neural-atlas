@@ -54,6 +54,26 @@ describe("missions", () => {
     expect(timeline.getState()).toMatchObject({ cursor: 35, playing: false, live: false });
   });
 
+  it("centres on the mission's own moment and plays it slowly when asked", () => {
+    const timeline = new Timeline<TimelineFrame>({ framesPerSecond: 30 });
+    for (let epoch = 0; epoch <= 120; epoch += 1) timeline.record({ epoch, loss: 1 });
+    const replay = { before: 16, after: 2, moment: () => 40, framesPerSecond: 8 };
+    const window = replayWindow(timeline, 120, replay)!;
+    expect(window).toEqual({ fromEpoch: 24, atEpoch: 40, after: 2, run: 0, framesPerSecond: 8 });
+    expect(startReplay(timeline, window)).toBe(true);
+    let seconds = 0;
+    while (advanceReplay(timeline, window, 1 / 60)) seconds += 1 / 60;
+    expect(timeline.current()?.epoch).toBe(42);
+    expect(seconds).toBeGreaterThanOrEqual(2);
+  });
+
+  it("falls back to the moment it fired when the mission's moment is not recorded", () => {
+    const timeline = new Timeline<TimelineFrame>();
+    for (let epoch = 0; epoch < 10; epoch += 1) timeline.record({ epoch, loss: 1 });
+    const window = replayWindow(timeline, 9, { before: 2, after: 0, moment: () => null });
+    expect(window).toEqual({ fromEpoch: 7, atEpoch: 9, after: 0, run: 0 });
+  });
+
   it("keeps its window when the timeline drops old frames", () => {
     const timeline = new Timeline<TimelineFrame>({ capacity: 5 });
     for (let epoch = 0; epoch < 5; epoch += 1) timeline.record({ epoch, loss: 1 });

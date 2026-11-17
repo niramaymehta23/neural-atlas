@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useId,
   useRef,
   useState,
@@ -19,6 +20,8 @@ export type PaintWords = {
   position: (across: number, up: number) => string;
   /** What was just planted and where, such as "Planted a daisy at 50% across, 50% up". */
   planted: (group: number, across: number, up: number) => string;
+  /** What was just pulled up and where (needed with `onRemove`). */
+  removed?: (count: number, across: number, up: number) => string;
 };
 
 type PaintCanvasProps = {
@@ -27,6 +30,13 @@ type PaintCanvasProps = {
   onAdd: (point: Point) => void;
   /** The group new points join. */
   group: number;
+  /**
+   * Present to pull points up instead: called with the indices (into `points`) within reach of
+   * a tap, a drag or the keyboard ring.
+   */
+  onRemove?: (indices: number[]) => void;
+  /** True while a tap pulls points up rather than planting (needs `onRemove`). */
+  erasing?: boolean;
   /** Plain description, such as "Garden: tap to plant apples or pears". */
   label: string;
   /** Drawn underneath the points (a DecisionField). */
@@ -41,6 +51,15 @@ const VIEW = 200;
 const TRAIL_GAP = 0.06;
 const CURSOR_STEP = 0.05;
 const POINT_RADIUS = 3.4;
+/** Pulling up reaches points this close (in −1…1 units). */
+const REACH = 0.07;
+/**
+ * On a touch screen a finger that moves before this long scrolls the page; one held still this
+ * long paints, and a quick tap plants one point (QL-14).
+ */
+export const HOLD_MS = 250;
+/** How far (px) a finger may wander and still count as held still. */
+const STILL_PX = 8;
 
 /**
  * Position in the SVG box, rounded: the server and the browser can disagree in the last digit of
@@ -50,39 +69,98 @@ const toView = (value: number) => Math.round(((value + 1) / 2) * VIEW * 100) / 1
 
 const percent = (value: number) => Math.round(((value + 1) / 2) * 100);
 
+type Spot = { x: number; y: number };
+
 /**
- * Click or drag to add points of the chosen group. From the keyboard: arrows move a ring,
- * Enter or Space plants a point there, and a polite line says where the ring is and what grew.
- * Each group has its own shape, outlined in ink, so groups never rest on colour (A11Y-08).
+ * Click or drag to add points of the chosen group (or pull them up). From the keyboard: arrows
+ * move a ring, Enter or Space plants (or pulls up) there, and a polite line says where the ring
+ * is and what changed. Each group has its own shape, outlined in ink, so groups never rest on
+ * colour (A11Y-08). On a touch screen a swipe scrolls the page; a tap or a held finger paints.
  */
 export function PaintCanvas({
   points,
   onAdd,
   group,
+  onRemove,
+  erasing = false,
   label,
   children,
   words,
   className = "",
 }: PaintCanvasProps) {
   const surface = useRef<HTMLDivElement>(null);
-  const last = useRef<{ x: number; y: number } | null>(null);
+  const last = useRef<Spot | null>(null);
+  /** A finger on the garden: where it went down, and whether it has started painting. */
+  const touch = useRef<{ id: number; x: number; y: number; painting: boolean } | null>(null);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestPoints = useRef(points);
   const instructionsId = useId();
-  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  const [cursor, setCursor] = useState<Spot | null>(null);
   const [spoken, setSpoken] = useState("");
-  const where = (at: { x: number; y: number }) =>
-    words ? words.position(percent(at.x), percent(at.y)) : "";
+  const pulling = erasing && Boolean(onRemove);
+  const where = (at: Spot) => (words ? words.position(percent(at.x), percent(at.y)) : "");
 
-  const plant = (x: number, y: number) => {
-    last.current = { x, y };
-    onAdd({ x, y, label: group });
+  useEffect(() => {
+    latestPoints.current = points;
+  }, [points]);
+
+  // Once a held finger paints, the page must not scroll under it (a passive listener can't stop it).
+  useEffect(() => {
+    const element = surface.current;
+    if (!element) return;
+    const stopScroll = (event: TouchEvent) => {
+      if (touch.current?.painting && event.cancelable) event.preventDefault();
+    };
+    element.addEventListener("touchmove", stopScroll, { passive: false });
+    return () => element.removeEventListener("touchmove", stopScroll);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (holdTimer.current) clearTimeout(holdTimer.current);
+    },
+    [],
+  );
+
+  const within = (at: Spot) =>
+    latestPoints.current.flatMap((point, index) =>
+      Math.hypot(point.x - at.x, point.y - at.y) <= REACH ? [index] : [],
+    );
+
+  /** Plants at `at`, or pulls up what is within reach; returns how many were pulled up. */
+  const paintAt = (at: Spot) => {
+    last.current = at;
+    if (!pulling) {
+      onAdd({ x: at.x, y: at.y, label: group });
+      return 0;
+    }
+    const reached = within(at);
+    if (reached.length > 0) onRemove?.(reached);
+    return reached.length;
   };
 
-  const fromPointer = (event: PointerEvent) => {
+  const fromPointer = (event: { clientX: number; clientY: number }) => {
     const box = surface.current?.getBoundingClientRect();
     if (!box || box.width === 0) return null;
     const x = ((event.clientX - box.left) / box.width) * 2 - 1;
     const y = 1 - ((event.clientY - box.top) / box.height) * 2;
     return { x: Math.min(1, Math.max(-1, x)), y: Math.min(1, Math.max(-1, y)) };
+  };
+
+  /** Paints along a drag, a trail of points at least TRAIL_GAP apart (every move when pulling up). */
+  const dragTo = (event: PointerEvent) => {
+    const at = fromPointer(event);
+    const previous = last.current;
+    if (
+      at &&
+      (pulling || !previous || Math.hypot(at.x - previous.x, at.y - previous.y) >= TRAIL_GAP)
+    )
+      paintAt(at);
+  };
+
+  const cancelHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -103,8 +181,10 @@ export function PaintCanvas({
     } else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       setCursor(at);
-      plant(at.x, at.y);
-      if (words) setSpoken(words.planted(group, percent(at.x), percent(at.y)));
+      const pulled = paintAt(at);
+      if (!words) return;
+      if (!pulling) setSpoken(words.planted(group, percent(at.x), percent(at.y)));
+      else setSpoken(words.removed?.(pulled, percent(at.x), percent(at.y)) ?? "");
     }
   };
 
@@ -116,6 +196,7 @@ export function PaintCanvas({
       aria-roledescription="drawing board"
       aria-describedby={words ? instructionsId : undefined}
       tabIndex={0}
+      data-erasing={pulling || undefined}
       onKeyDown={onKeyDown}
       onFocus={() => {
         const start = cursor ?? { x: 0, y: 0 };
@@ -124,18 +205,55 @@ export function PaintCanvas({
       }}
       onBlur={() => setCursor(null)}
       onPointerDown={(event) => {
+        if (event.pointerType === "touch") {
+          // Wait: a finger that moves at once is scrolling the page, not painting.
+          const { pointerId, clientX, clientY } = event;
+          touch.current = { id: pointerId, x: clientX, y: clientY, painting: false };
+          cancelHold();
+          holdTimer.current = setTimeout(() => {
+            const held = touch.current;
+            if (!held || held.id !== pointerId) return;
+            held.painting = true;
+            surface.current?.setPointerCapture?.(pointerId);
+            const at = fromPointer({ clientX: held.x, clientY: held.y });
+            if (at) paintAt(at);
+          }, HOLD_MS);
+          return;
+        }
         event.currentTarget.setPointerCapture(event.pointerId);
         const at = fromPointer(event);
-        if (at) plant(at.x, at.y);
+        if (at) paintAt(at);
       }}
       onPointerMove={(event) => {
-        if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-        const at = fromPointer(event);
-        const previous = last.current;
-        if (at && (!previous || Math.hypot(at.x - previous.x, at.y - previous.y) >= TRAIL_GAP))
-          plant(at.x, at.y);
+        const held = touch.current;
+        if (event.pointerType === "touch") {
+          if (!held || held.id !== event.pointerId) return;
+          if (held.painting) return dragTo(event);
+          if (Math.hypot(event.clientX - held.x, event.clientY - held.y) > STILL_PX) {
+            // Moved before the hold: a scroll. Let the page have it.
+            cancelHold();
+            touch.current = null;
+          }
+          return;
+        }
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) dragTo(event);
       }}
-      className={`relative aspect-square cursor-crosshair touch-none overflow-hidden rounded-card border border-hairline bg-paper focus-visible:outline-offset-0 ${className}`}
+      onPointerUp={(event) => {
+        const held = touch.current;
+        if (event.pointerType !== "touch" || !held || held.id !== event.pointerId) return;
+        cancelHold();
+        touch.current = null;
+        // A quick tap that never moved plants (or pulls up) once.
+        if (!held.painting) {
+          const at = fromPointer(event);
+          if (at) paintAt(at);
+        }
+      }}
+      onPointerCancel={() => {
+        cancelHold();
+        touch.current = null;
+      }}
+      className={`relative aspect-square touch-pan-y overflow-hidden rounded-card border border-hairline bg-paper focus-visible:outline-offset-0 ${pulling ? "cursor-cell" : "cursor-crosshair"} ${className}`}
     >
       <div className="absolute inset-0">{children}</div>
       <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="absolute inset-0 size-full" aria-hidden>
@@ -156,14 +274,14 @@ export function PaintCanvas({
             <circle
               cx={toView(cursor.x)}
               cy={toView(-cursor.y)}
-              r={7}
+              r={pulling ? (REACH / 2) * VIEW : 7}
               stroke="var(--color-ink)"
               strokeWidth={3}
             />
             <circle
               cx={toView(cursor.x)}
               cy={toView(-cursor.y)}
-              r={7}
+              r={pulling ? (REACH / 2) * VIEW : 7}
               stroke="var(--color-accent)"
               strokeWidth={1.5}
             />

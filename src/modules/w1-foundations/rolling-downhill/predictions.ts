@@ -1,12 +1,17 @@
 import type { Prediction } from "@/platform/contract";
 import { predictionWords, words } from "./captions";
-import { firstToSettle, WALKERS, type DownhillFrame, type DownhillState } from "./model";
+import { firstToSettle, OUTCOMES, type DownhillFrame, type DownhillState } from "./model";
 
 export const predictions = [
   {
     id: "first-to-settle",
     question: predictionWords.question,
-    choices: WALKERS.map((walker) => ({ id: walker, label: words.walkers[walker] })),
-    answer: (state, frame) => firstToSettle(frame, state.valley),
+    choices: OUTCOMES.map((id) => ({
+      id,
+      label: id === "none" || id === "tie" ? predictionWords[id] : words.walkers[id],
+    })),
+    answer: (_state, frame) => firstToSettle(frame),
+    // A guess placed after a roll is about the next roll (DH-02).
+    fresh: true,
   },
 ] as const satisfies readonly [Prediction<DownhillState, DownhillFrame>];

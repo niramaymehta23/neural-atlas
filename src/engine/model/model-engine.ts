@@ -1,5 +1,5 @@
 /**
- * The page's handle on training. Owns the one worker, speaks the typed protocol, hands snapshots
+ * The page's handle on training. Owns its own worker, speaks the typed protocol, hands snapshots
  * to whoever records them (the Timeline), and reads the newest parameters each frame: straight
  * from shared memory when the page is cross-origin isolated (see public/_headers), otherwise from
  * the copies the worker posts about once a frame.
@@ -13,6 +13,7 @@ import type {
   Event,
   ModelSpec,
   Samples,
+  ScheduledChange,
   Snapshot,
   TrainSettings,
 } from "./protocol";
@@ -35,6 +36,12 @@ export type ModelEngineOptions = {
   train: TrainSettings;
   onSnapshot?: (snapshot: Snapshot) => void;
   onError?: (message: string) => void;
+  /** Training stopped by itself because there is nothing to learn from (ENG-08). */
+  onIdle?: (reason: "no-data") => void;
+  /** The steps grew too big: training stopped, back on the last good parameters (ENG-10). */
+  onDiverged?: (epoch: number) => void;
+  /** A tagged `setData` or `configure` took effect before epoch `epoch + 1`. */
+  onApplied?: (tag: number, epoch: number) => void;
 };
 
 /** A worker that has not said it is ready by then is treated as failed. */
@@ -59,6 +66,7 @@ export class ModelEngine {
     { resolve: (outputs: Float32Array) => void; reject: (error: Error) => void }
   >();
   private nextId = 0;
+  private disposed = false;
 
   constructor(
     private readonly options: ModelEngineOptions,
@@ -74,6 +82,7 @@ export class ModelEngine {
     this.ready.catch(() => {}); // reported through onError; awaiting callers still see it
     // An error ends whatever was in flight: no prediction or `ready` waits forever.
     const fail = (message: string) => {
+      if (this.disposed) return;
       clearTimeout(this.readyTimer);
       failReady(new Error(message));
       this.settleAll(message);
@@ -94,6 +103,8 @@ export class ModelEngine {
     this.port.onerror = () => fail("The training worker could not start.");
     this.port.onmessageerror = () => fail("A message from the training worker could not be read.");
     this.port.onmessage = ({ data: event }) => {
+      // A closed engine's worker may still have messages queued: none reach the new run (MLP-06).
+      if (this.disposed) return;
       if (event.type === "ready") {
         clearTimeout(this.readyTimer);
         markReady(event.backend);
@@ -104,7 +115,10 @@ export class ModelEngine {
       } else if (event.type === "prediction") {
         this.pending.get(event.id)?.resolve(event.outputs);
         this.pending.delete(event.id);
-      } else fail(event.message);
+      } else if (event.type === "applied") this.options.onApplied?.(event.tag, event.epoch);
+      else if (event.type === "idle") this.options.onIdle?.(event.reason);
+      else if (event.type === "diverged") this.options.onDiverged?.(event.epoch);
+      else fail(event.message);
     };
     const { backend, model, data, train } = options;
     this.send({ type: "init", backend, model, data, train, live: this.live });
@@ -118,16 +132,19 @@ export class ModelEngine {
     this.send({ type: "pause" });
   }
 
-  step(epochs = 1): void {
-    this.send({ type: "step", epochs });
+  /** Trains `epochs` more, applying `schedule`'s changes at their epochs (a replayed run). */
+  step(epochs = 1, schedule?: readonly ScheduledChange[]): void {
+    this.send({ type: "step", epochs, schedule });
   }
 
-  configure(optimiser: OptimiserSettings): void {
-    this.send({ type: "configure", optimiser });
+  /** With a `tag`, `onApplied` later says at which epoch it took effect. */
+  configure(optimiser: OptimiserSettings, tag?: number): void {
+    this.send({ type: "configure", optimiser, tag });
   }
 
-  setData(data: Samples): void {
-    this.send({ type: "setData", data });
+  /** With a `tag`, `onApplied` later says at which epoch it took effect. */
+  setData(data: Samples, tag?: number): void {
+    this.send({ type: "setData", data, tag });
   }
 
   /** Continues training from a recorded moment (after scrubbing back). */
@@ -150,7 +167,12 @@ export class ModelEngine {
   }
 
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     clearTimeout(this.readyTimer);
+    this.port.onmessage = null;
+    this.port.onerror = null;
+    this.port.onmessageerror = null;
     this.port.terminate();
     this.settleAll("The model was closed.");
   }
@@ -161,6 +183,6 @@ export class ModelEngine {
   }
 
   private send(command: Command): void {
-    this.port.postMessage(command);
+    if (!this.disposed) this.port.postMessage(command);
   }
 }

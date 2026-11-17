@@ -8,40 +8,48 @@ Shared problems (error boundaries, snapshot clamping, guess locking, replay wind
 - Cause: `useRecordedRun` (`scene.tsx:26-38`) puts 121 precomputed frames on the timeline one per `requestAnimationFrame`; rAF pauses in background tabs, so recording stalls (seen live at 10 of 121) and `firstToSettle` (`model.ts:132`) stays null. "Roll again" appears as soon as `runs > 0` (`controls.tsx:53`), not at the end.
 - Fix: record all frames at once with `timeline.record` (the reduced-motion path already does) and animate only the cursor. Base "running" and the button label on the final frame being recorded.
 - Test: rAF stubbed to never fire, one roll → timeline length 121, reveal enabled.
+- Fixed in 0dc22eb.
 
 ### DH-02 · High · Predict-then-reveal is a multiple choice after the fact
 - Problem: the spec (prompt 4) asks learners to tap where each ball will end before starting, with ghost markers; the lesson has a multiple-choice card that can be answered after watching (PLT-09).
 - Fix: tap-to-guess end spots drawn as ghost markers, locked when the roll starts; reveal compares spots with outcomes. Keep the guess card above the start button (LIVE-11).
 - Test: guess after a finished roll keeps the reveal disabled until a new roll.
+- Fixed in 0dc22eb.
 
 ### DH-03 · Medium · The guess answer is wrong for fly-offs, ties and the saddle
 - Evidence: `model.ts:130-141` (sorts by settle step, height, array order). Pass (0.99, 0.99) at dial 1: all fly off, answer "Steady walker". Start at the bottom: tie always to Steady walker. Bowl at dial 0.7: nobody settles, lowest reported.
 - Fix: "None of them" choice; flown-off walkers never settle; settle only where curvature is positive; a "they tied" outcome.
 - Test: `model.test.ts` cases for each.
+- Fixed in 0dc22eb.
 
 ### DH-04 · Medium · The fly-off mission fires without big steps
 - Evidence: `missions.ts:10` fires when any walker leaves; ravine corner start fires from dial 0.19 via the rolling ball's speed. The success caption describes the steady walker's overshoot.
 - Fix: fire only when the steady walker leaves, or check `stepSize > 2 / curvature` for the walker that left; otherwise a caption naming the walker and cause.
 - Test: `when` false for ravine, step 0.19, keepRolling 0.9, start (0.99, 0.99).
+- Fixed in 0dc22eb.
 
 ### DH-05 · Medium · Every dial tick re-rolls and replaces the ghost
 - Evidence: `scene.tsx:39` deps include every dial.
 - Fix: re-roll only on `runs`/`start`, or after the drag ends (pointerup/keyup).
 - Test: 10 dial changes after one roll → at most one more `newRun`; ghost equals the run before the drag.
+- Fixed in 0dc22eb.
 
 ### DH-06 · Medium · The mistake curve drops when walkers fly off; bumpy field goes negative
 - Evidence: `model.ts:90-92`, `model.ts:17`.
 - Fix: a flown-off walker counts at the map's maximum height (or plot per walker); shift bumpy up by 0.16.
 - Test: all-off loss ≥ max on-map height; bumpy minimum ≥ 0.
+- Fixed in 0dc22eb.
 
 ### DH-07 · Medium · Missing spec parts (prompt 4)
 - Missing: orbiting the valley (drei `OrbitControls` with damping and limits behind a "turn the valley" affordance); the drawer animating the update rule in step with the cursor (read `timeline.current()`); slow-motion replay (≈8 fps, ≥2 s).
 - Test: dragging the canvas changes the camera azimuth; replay lasts ≥2 s.
+- Fixed in 0dc22eb.
 
 ### DH-08 · Low · Walkers are hard to tell apart; valley framing looks like a sheet
 - Evidence: `scene.tsx:15` (`WALKER_TONES = [ink, sage, ink-soft]`); confirmed live: walkers start stacked so only one shows, the bowl is seen from low with clipped edges and a big empty area below.
 - Fix: distinct tones checked against both terrain ends plus a shape per walker (A11Y-20); offset the three start points slightly; frame the camera higher so the whole bowl shows.
 - Test: pairwise ΔE > 20 and >3:1 against terrain; screenshot shows three walkers at start.
+- Fixed in 0dc22eb.
 
 Keyboard drop spot and legend buttons: A11Y-11, A11Y-20. WebGL fallback: ENG-12.
 
@@ -51,47 +59,57 @@ Keyboard drop spot and legend buttons: A11Y-11, A11Y-20. WebGL fallback: ENG-12.
 - Evidence: `createFieldReader` for 2-8-8-8-8-1 on 48×48 takes 30 ms per redraw (measured) vs 4.6 ms for the default; recomputed every epoch on the main thread (`scene.tsx:91-105`); `MLP.predict` allocates a `Value` per neuron (`src/engine/autodiff/nn.ts:94-107`).
 - Fix: typed-array forward pass in `src/engine/model/forward.ts`; at most one redraw per animation frame, skipping if the last took >8 ms; or compute the field in the worker.
 - Test: unit benchmark (4×8 field under 4 ms); the perf e2e repeated at max layers and cells.
+- Fixed in fbfff76 (typed-array field reader), b3dc27d (draw loop), 0dc22eb (perf e2e at 4×8).
 
 ### MLP-02 · Medium · Old fences stay painted after a new try, reshape or garden change
 - Evidence: `scene.tsx:77`, `src/data/DecisionField.tsx:43` (returns early on null without clearing).
 - Fix: clear on null; better, draw the untrained team's field at once from initial parameters (MLP-08).
 - Test: outputs then null → canvas cleared.
+- Fixed in b3dc27d.
 
 ### MLP-03 · Medium · Empty or tiny gardens flood the main thread
 - Evidence: see ENG-08; "Practised about 2 million times" with zero loss.
 - Fix: no training with fewer than 2 points or one group ("Plant some flowers of both kinds first"); throttle snapshots to ≤30/s; write `epochs` to state on pause or share, not every snapshot.
 - Test: empty garden keeps "Let it learn" disabled with the hint.
+- Fixed in fbfff76 (idle trainer), b3dc27d (disabled button and hint), 0dc22eb (e2e).
 
 ### MLP-04 · Medium · Large gardens slow the page and break links; no eraser
 - Evidence: `src/data/PaintCanvas.tsx:22` (a dot per 0.06 units, no cap), `scene.tsx:81`; 3000 dots → 300 ms epochs.
 - Fix: cap at 400 points with a note; batch `setData` per frame; share size check (PLT-12); an eraser brush or tap-to-remove.
 - Test: 500 plants stay at the cap; eraser removes a point.
+- Fixed in b3dc27d (400-flower cap, eraser), 0dc22eb (e2e).
 
 ### MLP-05 · Medium (suspected) · Mission and guess can read the previous team's last frame
 - Evidence: `ModuleShell.tsx:87`.
 - Fix: frames carry a `runKey` (shape + attempt); `when`/`answer` require a match.
 - Test: `when(oneCellSpiral, frameFrom2CellRun)` is false.
+- Fixed in b3dc27d.
 
 ### MLP-06 · Low (suspected) · A disposed worker's queued snapshots land in the new run
 - Evidence: `src/engine/model/model-engine.ts:118`.
 - Fix: `port.onmessage = null` and a `disposed` guard in `dispose`.
+- Fixed in fbfff76.
 
 ### MLP-07 · Medium · Missing spec parts (prompt 5)
 - Missing: activation colouring and backward flow particles on `NetworkView` (`scene.tsx:155`); hover mini-field per hidden cell; per-layer activation choice; missions "fewest cells for the spiral", "every cell switched off", "overfit with 5 points".
 - Fix: implement them (wording in the captions file, reviewed against the smart 12-year-old test).
 - Test: hover shows a mini field; activation selector changes the model; e2e per mission.
+- Fixed in b3dc27d (bends per layer, own-fence view, backward flow), 0dc22eb (e2e per mission).
 
 ### MLP-08 · Low · The lesson opens with an empty field
 - Fix: post a frame-0 snapshot on init and draw it.
 - Test: field has non-paper pixels before "Let it learn".
+- Fixed in fbfff76 (epoch-0 snapshot), b3dc27d, 0dc22eb (e2e).
 
 ### MLP-09 · Medium · Missing tests
 - Fix: e2e that the spiral mission fires (one cell, one layer, learn → "You earned a star."); per-lesson share → open → same view; fix the vacuous assertion `model.test.ts:36` (`below.at(-1)`).
+- Fixed in b3dc27d, 0dc22eb (mission and link e2e; `below.at(-1)` in rolling-downhill/model.test.ts).
 
 ### MLP-10 · Low · Wording
 - Confirmed live: the paint toggle reads "Blue / Green" with no label (A11Y-08); the mission "Draw a spiral with one cell" reads oddly — reword to "Try to fence in the spiral with just one cell".
+- Fixed in b3dc27d.
 
-Paint canvas scroll-blocking on phones: see QL-14 (same fix for PaintCanvas).
+Paint canvas scroll-blocking on phones: see QL-14 (same fix for PaintCanvas; done in b3dc27d, a 250 ms hold before a finger paints).
 
 ## Who is looking at whom (src/modules/w5-transformers/who-is-looking-at-whom, src/engine/pretrained)
 

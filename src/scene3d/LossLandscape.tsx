@@ -1,9 +1,9 @@
 "use client";
 
-import { Line } from "@react-three/drei";
+import { Line, OrbitControls } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Color, PlaneGeometry, SRGBColorSpace } from "three";
+import { BackSide, Color, PlaneGeometry, SRGBColorSpace } from "three";
 import { warmth, type ClassShape } from "@/design/encodings";
 import { useColourTable, useResolvedColours, type Rgb } from "@/design/paint";
 import type { Vec3 } from "./CameraRig";
@@ -22,6 +22,17 @@ type LossLandscapeProps = {
   markers?: readonly (Spot & { tone?: string; shape?: ClassShape })[];
   /** Soft paths drawn along the surface, such as where each ball has been; `dash` in ground units. */
   trails?: readonly { points: readonly Spot[]; tone: string; dash?: readonly [number, number] }[];
+  /** See-through markers, such as where the learner guessed each ball would stop. */
+  ghosts?: readonly (Spot & { tone?: string; shape?: ClassShape })[];
+  /**
+   * A dark rim around every marker and trail (a CSS colour), so they stand out from every part
+   * of the warm-to-cool ground, whatever their own tone.
+   */
+  rim?: string;
+  /** Lets the learner turn the valley by dragging (picking is off meanwhile). */
+  orbit?: boolean;
+  /** Called with the camera's angle around the valley, in radians, as it is turned. */
+  onTurn?: (azimuth: number) => void;
   /** Called with the spot on the ground the learner taps, or drops the ring on by keyboard. */
   onPick?: (at: Spot) => void;
   /** Words for the keyboard drop spot, needed with `onPick`. */
@@ -35,6 +46,11 @@ type LossLandscapeProps = {
 /** How tall the tallest hill is, in ground units. */
 const RELIEF = 0.7;
 const BALL = 0.05;
+/** The rim is this much bigger than its marker. */
+const RIM = 1.4;
+const GHOST_OPACITY = 0.45;
+/** How far the valley can be turned: never under the ground or straight overhead. */
+const ORBIT = { minPolar: 0.15, maxPolar: 1.3, minDistance: 1.8, maxDistance: 4.5 };
 /** Trails float just above the ground so it never hides them. */
 const TRAIL_LIFT = 0.012;
 const TRAIL_OPACITY = 0.85;
@@ -67,6 +83,10 @@ export function LossLandscape({
   height,
   markers = [],
   trails = [],
+  ghosts = [],
+  rim,
+  orbit = false,
+  onTurn,
   onPick,
   pickWords,
   label,
@@ -84,10 +104,14 @@ export function LossLandscape({
     "var(--color-ink)",
     ...markers.map(({ tone }) => tone ?? "var(--color-accent)"),
     ...trails.map(({ tone }) => tone),
+    ...ghosts.map(({ tone }) => tone ?? "var(--color-accent)"),
+    rim ?? "var(--color-ink)",
   ];
   const resolved = useResolvedColours(tones);
   const colours = useMemo(() => resolved.map(toColour), [resolved]);
   const [accent, ink] = colours;
+  const rimColour = rim ? colours.at(-1) : undefined;
+  const ghostColour = (index: number) => colours[markers.length + trails.length + index + 2];
 
   const { geometry, lift } = useMemo(() => {
     const plane = new PlaneGeometry(2, 2, resolution, resolution);
@@ -148,32 +172,75 @@ export function LossLandscape({
       camera={camera}
       className={className}
       fallback={
-        <ValleyMap height={height} markers={markers} trails={trails} cursor={spot} label={label} />
+        <ValleyMap
+          height={height}
+          markers={markers}
+          trails={trails}
+          ghosts={ghosts}
+          cursor={spot}
+          label={label}
+        />
       }
     >
       <mesh geometry={geometry} onClick={pick}>
         <meshStandardMaterial vertexColors roughness={0.95} metalness={0} />
       </mesh>
       {markers.map(({ x, z, shape }, index) => (
+        <group key={index} position={[x, lift(x, z) + BALL, z]}>
+          <mesh>
+            <Marker shape={shape} />
+            <meshStandardMaterial color={colours[index + 2]} roughness={0.8} metalness={0} />
+          </mesh>
+          {rimColour && (
+            <mesh scale={RIM}>
+              <Marker shape={shape} />
+              <meshBasicMaterial color={rimColour} side={BackSide} />
+            </mesh>
+          )}
+        </group>
+      ))}
+      {ghosts.map(({ x, z, shape }, index) => (
         <mesh key={index} position={[x, lift(x, z) + BALL, z]}>
           <Marker shape={shape} />
-          <meshStandardMaterial color={colours[index + 2]} roughness={0.8} metalness={0} />
+          <meshBasicMaterial
+            color={ghostColour(index) ?? accent}
+            transparent
+            opacity={GHOST_OPACITY}
+            depthWrite={false}
+          />
         </mesh>
       ))}
-      {trails.map(({ points, dash }, index) =>
-        points.length < 2 ? null : (
-          <Line
-            key={index}
-            points={points.map(({ x, z }) => [x, lift(x, z) + TRAIL_LIFT, z] as const)}
-            color={colours[markers.length + index + 2] ?? accent}
-            lineWidth={3}
-            dashed={Boolean(dash)}
-            dashSize={dash?.[0]}
-            gapSize={dash?.[1]}
-            transparent
-            opacity={TRAIL_OPACITY}
-          />
-        ),
+      {trails.map(({ points, dash }, index) => {
+        if (points.length < 2) return null;
+        const path = points.map(({ x, z }) => [x, lift(x, z) + TRAIL_LIFT, z] as const);
+        return (
+          <group key={index}>
+            {rimColour && <Line points={path} color={rimColour} lineWidth={5} />}
+            <Line
+              points={path}
+              color={colours[markers.length + index + 2] ?? accent}
+              lineWidth={3}
+              dashed={Boolean(dash)}
+              dashSize={dash?.[0]}
+              gapSize={dash?.[1]}
+              transparent={!rimColour}
+              opacity={rimColour ? 1 : TRAIL_OPACITY}
+            />
+          </group>
+        );
+      })}
+      {orbit && (
+        <OrbitControls
+          makeDefault
+          enableDamping
+          enablePan={false}
+          target={camera.target ? [...camera.target] : [0, 0, 0]}
+          minPolarAngle={ORBIT.minPolar}
+          maxPolarAngle={ORBIT.maxPolar}
+          minDistance={ORBIT.minDistance}
+          maxDistance={ORBIT.maxDistance}
+          onChange={(event) => onTurn?.(event?.target.getAzimuthalAngle() ?? 0)}
+        />
       )}
       {spot && (
         <mesh

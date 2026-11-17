@@ -39,18 +39,36 @@ export function createMissionWatcher<S extends ModuleState, F extends TimelineFr
  * the timeline drops its oldest frames: from `before` moments before the one it fired on, to
  * `after` moments after it.
  */
-export type ReplayWindow = { fromEpoch: number; atEpoch: number; after: number; run: number };
+export type ReplayWindow = {
+  fromEpoch: number;
+  atEpoch: number;
+  after: number;
+  run: number;
+  /** Replay speed, when slower than the timeline's own. */
+  framesPerSecond?: number;
+};
 
-/** The window around moment `at` (an index into the timeline), or null with nothing recorded. */
+/**
+ * The window around moment `at` (an index into the timeline), or around the mission's own
+ * `moment` when it names one, or null with nothing recorded.
+ */
 export function replayWindow(
   timeline: Timeline<TimelineFrame>,
   at: number,
-  { before, after }: Mission<ModuleState>["replay"],
+  { before, after, moment, framesPerSecond }: Mission<ModuleState>["replay"],
 ): ReplayWindow | null {
+  const newest = timeline.at(at);
+  const epoch = newest && moment ? moment(newest) : null;
+  if (epoch !== null) {
+    const found = timeline.frames().findIndex((frame) => frame.epoch >= epoch);
+    if (found >= 0) at = found;
+  }
   const fired = timeline.at(at);
   const start = timeline.at(Math.max(0, at - before));
   const { run } = timeline.getState();
-  return fired && start ? { fromEpoch: start.epoch, atEpoch: fired.epoch, after, run } : null;
+  if (!fired || !start) return null;
+  const window = { fromEpoch: start.epoch, atEpoch: fired.epoch, after, run };
+  return framesPerSecond ? { ...window, framesPerSecond } : window;
 }
 
 /** The window as timeline indices today, clamped to what is recorded. */
@@ -93,7 +111,8 @@ export function advanceReplay(
   window: ReplayWindow,
   seconds: number,
 ): boolean {
-  timeline.tick(seconds);
+  const speed = window.framesPerSecond ? window.framesPerSecond / timeline.framesPerSecond : 1;
+  timeline.tick(seconds * speed);
   const { to } = indices(timeline, window);
   if (timeline.getState().cursor < to && timeline.getState().playing) return true;
   timeline.seek(to);

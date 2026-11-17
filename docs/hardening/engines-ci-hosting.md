@@ -54,21 +54,26 @@
 - Evidence: `stacking-cells/model.ts:9,49` (`plant("own")` returns `[]`), `src/engine/model/backends/autodiff.ts:50` (loss 0 instantly), `trainer.ts:80`; `batchSize <= 0` loops forever (`autodiff.ts:39`, `tfjs.ts:86`).
 - Fix: with `data.count === 0`, `run`/`step` are no-ops and post `{type:"idle", reason:"no-data"}`; validate `batchSize >= 1` and `snapshotEvery >= 1` in `init`; the scene says "Plant some flowers first" and disables "Let it learn".
 - Proof: trainer tests for empty data and `batchSize: 0`.
+- Fixed in fbfff76.
 
 ## ENG-09 · Medium · Link replay is unbounded and not faithful
 - Evidence: `stacking-cells/scene.tsx:72` (`step(start.epochs)` in one task, unclamped), `trainer.ts:112-129` (final settings used from epoch 0; RNG and optimiser state not restored).
 - Fix: clamp epochs (5000); replay in slices with a progress caption; record a compact change log (epoch, setting) in state and replay it — or put RNG and optimiser state plus params in the snapshot. Update architecture.md's determinism note.
 - Proof: change the step at epoch 50, continue to 100, replay from state → identical params; `epochs: 1e9` is clamped.
+- Fixed in fbfff76 (scheduled changes, sliced replay), b3dc27d (the lesson's change log).
 
 ## ENG-10 · Medium · No divergence or NaN handling
 - Evidence: `src/engine/autodiff/optimisers.ts:31-51`, `backend.ts:31-34`; TF.js the same.
 - Fix: after each epoch, a non-finite loss or parameter stops the run and posts `{type:"diverged", epoch}`; lessons show "the steps got too big"; the live buffer keeps the last finite params.
 - Proof: SGD at learning rate 1e6 emits `diverged` and stops.
+- Fixed in fbfff76.
 
 ## ENG-11 · Medium (suspected) · TF.js backend stalls the GPU every batch
 - Evidence: `tfjs.ts:100` (`await cost.data()` per batch), `trainer.ts:71` → `tfjs.ts:114-128` (all kernels read each epoch), `tfjs.ts:151` (Adam LR set on an internal field); no WebGPU device-loss handling.
 - Fix: accumulate loss on the GPU and read once per epoch; write live params at most every ~16 ms; on device loss re-init on WebGL; recreate Adam on LR change.
 - Proof: epochs/second before and after; `configure` changes the Adam step.
+- Fixed in fbfff76.
+- Follow-up, fixed in 698aade: under heavy load the TF.js e2e stayed at epoch 0. Cause: WebGL checks each new shader program synchronously, so the worker froze while a swamped graphics process compiled (over 30 s with 4–8 browsers), and each epoch then waited on 7 device reads in a row (~0.8 s each). Fix: the model's programs are compiled ahead without blocking (compile-only mode, parallel compile, shape uniforms) plus one real read; a device not ready within 5 s is passed over; parameters come back in one read; three slow reads in a row (over 1 s each) move training to the next device, as a lost device does. Proof: the e2e passed 8/8 and 12/12 run in parallel (0/8 before); unit tests for passing over a device, the deadline and the slow-read rule.
 
 ## ENG-12 · Medium · 3D has no WebGL fallback; replaced geometry leaks
 - Evidence: `src/scene3d/SoftStage.tsx:22` (R3F throws without WebGL), `LossLandscape.tsx:57-86` (geometry never disposed).
@@ -104,7 +109,7 @@
 - Fix: keep them but `noindex` (NAV-28) and say so in architecture.md, or hide them behind a build flag.
 
 ## REPO-18 · Low · Unused dependencies
-- **Status:** Partly fixed in fd27c88: `d3` and `@types/d3` removed. Splitting `@tensorflow/tfjs` needs `src/engine/model/backends/tfjs.ts`, outside H1's files: left for H3a (ENG-11).
+- **Status:** Fixed: `d3` and `@types/d3` removed in fd27c88; `@tensorflow/tfjs` split into `tfjs-core`, `tfjs-layers`, `tfjs-backend-webgl` and `tfjs-backend-cpu` in fbfff76 (H3a).
 - Evidence (verified): no imports of `d3`; `@tensorflow/tfjs` umbrella pulls unused converter/data packages.
 - Fix: remove `d3`, `@types/d3`; depend on `tfjs-core`, `tfjs-layers`, `tfjs-backend-webgl`, `tfjs-backend-cpu` (and webgpu).
 

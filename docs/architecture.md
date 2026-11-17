@@ -420,3 +420,51 @@ LIVE-13/14.
 - **Checks**: `e2e/attention.spec.ts` and `e2e/scoring.spec.ts`; unit tests beside each lesson
   (`looking.test.ts`, `threads.test.tsx`, `scene.test.tsx`, `scoring.test.tsx`, `hardening.test.tsx`) and engine tests in
   `engine/pretrained/*.test.ts` and `engine/rl/gridworld.test.ts`.
+
+## Lessons hand-over (H3a: Rolling downhill, Stacking cells, the training engine)
+
+Items and their tests are in `docs/hardening/lessons.md` (DH-01..08, MLP-01..10) and `engines-ci-hosting.md`
+(ENG-08..11).
+
+- **Exact link replay (ENG-09)**: links still replay from state, not from stored parameters, but a training lesson now
+  keeps a compact change log in state (`log`: the epoch and old value of every step-size change, flowers planted and
+  pulled up). The scene builds the engine from the run's *beginning* (`beginning(state)`) and replays with
+  `engine.step(epochs, schedule)`, where `ScheduledChange = { epoch, data?, optimiser? }` is applied when the trainer
+  reaches that epoch. Replay runs in slices (`setTimeout(0)` between them) with a progress caption; `parseState` clamps
+  epochs (5000) and the log (2000 entries, and it must work back to the garden it ends on). Same seed + same log ⇒
+  identical parameters, checked through the real trainer in `stacking-cells.test.tsx`. Copy this for any lesson whose
+  learner changes settings mid-run.
+- **Trainer events** (`engine/model/protocol.ts`): `init` posts an epoch-0 snapshot (so a field shows before practice),
+  validates `batchSize`/`snapshotEvery` (whole numbers ≥ 1), and answers empty data with `{ type: "idle", reason:
+  "no-data" }`. A non-finite loss or parameter restores the last good parameters and posts `{ type: "diverged", epoch }`.
+  `setData` and `configure` take an optional `tag` and answer `{ type: "applied", tag, epoch }` (how the lesson logs the
+  epoch a change landed on). `TrainSettings.snapshotMs` throttles snapshots while running. `ModelEngine` takes
+  `onIdle`, `onDiverged`, `onApplied`; `dispose()` is idempotent and drops queued messages.
+- **Per-layer bends**: `ModelSpec.activation` may be a list, one bend per hidden layer (`hiddenActivation` in
+  `autodiff/nn.ts`; extra layers reuse the last). `createFieldReader(model)` (`engine/model/forward.ts`) is a
+  typed-array forward pass (a 48×48 field of a 4×8 team in ~2 ms) with `.hidden(params, inputs)` for each hidden cell's
+  own answers.
+- **TF.js** (`engine/model/backends/tfjs.ts`): depends on `tfjs-core`, `tfjs-layers` and the webgl/cpu backends only
+  (REPO-18). The epoch loss is summed on the device and read once; parameters are read at most every 16 ms. On WebGPU
+  device loss it rebuilds on WebGL (then CPU) from the last parameters. `configure` changes Adam's step by recreating
+  it with its averages (TF.js optimisers answer `instanceof` by duck typing, so branch on `kind`).
+  WebGL shader programs are compiled ahead without blocking (`compileAhead`), because WebGL's synchronous
+  compile check froze the worker for over 30 s on a busy machine; a device not ready in `GPU_READY_MS` (5 s), or
+  one whose reads are slow `SLOW_READS` times in a row, is left for the next device (the CPU is quick for these
+  models). Keep device reads few: parameters come back in one read.
+- **After merging H3b**: QL-14's PaintCanvas half was already done here (`touch-pan-y`, a 250 ms hold before a
+  finger paints, then a non-passive `touchmove` that blocks scrolling only while painting; H3b's Board waits 300 ms).
+- **Platform additions (minimal)**: `Mission.replay` may give `moment(frame)` (the epoch to centre the replay on) and
+  `framesPerSecond` (a slower replay); `Prediction.fresh` makes a guess placed while a run is on screen wait for the
+  next run before it can be revealed. `LossLandscape` gained `ghosts` (see-through markers), `rim` (a dark outline on
+  markers and trails, for contrast with both ends of the ground), `orbit` + `onTurn` (drei `OrbitControls`, damped,
+  no pan, limited; picking is off while turning); `ValleyMap` draws ghosts as dashed outlines. `PaintCanvas` gained
+  `erasing`/`onRemove` and waits 250 ms before a finger paints (a moving finger scrolls; QL-14's PaintCanvas half);
+  `DecisionField` clears when its outputs go null; `NetworkView` gained `backward` flow, `activations`, and
+  `cellLabel`/`onCell`/`chosen` buttons over hidden cells.
+- **Rolling downhill**: a roll is recorded whole at once and then played (a hidden tab still finishes it); turning a
+  dial after a roll asks for one new roll 400 ms after the dial rests. Walker colours are fixed palette colours
+  (`tones.ts`, checked by `tones.test.ts`), not theme tokens, because the ground is the same in both themes.
+- **Checks**: `e2e/rolling-downhill.spec.ts` and `e2e/stacking-cells.spec.ts` (every mission, links, the garden cap, the
+  hover fence, the field before practice, guesses, turning the valley, the slow replay, the biggest team at 60 fps as
+  `@perf`).
