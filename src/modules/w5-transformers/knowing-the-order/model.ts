@@ -3,6 +3,7 @@
  * Order stamps (sine waves, one set per place in the sentence) are added to each word's code
  * before it is read, and a small bend (tanh) makes the pairing of word and place matter.
  */
+import { toyCode } from "@/engine/language/toy-codes";
 import { createRandom } from "@/engine/random";
 import type { TimelineFrame } from "@/platform/contract";
 
@@ -49,17 +50,8 @@ export function fullOrder(order: readonly number[], count: number): number[] {
   return sorted.every((value, at) => value === at) ? [...order] : typed;
 }
 
-function hash(word: string) {
-  let value = 2166136261;
-  for (const letter of word) value = Math.imul(value ^ (letter.codePointAt(0) ?? 0), 16777619);
-  return value >>> 0;
-}
-
 /** A word's code: the same made-up numbers every time for the same word. */
-export function codeOf(word: string): number[] {
-  const random = createRandom(hash(word));
-  return Array.from({ length: SIZE }, () => random.normal());
-}
+export const codeOf = (word: string) => toyCode(word, SIZE);
 
 /** The order stamp for place `at`: waves that change faster in the first numbers than the last. */
 export function stampOf(at: number, speed: number): number[] {

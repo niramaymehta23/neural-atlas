@@ -67,6 +67,8 @@ export const world5: WorldEntry = {
       idea: "Look around, think, pass it on, with a shortcut",
       playWith: "A river where each block adds a stream",
       prerequisites: ["many-readers-at-once", "knowing-the-order", "keeping-things-steady"],
+      load: () =>
+        import("@/modules/w5-transformers/the-thinking-block").then(({ definition }) => definition),
     },
     {
       id: "guess-the-next-word",
