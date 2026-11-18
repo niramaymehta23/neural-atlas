@@ -1,0 +1,49 @@
+import { oneOf } from "@/platform/clamp";
+import { defineModule } from "@/platform/contract";
+import { captions, words } from "./captions";
+import { TruthControls } from "./controls";
+import { TruthDrawer } from "./drawer";
+import { missions } from "./missions";
+import { KINDS, type TruthFrame, type TruthState } from "./model";
+import { predictions } from "./predictions";
+import { TruthScene } from "./scene";
+
+/** The animals in the storyteller's books (as its manifest lists them). */
+const ANIMALS = [
+  "owl",
+  "fox",
+  "bear",
+  "frog",
+  "duck",
+  "horse",
+  "cow",
+  "hen",
+  "bee",
+  "mouse",
+  "rabbit",
+  "hedgehog",
+];
+
+export const definition = defineModule<TruthState, TruthFrame>({
+  initialState: { animal: "fox", kind: "eats", source: false },
+  scene: TruthScene,
+  controls: TruthControls,
+  captions,
+  missions,
+  predictions,
+  underTheHood: TruthDrawer,
+  compare: (state) => ({ ...state, source: !state.source }),
+  parseState: (saved) => ({
+    animal: oneOf(saved.animal, ANIMALS, "fox"),
+    kind: oneOf(saved.kind, KINDS, "eats"),
+    source: saved.source,
+  }),
+  describe: (_state, frame) =>
+    frame
+      ? words.describe.done(
+          words.answer(frame.answer),
+          words.sureWords(frame.sure),
+          words.truth[frame.truth],
+        )
+      : words.describe.waiting,
+});

@@ -189,6 +189,10 @@ export const world5: WorldEntry = {
       idea: "Sounding right is not being right",
       playWith: "Confidence vs truth side by side",
       prerequisites: ["safe-vs-adventurous"],
+      load: () =>
+        import("@/modules/w5-transformers/confident-but-wrong").then(
+          ({ definition }) => definition,
+        ),
     },
   ],
 };
