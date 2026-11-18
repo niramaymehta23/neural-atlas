@@ -133,6 +133,8 @@ export const world5: WorldEntry = {
       idea: "Teach a general writer a special style",
       playWith: "Retrain the tiny writer on pirate talk",
       prerequisites: ["reading-the-internet", "standing-on-giants"],
+      load: () =>
+        import("@/modules/w5-transformers/specialising").then(({ definition }) => definition),
     },
     {
       id: "learning-from-thumbs-up",
