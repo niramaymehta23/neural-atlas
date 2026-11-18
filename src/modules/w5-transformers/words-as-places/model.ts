@@ -22,6 +22,8 @@ export type PlacesState = {
   amount: number;
   /** Leave the three start words out of the answers. */
   skip: boolean;
+  /** How many of the nearest words to show. */
+  shown: number;
 };
 
 export type PlacesFrame = TimelineFrame & {
@@ -30,6 +32,7 @@ export type PlacesFrame = TimelineFrame & {
   plus: string;
   amount: number;
   skip: boolean;
+  shown: number;
   /** Every word is on the map. */
   known: boolean;
   /** The nearest words to where the walk lands, nearest first. */
@@ -38,7 +41,7 @@ export type PlacesFrame = TimelineFrame & {
 
 export const MOST_LETTERS = 20;
 export const MOST_AMOUNT = 1.5;
-export const NEAREST = 5;
+export const NEAREST = { min: 3, max: 8, start: 5 } as const;
 /** "The whole arrow", give or take a notch of the dial. */
 export const WHOLE = 0.05;
 
@@ -66,7 +69,7 @@ export function frameOf(places: WordPlaces, state: PlacesState): Omit<PlacesFram
     ...state,
     known: vector !== null,
     landing: vector
-      ? nearest(places, vector, NEAREST, state.skip ? new Set(startWords(state)) : new Set())
+      ? nearest(places, vector, state.shown, state.skip ? new Set(startWords(state)) : new Set())
       : [],
   };
 }

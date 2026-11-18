@@ -1,16 +1,16 @@
-import { clampNumber } from "@/platform/clamp";
+import { clampNumber, clampWhole } from "@/platform/clamp";
 import { defineModule } from "@/platform/contract";
 import { captions, words } from "./captions";
 import { PlacesControls } from "./controls";
 import { PlacesDrawer } from "./drawer";
 import { missions } from "./missions";
-import { GUESS, MOST_AMOUNT, tidy, type PlacesFrame, type PlacesState } from "./model";
+import { GUESS, MOST_AMOUNT, NEAREST, tidy, type PlacesFrame, type PlacesState } from "./model";
 import { predictions } from "./predictions";
 import { PlacesScene } from "./scene";
 
 export const definition = defineModule<PlacesState, PlacesFrame>({
   // Starts at "king" without walking, so the guess is made before the walk is seen.
-  initialState: { ...GUESS, amount: 0, skip: true },
+  initialState: { ...GUESS, amount: 0, skip: true, shown: NEAREST.start },
   scene: PlacesScene,
   controls: PlacesControls,
   captions,
@@ -24,6 +24,7 @@ export const definition = defineModule<PlacesState, PlacesFrame>({
     plus: tidy(saved.plus),
     amount: clampNumber(saved.amount, 0, MOST_AMOUNT),
     skip: saved.skip,
+    shown: clampWhole(saved.shown, NEAREST.min, NEAREST.max),
   }),
   describe: (state, frame) => {
     if (!frame) return words.describe.waiting;

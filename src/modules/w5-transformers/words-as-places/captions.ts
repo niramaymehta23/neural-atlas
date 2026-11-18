@@ -1,4 +1,5 @@
 // Every word the learner sees in this lesson, kept here so the 12-year-old review covers it all.
+import { count } from "@/design/copy";
 
 export const captions = {
   opening:
@@ -42,6 +43,10 @@ export const words = {
     },
   },
   skip: "Skip the words you started with",
+  shown: {
+    label: "How many nearby words to show",
+    describe: (value: number) => `The nearest ${count(value)}`,
+  },
   landing: "Nearest words to where you land",
   closeness: (likeness: number) => {
     if (likeness >= 0.95) return "right on top";

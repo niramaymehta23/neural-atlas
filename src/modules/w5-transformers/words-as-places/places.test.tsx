@@ -66,7 +66,14 @@ describe("words as places: mission and guess", () => {
 describe("words as places: links and words", () => {
   it("keeps a hand-made link to small words and the dial's range", () => {
     const safe = definition.parseState!(
-      { from: "KING!!" + "x".repeat(40), minus: "m4n", plus: "", amount: 9, skip: false },
+      {
+        from: "KING!!" + "x".repeat(40),
+        minus: "m4n",
+        plus: "",
+        amount: 9,
+        skip: false,
+        shown: 50,
+      },
       initial,
     ) as PlacesState;
     expect(safe).toEqual({
@@ -75,6 +82,7 @@ describe("words as places: links and words", () => {
       plus: "",
       amount: 1.5,
       skip: false,
+      shown: 8,
     });
   });
 
