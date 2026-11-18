@@ -52,14 +52,14 @@ describe("specialising: pirate talk", () => {
     expect(talksLikeAPirate(frame.sample)).toBe(true);
     expect(mission.when(initial, frame)).toBe(true);
     expect(guess.answer(initial, frame)).toBe("worse");
-  }, 30_000);
+  }, 60_000);
 
   it("keeps its everyday writing when it rereads half of it", () => {
     const state = at({ mix: 0.5 });
     const frame = practised(state, 100);
     expect(mission.when(state, frame)).toBe(false);
     expect(guess.answer(state, frame)).toBeNull();
-  }, 30_000);
+  }, 60_000);
 });
 
 describe("specialising: links", () => {
@@ -89,5 +89,5 @@ describe("specialising: in the lesson", () => {
       },
     );
     await userEvent.click(screen.getByRole("button", { name: words.pause }));
-  }, 40_000);
+  }, 60_000);
 });

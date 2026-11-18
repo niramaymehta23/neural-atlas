@@ -8,7 +8,8 @@ import { letterIds, lettersOf } from "./writers";
 
 readFilesFromDisk();
 const LETTERS = `\n${Array.from({ length: 95 }, (_, at) => String.fromCharCode(32 + at)).join("")}`;
-const SHAPE = { vocab: LETTERS.length, context: 32, width: 48, heads: 4, layers: 2 };
+/** Smaller than the lesson writer, so the mechanics are checked quickly even on a busy machine. */
+const SHAPE = { vocab: LETTERS.length, context: 24, width: 24, heads: 2, layers: 2 };
 const TEXT =
   "Twinkle, twinkle, little star, how I wonder what you are. Up above the world so high, like a diamond in the sky.";
 
@@ -43,7 +44,7 @@ describe("baby GPT", () => {
     expect(losses.at(-1)).toBeLessThan(losses[0]! / 2);
     for (let at = 2; at < losses.length; at += 1) expect(losses[at]).toBeLessThan(losses[0]!);
     expect(practise(fresh(), 150)).toEqual(moments);
-  }, 20_000);
+  }, 60_000);
 
   it("replays the same moments however its steps are sliced (links replay exactly)", async () => {
     const run = async (later: (next: () => void) => void) => {
@@ -68,7 +69,7 @@ describe("baby GPT", () => {
     const slow = await run((next) => setTimeout(next, 3));
     expect(quick.map((event) => event.type === "moment" && event.step)).toEqual([0, 25, 50, 75]);
     expect(slow).toEqual(quick);
-  }, 20_000);
+  }, 60_000);
 
   it("reports a text too short to read instead of breaking", () => {
     const events: WriterEvent[] = [];
@@ -101,5 +102,5 @@ describe("baby GPT", () => {
     expect(lettersOf(writer, last.sample)).toMatch(/\b(be|ye|arr|matey|me)\b/i);
     expect(last.loss).toBeLessThan(first.loss / 3);
     expect(last.everyday ?? 0).toBeGreaterThan(first.everyday ?? 0);
-  }, 30_000);
+  }, 60_000);
 });

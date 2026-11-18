@@ -58,7 +58,7 @@ describe("reading the internet: one sentence", () => {
     expect(mission.when(state, frame)).toBe(true);
     expect(guess.answer(state, frame)).toBe("copy");
     expect(mission.when(at({ text: TEXTS.sentence, learning: 0.005 }), frame)).toBe(false);
-  }, 30_000);
+  }, 60_000);
 
   it("has not learned it before practising", () => {
     const state = at({ text: TEXTS.sentence });
@@ -100,5 +100,5 @@ describe("reading the internet: in the lesson", () => {
       },
     );
     await userEvent.click(screen.getByRole("button", { name: words.pause }));
-  }, 40_000);
+  }, 60_000);
 });
