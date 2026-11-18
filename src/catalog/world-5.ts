@@ -143,6 +143,10 @@ export const world5: WorldEntry = {
       idea: "People pick better answers and it learns to prefer them",
       playWith: "Choose between two answers and watch it change",
       prerequisites: ["specialising", "treats-and-tricks"],
+      load: () =>
+        import("@/modules/w5-transformers/learning-from-thumbs-up").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "looking-things-up",
