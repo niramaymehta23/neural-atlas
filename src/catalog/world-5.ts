@@ -89,6 +89,10 @@ export const world5: WorldEntry = {
       idea: "Pick the likely word, or take risks",
       playWith: 'A "boring ↔ wild" dial with live text',
       prerequisites: ["guess-the-next-word"],
+      load: () =>
+        import("@/modules/w5-transformers/safe-vs-adventurous").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "reading-the-internet",
