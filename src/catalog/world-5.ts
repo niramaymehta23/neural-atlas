@@ -23,6 +23,8 @@ export const world5: WorldEntry = {
       idea: "Words with similar meaning sit near each other",
       playWith: "King minus man plus woman lands near queen",
       prerequisites: ["chopping-text-into-pieces", "meaning-as-places"],
+      load: () =>
+        import("@/modules/w5-transformers/words-as-places").then(({ definition }) => definition),
     },
     {
       id: "who-is-looking-at-whom",
