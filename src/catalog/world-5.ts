@@ -177,6 +177,10 @@ export const world5: WorldEntry = {
       idea: "Images and text share one map of meaning",
       playWith: "Drag captions onto pictures",
       prerequisites: ["words-as-places", "how-machines-see"],
+      load: () =>
+        import("@/modules/w5-transformers/pictures-and-words-together").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "confident-but-wrong",
