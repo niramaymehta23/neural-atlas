@@ -105,10 +105,10 @@ describe("HomeMap", () => {
     await screen.findByText("choose");
     screen.getByText("star").focus();
     // A click that does not move focus itself, like a shortcut would.
-    fireEvent.click(screen.getByRole("radio", { name: "Learning by trying" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Brains made of numbers" }));
     await waitFor(() =>
       expect(document.activeElement).toBe(
-        screen.getByRole("radio", { name: "Learning by trying" }),
+        screen.getByRole("radio", { name: "Brains made of numbers" }),
       ),
     );
   });
