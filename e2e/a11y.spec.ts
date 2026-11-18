@@ -23,7 +23,7 @@ const PAGES = [
   { path: "/learn/stacking-cells", ready: "[data-region=scene]" },
   { path: "/learn/who-is-looking-at-whom", ready: "[data-region=scene]" },
   { path: "/learn/scoring-every-move", ready: "[data-region=scene]" },
-  { path: "/learn/chopping-text-into-pieces", ready: "h1" },
+  { path: "/learn/treats-and-tricks", ready: "h1" },
   { path: "/learn/no-such-idea", ready: "h1" },
   { path: "/styleguide", ready: "h1" },
 ] as const;

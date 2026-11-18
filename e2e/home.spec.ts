@@ -83,10 +83,10 @@ test("the home map shows all 74 ideas and a paper label on hover", async ({ page
 
 test("ideas still being drawn say so; built ones don't", async ({ page }) => {
   await openHome(page);
-  await page.locator('[data-star="chopping-text-into-pieces"]').hover(steady);
+  await page.locator('[data-star="treats-and-tricks"]').hover(steady);
   await expect(page.getByRole("tooltip")).toContainText("Still being drawn");
   await expect(
-    page.getByRole("link", { name: "Chopping text into pieces, Still being drawn" }),
+    page.getByRole("link", { name: "Treats and tricks, Still being drawn" }),
   ).toBeAttached();
   await page.mouse.move(0, 0);
   await page.locator('[data-star="stacking-cells"]').hover(steady);
@@ -279,7 +279,7 @@ test("the palette takes over a flight that has started", async ({ page }) => {
 });
 
 test("the locked page offers a lesson that is ready now", async ({ page }) => {
-  await page.goto("/learn/chopping-text-into-pieces");
+  await page.goto("/learn/treats-and-tricks");
   const ready = page.getByRole("navigation", { name: "Ready to explore now" });
   // The first built lesson in curriculum order, for a learner who has mastered nothing.
   await expect(ready.getByRole("link")).toHaveAttribute("href", "/learn/teach-by-showing");

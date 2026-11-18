@@ -11,6 +11,10 @@ export const world5: WorldEntry = {
       idea: "AI reads in chunks, not words",
       playWith: "Type anything and see the pieces",
       prerequisites: ["reading-one-word-at-a-time"],
+      load: () =>
+        import("@/modules/w5-transformers/chopping-text-into-pieces").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "words-as-places",

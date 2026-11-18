@@ -133,7 +133,7 @@ async function main() {
       console.log(`step ${step}: ${cost?.dataSync()[0]?.toFixed(3)}`);
     cost?.dispose();
   }
-  const finished = rows(tf.matMul(rows(pictureRows), pictureMap)).arraySync();
+  const finished = (rows(tf.matMul(rows(pictureRows), pictureMap)) as tf.Tensor2D).arraySync();
   const matcher = {
     size: SIZE,
     wordMap: round(wordMap.dataSync()),
