@@ -4,7 +4,7 @@ import type { ModuleViewProps } from "@/platform/contract";
 import { Dial } from "@/ui/Dial";
 import { SegmentedControl } from "@/ui/SegmentedControl";
 import { TOOLS, words, type Tool } from "./captions";
-import { NEVER, toolsOf, type AgentFrame, type AgentState } from "./model";
+import { LIMIT, NEVER, toolsOf, type AgentFrame, type AgentState } from "./model";
 
 const TASK_OPTIONS = [
   { value: "0", label: words.tasks.picnic },
@@ -44,6 +44,15 @@ export function AgentControls({ state, update }: ModuleViewProps<AgentState, Age
         step={1}
         onChange={(patience) => update({ patience, shown: 1 })}
         describe={(value) => words.patience.describe(value, value >= NEVER)}
+      />
+      <Dial
+        label={words.limit.label}
+        value={state.limit}
+        min={LIMIT.min}
+        max={LIMIT.max}
+        step={1}
+        onChange={(limit) => update({ limit, shown: 1 })}
+        describe={words.limit.describe}
       />
     </>
   );

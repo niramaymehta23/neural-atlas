@@ -75,6 +75,7 @@ export const words = {
   error: (tool: string) => `${sentenceStart(tool)} didn't answer. I'll try again.`,
   giveUp: (tool: string) => `Sorry, ${tool} isn't working, so I can't answer this for sure.`,
   stopped: "The safety limit stopped it. It would have kept trying for ever.",
+  cutOff: "The safety limit stopped it before it ran out of tries.",
   step: (at: number, total: number) => `Step ${count(at)} of ${count(total)}`,
   next: "Next step",
   all: "Show every step",
@@ -90,10 +91,15 @@ export const words = {
           ? "Gives up after one try"
           : `Gives up after ${count(value)} tries`,
   },
+  limit: {
+    label: "The most steps it may take",
+    describe: (value: number) => `${sentenceStart(count(value))} steps at most`,
+  },
   outcome: {
     done: "It finished the job.",
     gaveUp: "It gave up and said so honestly.",
     loop: "It's trapped in a loop: the same failing step, again and again.",
+    cutOff: "The safety limit cut it off before it could finish or give up.",
   },
   describe: (shown: string, outcome: string) => `${shown}. ${outcome}`,
   drawer: [

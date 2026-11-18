@@ -12,13 +12,16 @@ export type AgentState = {
   broken: string;
   /** Tries before giving up; NEVER never gives up. */
   patience: number;
+  /** The safety limit: the most steps it may take. */
+  limit: number;
   /** Steps shown so far. */
   shown: number;
 };
 
 export type StepKind = "think" | "tool" | "result" | "failed" | "check" | "answer" | "stopped";
 export type Step = { kind: StepKind; text: string };
-export type Outcome = "done" | "gaveUp" | "loop";
+/** "cutOff": the safety limit stopped it while it still had tries left. */
+export type Outcome = "done" | "gaveUp" | "loop" | "cutOff";
 
 export type AgentFrame = TimelineFrame &
   AgentState & {
@@ -27,11 +30,11 @@ export type AgentFrame = TimelineFrame &
   };
 
 export const NEVER = 11;
-/** The safety limit on steps. */
-export const LIMIT = 24;
+/** The safety limit on steps: never below the longest job with every tool working, plus room. */
+export const LIMIT = { min: 12, max: 40, start: 24 } as const;
 export const BROKEN = ["none", ...Object.keys(TOOLS)] as const;
 
-export function runOf(state: Pick<AgentState, "task" | "broken" | "patience">): {
+export function runOf(state: Pick<AgentState, "task" | "broken" | "patience" | "limit">): {
   steps: Step[];
   outcome: Outcome;
 } {
@@ -45,9 +48,10 @@ export function runOf(state: Pick<AgentState, "task" | "broken" | "patience">): 
     const tool = TOOLS[action.tool as Tool];
     let tries = 0;
     for (;;) {
-      if (steps.length + 2 >= LIMIT) {
-        steps.push({ kind: "stopped", text: words.stopped });
-        return { steps, outcome: "loop" };
+      if (steps.length + 2 >= state.limit) {
+        const never = state.patience >= NEVER;
+        steps.push({ kind: "stopped", text: never ? words.stopped : words.cutOff });
+        return { steps, outcome: never ? "loop" : "cutOff" };
       }
       steps.push({ kind: "tool", text: words.uses(tool, action.input) });
       if (state.broken !== action.tool) {

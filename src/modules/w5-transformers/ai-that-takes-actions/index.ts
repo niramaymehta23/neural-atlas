@@ -9,7 +9,7 @@ import { predictions } from "./predictions";
 import { AgentScene } from "./scene";
 
 export const definition = defineModule<AgentState, AgentFrame>({
-  initialState: { task: 0, broken: "none", patience: 3, shown: 1 },
+  initialState: { task: 0, broken: "none", patience: 3, limit: LIMIT.start, shown: 1 },
   scene: AgentScene,
   controls: AgentControls,
   captions,
@@ -21,7 +21,8 @@ export const definition = defineModule<AgentState, AgentFrame>({
     task: clampWhole(saved.task, 0, TASKS.length - 1),
     broken: oneOf(saved.broken, BROKEN, "none"),
     patience: clampWhole(saved.patience, 1, NEVER),
-    shown: clampWhole(saved.shown, 1, LIMIT),
+    limit: clampWhole(saved.limit, LIMIT.min, LIMIT.max),
+    shown: clampWhole(saved.shown, 1, LIMIT.max),
   }),
   describe: (state, frame) => {
     const { outcome } = runOf(state);

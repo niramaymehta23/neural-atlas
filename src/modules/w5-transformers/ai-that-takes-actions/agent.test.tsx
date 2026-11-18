@@ -10,7 +10,7 @@ import { predictions } from "./predictions";
 
 const initial = definition.initialState as AgentState;
 const at = (change: Partial<AgentState>): AgentState => ({ ...initial, ...change }) as AgentState;
-const all = (state: AgentState): AgentState => ({ ...state, shown: LIMIT });
+const all = (state: AgentState): AgentState => ({ ...state, shown: LIMIT.max });
 const shown = (state: AgentState): AgentFrame => ({ ...frameOf(state), epoch: 1 });
 const [mission] = missions;
 const [guess] = predictions;
@@ -30,8 +30,17 @@ describe("ai that takes actions: the agent", () => {
   it("loops until the safety limit when it never gives up", () => {
     const run = runOf(at({ broken: "converter", patience: NEVER }));
     expect(run.outcome).toBe("loop");
-    expect(run.steps.length).toBeLessThanOrEqual(LIMIT);
+    expect(run.steps.length).toBeLessThanOrEqual(LIMIT.start);
     expect(run.steps.at(-1)?.kind).toBe("stopped");
+  });
+
+  it("stops sooner with a lower limit, and is cut off if it still had tries left", () => {
+    const short = runOf(at({ broken: "converter", patience: NEVER, limit: LIMIT.min }));
+    expect(short.outcome).toBe("loop");
+    expect(short.steps.length).toBeLessThanOrEqual(LIMIT.min);
+    const cut = runOf(at({ broken: "weather", patience: 10, limit: LIMIT.min }));
+    expect(cut.outcome).toBe("cutOff");
+    for (const task of [0, 1]) expect(runOf(at({ task, limit: LIMIT.min })).outcome).toBe("done");
   });
 
   it("ignores a broken tool the job doesn't use", () => {
@@ -55,11 +64,15 @@ describe("ai that takes actions: mission and guess", () => {
 describe("ai that takes actions: links", () => {
   it("keeps a hand-made link to a real job, tool and dials", () => {
     expect(
-      definition.parseState!({ task: 9, broken: "laser", patience: 50, shown: -1 }, initial),
+      definition.parseState!(
+        { task: 9, broken: "laser", patience: 50, limit: 99, shown: -1 },
+        initial,
+      ),
     ).toEqual({
       task: 1,
       broken: "none",
       patience: NEVER,
+      limit: LIMIT.max,
       shown: 1,
     });
   });
