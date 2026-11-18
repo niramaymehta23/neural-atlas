@@ -97,25 +97,33 @@ describe("squeeze and rebuild: links and words", () => {
   });
 });
 
+/** Reading and running the 3.2 MB squeezer the first time; a slower CI runner needs well over a second. */
+const LOAD = { timeout: 10_000 };
+
 describe("squeeze and rebuild: in the lesson", () => {
   beforeEach(readFacesFromDisk);
 
   it("rebuilds the face, then earns the star once squeezed to one number", async () => {
     renderLesson();
-    await waitFor(() => expect(document.querySelector("[data-closeness]")).not.toBeNull());
+    await waitFor(() => expect(document.querySelector("[data-closeness]")).not.toBeNull(), LOAD);
     expect(document.querySelector("[data-closeness]")?.getAttribute("data-closeness")).toBe(
       "almost",
     );
     screen.getByRole("slider", { name: words.keep.label }).focus();
     await userEvent.keyboard("{Home}");
-    await waitFor(() =>
-      expect(document.querySelector("[data-closeness]")?.getAttribute("data-closeness")).toBe(
-        "blurry",
-      ),
+    await waitFor(
+      () =>
+        expect(document.querySelector("[data-closeness]")?.getAttribute("data-closeness")).toBe(
+          "blurry",
+        ),
+      LOAD,
     );
     const dock = document.querySelector("[data-region=dock]") as HTMLElement;
-    await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
-  });
+    await waitFor(
+      () => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument(),
+      LOAD,
+    );
+  }, 30_000);
 
   it("picks another face from the keyboard", async () => {
     renderLesson();
@@ -131,9 +139,9 @@ describe("squeeze and rebuild: in the lesson", () => {
   it("says plainly when the squeezer cannot be fetched, and tries again", async () => {
     failFaceFiles();
     renderLesson();
-    expect(await screen.findByText(words.model.failed)).toBeInTheDocument();
+    expect(await screen.findByText(words.model.failed, {}, LOAD)).toBeInTheDocument();
     readFacesFromDisk();
     await userEvent.click(screen.getByRole("button", { name: words.model.retry }));
-    await waitFor(() => expect(document.querySelector("[data-closeness]")).not.toBeNull());
-  });
+    await waitFor(() => expect(document.querySelector("[data-closeness]")).not.toBeNull(), LOAD);
+  }, 30_000);
 });
