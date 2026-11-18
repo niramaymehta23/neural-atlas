@@ -7,7 +7,14 @@ import { useLanguageFile } from "@/features/language/use-language-file";
 import { useShownFrame } from "@/features/language/use-shown-frame";
 import type { ModuleViewProps } from "@/platform/contract";
 import { LIBRARY, QUESTIONS, words } from "./captions";
-import { frameOf, MOST_LETTERS, wrongBook, type LookFrame, type LookState } from "./model";
+import {
+  frameOf,
+  listedOf,
+  MOST_LETTERS,
+  wrongBook,
+  type LookFrame,
+  type LookState,
+} from "./model";
 
 type Props = ModuleViewProps<LookState, LookFrame>;
 
@@ -66,7 +73,7 @@ export function LookScene({ state, update, timeline, side }: Props) {
               <p className="text-ink-soft">{words.unknown}</p>
             ) : (
               <ol className="flex flex-col gap-1" data-ranking>
-                {frame.ranking.map(({ book, likeness }) => {
+                {listedOf(frame).map(({ book, likeness }) => {
                   const title = LIBRARY[book]?.title ?? "";
                   const isUsed = book === frame.used;
                   return (
@@ -109,7 +116,15 @@ export function LookScene({ state, update, timeline, side }: Props) {
             data-wrong={wrongBook(frame) ? "" : undefined}
           >
             <p className="font-semibold">{words.answer}</p>
-            {used ? (
+            {used && frame.refused ? (
+              <p
+                className="rounded-card border border-dashed border-hairline bg-paper p-3"
+                data-answer
+                data-refused
+              >
+                {words.refused(used.title)}
+              </p>
+            ) : used ? (
               <>
                 <p className="text-ink-soft">{words.handed(used.title)}</p>
                 <p

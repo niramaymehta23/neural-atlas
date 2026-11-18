@@ -1,4 +1,5 @@
 // Every word the learner sees in this lesson, kept here so the 12-year-old review covers it all.
+import { count } from "@/design/copy";
 
 const quote = (text: string) => `“${text}”`;
 
@@ -99,6 +100,22 @@ export const words = {
   rightBook: "This is the book that really answers the question.",
   unknown: "The librarian couldn't understand any of these words. Try everyday words.",
   lookUp: "Look things up first",
+  need: {
+    label: "How good a match it needs before answering",
+    describe: (value: number) => {
+      if (value < 0.05) return "Answers from any book";
+      if (value < 0.5) return "Needs a weak match";
+      if (value < 0.7) return "Needs a fair match";
+      if (value < 0.85) return "Needs a good match";
+      return "Needs a very good match";
+    },
+  },
+  listed: {
+    label: "How many books the librarian lists",
+    describe: (value: number) => (value === 1 ? "Just the best one" : `The best ${count(value)}`),
+  },
+  refused: (title: string) =>
+    `${quote(title)} isn't a good enough match for this question, so the chatbot says: “I couldn't find a good answer to that.”`,
   model: {
     loading: "Opening the library…",
     failed: "The library's word map could not be fetched. Check your connection and try again.",
@@ -107,6 +124,8 @@ export const words = {
   describe: {
     waiting: "The library is opening.",
     memory: "It answers from memory, without looking anything up.",
+    refused: (title: string) =>
+      `It was handed ${quote(title)}, which doesn't match well enough, so it says it can't answer.`,
     done: (title: string, answer: string) => `It was handed ${quote(title)} and answers: ${answer}`,
   },
   drawer: [

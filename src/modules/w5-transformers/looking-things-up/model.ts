@@ -13,6 +13,10 @@ export type LookState = {
   handed: number;
   /** Look things up before answering. */
   lookUp: boolean;
+  /** "How good a match it needs before answering": below it, it says it can't answer. */
+  need: number;
+  /** "How many books the librarian lists". */
+  listed: number;
 };
 
 export type LookFrame = TimelineFrame &
@@ -21,13 +25,16 @@ export type LookFrame = TimelineFrame &
     ranking: { book: number; likeness: number }[];
     /** The book the chatbot answers from, or -1 without looking up. */
     used: number;
-    /** Its answer: a sentence from that book. */
+    /** Its answer: a sentence from that book, or empty when it refused. */
     answer: string;
+    /** The book it was handed matched too poorly, so it said it can't answer. */
+    refused: boolean;
     /** The ready-made question's real book, or -1 for a question of your own. */
     truth: number;
   };
 
 export const MOST_LETTERS = 80;
+export const NEED = { min: 0, max: 0.95 } as const;
 
 const bookText = (book: (typeof LIBRARY)[number]) => [book.title, ...book.pages].join(" ");
 
@@ -54,7 +61,9 @@ export function frameOf(places: WordPlaces, state: LookState): Omit<LookFrame, "
       })).sort((a, b) => b.likeness - a.likeness || a.book - b.book)
     : [];
   const used = !state.lookUp ? -1 : state.handed >= 0 ? state.handed : (ranking[0]?.book ?? -1);
-  const pages = LIBRARY[used]?.pages ?? [];
+  const match = ranking.find(({ book }) => book === used)?.likeness ?? 0;
+  const refused = used >= 0 && state.need > 0 && match < state.need;
+  const pages = refused ? [] : (LIBRARY[used]?.pages ?? []);
   let answer = "";
   let best = -Infinity;
   for (const page of pages) {
@@ -65,8 +74,12 @@ export function frameOf(places: WordPlaces, state: LookState): Omit<LookFrame, "
     }
   }
   const truth = QUESTIONS.find(({ ask }) => ask === state.question)?.book ?? -1;
-  return { loss: 0, ...state, ranking, used, answer, truth };
+  return { loss: 0, ...state, ranking, used, answer, refused, truth };
 }
+
+/** The librarian's list: the best `listed` books, and the book in use even when it ranks lower. */
+export const listedOf = (frame: Pick<LookFrame, "ranking" | "listed" | "used">) =>
+  frame.ranking.filter(({ book }, at) => at < frame.listed || book === frame.used);
 
 /** A ready-made question answered from a book that doesn't answer it. */
 export const wrongBook = (frame: Pick<LookFrame, "truth" | "used" | "answer">) =>

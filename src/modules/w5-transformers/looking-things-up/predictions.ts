@@ -10,10 +10,10 @@ export const predictions = [
       { id: "refuse", label: predictionWords.refuse },
       { id: "anyway", label: predictionWords.anyway },
     ],
-    // Told once a wrong book is handed over: the chatbot answers from it, or (if it had nothing
-    // to answer from) says it can't.
-    answer: (_state, frame) =>
-      !frame || frame.truth < 0 || frame.used < 0 || frame.used === frame.truth
+    // Told once a wrong book is handed over to the chatbot as it starts (needing no match at all):
+    // it answers from it, or (if it had nothing to answer from) says it can't.
+    answer: (state, frame) =>
+      !frame || state.need > 0 || frame.truth < 0 || frame.used < 0 || frame.used === frame.truth
         ? null
         : wrongBook(frame)
           ? "anyway"

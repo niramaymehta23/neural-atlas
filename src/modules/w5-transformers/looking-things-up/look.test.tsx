@@ -8,7 +8,7 @@ import { ModuleShell } from "@/platform/ModuleShell";
 import { LIBRARY, QUESTIONS, words } from "./captions";
 import { definition } from "./index";
 import { missions } from "./missions";
-import { frameOf, type LookFrame, type LookState } from "./model";
+import { frameOf, listedOf, type LookFrame, type LookState } from "./model";
 import { predictions } from "./predictions";
 
 readFilesFromDisk();
@@ -40,6 +40,23 @@ describe("looking things up: the librarian", () => {
   it("answers from memory without looking up", () => {
     expect(shown(at({ lookUp: false })).used).toBe(-1);
   });
+
+  it("says it can't answer when the book it is handed matches too poorly", () => {
+    const right = shown(initial);
+    const best = right.ranking[0]?.likeness ?? 0;
+    const need = best - 0.01;
+    expect(shown(at({ need })).refused).toBe(false);
+    expect(shown(at({ need })).answer).not.toBe("");
+    const wrong = shown(at({ need, handed: 5 }));
+    expect(wrong.refused).toBe(true);
+    expect(wrong.answer).toBe("");
+    expect(mission.when(at({ need, handed: 5 }), wrong)).toBe(false);
+  });
+
+  it("lists only the best books, plus the one in use", () => {
+    const frame = shown(at({ listed: 1, handed: 5 }));
+    expect(listedOf(frame).map(({ book }) => book)).toEqual([frame.ranking[0]?.book, 5]);
+  });
 });
 
 describe("looking things up: mission and guess", () => {
@@ -55,11 +72,16 @@ describe("looking things up: mission and guess", () => {
 describe("looking things up: links", () => {
   it("keeps a hand-made link to a real book", () => {
     expect(
-      definition.parseState!({ question: "x".repeat(200), handed: 40, lookUp: true }, initial),
+      definition.parseState!(
+        { question: "x".repeat(200), handed: 40, lookUp: true, need: 4, listed: 0 },
+        initial,
+      ),
     ).toEqual({
       question: "x".repeat(80),
       handed: -1,
       lookUp: true,
+      need: 0.95,
+      listed: 1,
     });
   });
 });
