@@ -1,9 +1,10 @@
 /**
  * Fetches World 5's language files once per page and keeps them: GPT-2's pieces, GloVe word places
- * and the tiny writers. A fetch that stalls is given up after FETCH_TIMEOUT_MS, and a failure is
+ * the tiny writers and the picture matcher. A fetch that stalls is given up after FETCH_TIMEOUT_MS, and a failure is
  * forgotten, so Try again fetches afresh.
  */
 import { readPieceSet, type PieceSet } from "./bpe";
+import { PICTURES_PATH, readMatcher, type Matcher } from "./picture-words";
 import { readWordPlaces, type WordPlaces } from "./word-places";
 import { readWriters, WRITERS_PATH, type Writers, type WritersManifest } from "./writers";
 
@@ -69,6 +70,11 @@ export const loadWriters = (): Promise<Writers> =>
     ]);
     return readWriters(manifest, story, writer);
   });
+
+export const loadMatcher = (): Promise<Matcher> =>
+  once("pictures", async () =>
+    readMatcher(text(await languageFiles.read(`${PICTURES_PATH}matcher.json`))),
+  );
 
 /** Forgets everything fetched (tests only). */
 export function forgetLanguageFiles() {
