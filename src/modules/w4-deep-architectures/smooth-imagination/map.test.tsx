@@ -147,6 +147,24 @@ describe("smooth imagination: in the lesson", () => {
     await waitFor(() => expect(within(dock).getByText("You earned a star.")).toBeInTheDocument());
   });
 
+  it("counts the untidy map afresh when it arrives while the first map is still being checked", async () => {
+    renderLesson();
+    // The first map is on screen, so its check has just begun; switch maps before it can finish.
+    await waitFor(() => expect(document.querySelector("[data-nonsense]")).not.toBeNull());
+    expect(["", "null"]).toContain(
+      document.querySelector("[data-torn]")?.getAttribute("data-torn"),
+    );
+    screen.getByRole("slider", { name: words.tidy.label }).focus();
+    await userEvent.keyboard("{Home}");
+    await waitFor(
+      () =>
+        expect(document.querySelector("[data-torn]")?.getAttribute("data-torn")).toBe(
+          String(tornCount(0)),
+        ),
+      { timeout: 5000 },
+    );
+  }, 15_000);
+
   it("says plainly when the map cannot be fetched", async () => {
     failFaceFiles();
     renderLesson();
