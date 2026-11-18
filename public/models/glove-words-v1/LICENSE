@@ -1,0 +1,9 @@
+GloVe: Global Vectors for Word Representation
+Jeffrey Pennington, Richard Socher and Christopher D. Manning, Stanford University, 2014.
+https://nlp.stanford.edu/projects/glove/
+
+The pre-trained word vectors are made available under the Open Data Commons Public Domain Dedication
+and License (PDDL) v1.0: https://opendatacommons.org/licenses/pddl/1-0/
+
+The files in this folder are a cut-down copy (6,036 frequent words, rounded to whole numbers with one
+scale per word) of the "glove.6B.50d" vectors, trained on Wikipedia 2014 and Gigaword 5.

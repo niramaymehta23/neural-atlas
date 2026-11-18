@@ -83,10 +83,10 @@ test("the home map shows all 74 ideas and a paper label on hover", async ({ page
 
 test("ideas still being drawn say so; built ones don't", async ({ page }) => {
   await openHome(page);
-  await page.locator('[data-star="chopping-text-into-pieces"]').hover(steady);
+  await page.locator('[data-star="treats-and-tricks"]').hover(steady);
   await expect(page.getByRole("tooltip")).toContainText("Still being drawn");
   await expect(
-    page.getByRole("link", { name: "Chopping text into pieces, Still being drawn" }),
+    page.getByRole("link", { name: "Treats and tricks, Still being drawn" }),
   ).toBeAttached();
   await page.mouse.move(0, 0);
   await page.locator('[data-star="stacking-cells"]').hover(steady);
@@ -216,12 +216,14 @@ test("clicking a built idea flies in, with its lesson already fetched", async ({
 
 test("an idea still being drawn fades across instead of flying", async ({ page }) => {
   await openHome(page);
-  // Bigger and bigger sits clear of its neighbours (nothing is drawn over its middle), so the
-  // click lands on it and not on one in front.
-  await settled(page.getByRole("link", { name: "Bigger and bigger" }));
-  await page.getByRole("link", { name: "Bigger and bigger" }).click(steady);
+  // Treats and tricks is still being drawn. Other stars are drawn over parts of it, so it is opened
+  // from the keyboard, which reaches it whatever lies in front.
+  const idea = page.getByRole("link", { name: "Treats and tricks, Still being drawn" });
+  await settled(idea);
+  await idea.focus();
+  await page.keyboard.press("Enter");
   await expect(page.getByRole("main")).toHaveAttribute("data-leaving", "fade");
-  await page.waitForURL("**/learn/bigger-and-bigger");
+  await page.waitForURL("**/learn/treats-and-tricks");
 });
 
 test("a modifier-click on a star opens it in a new tab", async ({ page, context }) => {
@@ -279,7 +281,7 @@ test("the palette takes over a flight that has started", async ({ page }) => {
 });
 
 test("the locked page offers a lesson that is ready now", async ({ page }) => {
-  await page.goto("/learn/chopping-text-into-pieces");
+  await page.goto("/learn/treats-and-tricks");
   const ready = page.getByRole("navigation", { name: "Ready to explore now" });
   // The first built lesson in curriculum order, for a learner who has mastered nothing.
   await expect(ready.getByRole("link")).toHaveAttribute("href", "/learn/teach-by-showing");

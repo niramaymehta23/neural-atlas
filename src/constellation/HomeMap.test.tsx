@@ -25,8 +25,8 @@ vi.mock("./ConstellationScene", () => ({
     return (
       <>
         <button onClick={() => props.onChoose("rolling-downhill")}>choose</button>
-        <button onClick={() => props.onChoose("chopping-text-into-pieces")}>choose locked</button>
-        <button type="button" data-star="chopping-text-into-pieces">
+        <button onClick={() => props.onChoose("treats-and-tricks")}>choose locked</button>
+        <button type="button" data-star="treats-and-tricks">
           star
         </button>
       </>
@@ -56,7 +56,7 @@ describe("HomeMap", () => {
     render(<HomeMap />);
     await screen.findByText("choose");
     expect(scene.props?.built.has("rolling-downhill")).toBe(true);
-    expect(scene.props?.built.has("chopping-text-into-pieces")).toBe(false);
+    expect(scene.props?.built.has("treats-and-tricks")).toBe(false);
     expect(scene.props?.built.size).toBe(builtIds.length);
   });
 
@@ -105,10 +105,10 @@ describe("HomeMap", () => {
     await screen.findByText("choose");
     screen.getByText("star").focus();
     // A click that does not move focus itself, like a shortcut would.
-    fireEvent.click(screen.getByRole("radio", { name: "Learning by trying" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Brains made of numbers" }));
     await waitFor(() =>
       expect(document.activeElement).toBe(
-        screen.getByRole("radio", { name: "Learning by trying" }),
+        screen.getByRole("radio", { name: "Brains made of numbers" }),
       ),
     );
   });
@@ -142,9 +142,7 @@ describe("HomeMap", () => {
     await user.click(await screen.findByText("choose locked"));
     expect(scene.props?.flyingTo).toBeNull();
     expect(screen.getByRole("main")).toHaveAttribute("data-leaving", "fade");
-    await waitFor(() =>
-      expect(router.push).toHaveBeenCalledWith("/learn/chopping-text-into-pieces"),
-    );
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/learn/treats-and-tricks"));
   });
 
   it("lets the palette take over a flight that has started", async () => {

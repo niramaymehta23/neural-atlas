@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { world1 } from "../src/catalog/world-1";
 import { world3 } from "../src/catalog/world-3";
 import { world4 } from "../src/catalog/world-4";
+import { world5 } from "../src/catalog/world-5";
 import { gpuTagFor } from "./gpu";
 
 /**
@@ -10,9 +11,10 @@ import { gpuTagFor } from "./gpu";
  * desktop width with normal motion and a 320px phone with reduced motion. WCAG 2.1 A and AA,
  * colour contrast included, so it catches A11Y-01..05 coming back.
  */
-/** Every built World 1, 3 and 4 lesson besides the headline ones (stages 06 and 08). */
-const BUILT_LESSONS = [...world1.lessons, ...world3.lessons, ...world4.lessons]
-  .filter(({ load, id }) => load && id !== "rolling-downhill" && id !== "stacking-cells")
+/** Every built World 1, 3, 4 and 5 lesson besides the headline ones (stages 06, 08 and 09). */
+const HEADLINES = ["rolling-downhill", "stacking-cells", "who-is-looking-at-whom"];
+const BUILT_LESSONS = [...world1.lessons, ...world3.lessons, ...world4.lessons, ...world5.lessons]
+  .filter(({ load, id }) => load && !HEADLINES.includes(id))
   .map(({ id }) => ({ path: `/learn/${id}`, ready: "[data-region=scene]" }));
 
 const PAGES = [
@@ -23,7 +25,7 @@ const PAGES = [
   { path: "/learn/stacking-cells", ready: "[data-region=scene]" },
   { path: "/learn/who-is-looking-at-whom", ready: "[data-region=scene]" },
   { path: "/learn/scoring-every-move", ready: "[data-region=scene]" },
-  { path: "/learn/chopping-text-into-pieces", ready: "h1" },
+  { path: "/learn/treats-and-tricks", ready: "h1" },
   { path: "/learn/no-such-idea", ready: "h1" },
   { path: "/styleguide", ready: "h1" },
 ] as const;
