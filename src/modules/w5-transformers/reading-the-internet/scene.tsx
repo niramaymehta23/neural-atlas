@@ -29,12 +29,12 @@ export const FRESH = { steps: 0, running: false };
 /** The text to read, what baby GPT writes at the moment on the timeline, and how far it got. */
 export function ReadingScene(props: Props) {
   const { state, update, timeline, side } = props;
-  const { text, learning } = state;
+  const { text, learning, snippets } = state;
   const loaded = useLanguageFile(loadWriters);
   const writer = loaded.status === "ready" ? loaded.value.writer : null;
   const config = useMemo(
-    () => (writer ? configOf(writer, { text, learning }) : null),
-    [writer, text, learning],
+    () => (writer ? configOf(writer, { text, learning, snippets }) : null),
+    [writer, text, learning, snippets],
   );
   const run = runOf(state);
   const failure = useWriterPractice({

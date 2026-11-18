@@ -12,11 +12,13 @@ export type ReadingState = PracticeState & {
   text: string;
   /** "How big each practice step is". */
   learning: number;
+  /** "How many snippets each practice step reads". */
+  snippets: number;
 };
 
 export type ReadingFrame = TimelineFrame & {
   step: number;
-  /** The run it belongs to: text and step size. */
+  /** The run it belongs to. */
   run: string;
   /** What it writes at this moment, after the text's first two letters. */
   sample: string;
@@ -25,18 +27,18 @@ export type ReadingFrame = TimelineFrame & {
 export const MOST_LETTERS = 600;
 export const MOST_STEPS = 400;
 export const LEARNING = { min: 0.001, max: 0.01, start: 0.003 } as const;
+export const SNIPPETS = { min: 2, max: 16, start: 8 } as const;
 /** Letters of a sentence before learning it by heart counts. */
 export const BY_HEART_LETTERS = 12;
 export const PROMPT_LETTERS = 2;
 export const SAMPLE_LETTERS = 80;
 
-export const runOf = (state: Pick<ReadingState, "text" | "learning">) =>
-  `${state.learning.toFixed(4)}|${state.text}`;
+type RunSettings = Pick<ReadingState, "text" | "learning" | "snippets">;
 
-export function configOf(
-  writer: LetterWriter,
-  state: Pick<ReadingState, "text" | "learning">,
-): WriterRunConfig | null {
+export const runOf = (state: RunSettings) =>
+  `${state.learning.toFixed(4)}|${state.snippets}|${state.text}`;
+
+export function configOf(writer: LetterWriter, state: RunSettings): WriterRunConfig | null {
   const text = letterIds(writer, state.text);
   if (text.length < 2) return null;
   return {
@@ -45,7 +47,7 @@ export function configOf(
     text,
     everyday: null,
     learningRate: state.learning,
-    batch: 8,
+    batch: state.snippets,
     seed: 1,
     prompt: text.slice(0, PROMPT_LETTERS),
     sampleLength: SAMPLE_LETTERS,

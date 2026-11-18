@@ -71,10 +71,16 @@ describe("reading the internet: one sentence", () => {
 describe("reading the internet: links and words", () => {
   it("keeps a hand-made link inside the dials and never opens practising", () => {
     const safe = definition.parseState!(
-      { text: "x".repeat(900), learning: 1, steps: 9999, running: true },
+      { text: "x".repeat(900), learning: 1, snippets: 99, steps: 9999, running: true },
       initial,
     );
-    expect(safe).toEqual({ text: "x".repeat(600), learning: 0.01, steps: 400, running: false });
+    expect(safe).toEqual({
+      text: "x".repeat(600),
+      learning: 0.01,
+      snippets: 16,
+      steps: 400,
+      running: false,
+    });
   });
 });
 

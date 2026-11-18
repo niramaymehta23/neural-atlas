@@ -58,6 +58,10 @@ export const words = {
     describe: (value: number) =>
       value < 0.0025 ? "Small steps" : value < 0.006 ? "Medium steps" : "Big steps",
   },
+  snippets: {
+    label: "How many snippets each practice step reads",
+    describe: (value: number) => `${sentenceStart(count(value))} snippets`,
+  },
   model: {
     loading: "Fetching baby GPT's letters…",
     failed: "Baby GPT could not be fetched. Check your connection and try again.",
@@ -74,7 +78,7 @@ export const words = {
       paragraphs: [
         "Baby GPT is a tiny language model that reads letters, not word pieces. It starts with random numbers, so its first guesses are random.",
         "Each practice step it takes a few short stretches of your text, guesses every next letter, and nudges its numbers to be a little less surprised next time. Real chatbots do the same with word pieces, a far bigger model, and much of the internet.",
-        "It all runs in your browser, in the background, and every run with the same text and step size practises in exactly the same way.",
+        "It all runs in your browser, in the background, and every run with the same settings practises in exactly the same way.",
       ],
     },
     {

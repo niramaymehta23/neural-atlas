@@ -4,12 +4,25 @@ import { captions, TEXTS, words } from "./captions";
 import { ReadingControls } from "./controls";
 import { ReadingDrawer } from "./drawer";
 import { missions } from "./missions";
-import { LEARNING, MOST_LETTERS, MOST_STEPS, type ReadingFrame, type ReadingState } from "./model";
+import {
+  LEARNING,
+  MOST_LETTERS,
+  MOST_STEPS,
+  SNIPPETS,
+  type ReadingFrame,
+  type ReadingState,
+} from "./model";
 import { predictions } from "./predictions";
 import { ReadingScene } from "./scene";
 
 export const definition = defineModule<ReadingState, ReadingFrame>({
-  initialState: { text: TEXTS.rhymes, learning: LEARNING.start, steps: 0, running: false },
+  initialState: {
+    text: TEXTS.rhymes,
+    learning: LEARNING.start,
+    snippets: SNIPPETS.start,
+    steps: 0,
+    running: false,
+  },
   scene: ReadingScene,
   controls: ReadingControls,
   captions,
@@ -25,6 +38,7 @@ export const definition = defineModule<ReadingState, ReadingFrame>({
   parseState: (saved) => ({
     text: saved.text.slice(0, MOST_LETTERS),
     learning: clampNumber(saved.learning, LEARNING.min, LEARNING.max),
+    snippets: clampWhole(saved.snippets, SNIPPETS.min, SNIPPETS.max),
     steps: clampWhole(saved.steps, 0, MOST_STEPS),
     // A link never opens practising.
     running: false,

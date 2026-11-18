@@ -3,7 +3,7 @@
 import type { ModuleViewProps } from "@/platform/contract";
 import { Dial } from "@/ui/Dial";
 import { words } from "./captions";
-import { LEARNING, MOST_STEPS, type ReadingFrame, type ReadingState } from "./model";
+import { LEARNING, MOST_STEPS, SNIPPETS, type ReadingFrame, type ReadingState } from "./model";
 import { FRESH } from "./scene";
 
 const BUTTON =
@@ -21,6 +21,15 @@ export function ReadingControls({ state, update }: ModuleViewProps<ReadingState,
         step={0.0005}
         onChange={(learning) => update({ learning, ...FRESH })}
         describe={words.learning.describe}
+      />
+      <Dial
+        label={words.snippets.label}
+        value={state.snippets}
+        min={SNIPPETS.min}
+        max={SNIPPETS.max}
+        step={1}
+        onChange={(snippets) => update({ snippets, ...FRESH })}
+        describe={words.snippets.describe}
       />
       <div className="flex flex-wrap justify-center gap-2">
         <button
