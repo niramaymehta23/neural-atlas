@@ -26,6 +26,27 @@ export const words = {
   question: (text: string) => `You ask: ${quote(text)}`,
   answer: (text: string) => `It answers: ${quote(text)}`,
   askSource: "Ask where it read that",
+  heldBack: "It answers: “I'm not sure enough to say.”",
+  truthHeldBack: "It said nothing, so it said nothing wrong.",
+  need: {
+    label: "How sure it must be before answering",
+    describe: (value: number) => {
+      if (value < 0.05) return "Always answers";
+      if (value < 0.5) return "Answers unless it's quite unsure";
+      if (value < 0.8) return "Answers only when fairly sure";
+      if (value < 0.95) return "Answers only when very sure";
+      return "Answers only when completely sure";
+    },
+  },
+  heat: {
+    label: "How adventurous its words are",
+    describe: (value: number) =>
+      value < 0.05
+        ? "Always the likeliest words"
+        : value < 0.8
+          ? "A little adventurous"
+          : "Very adventurous",
+  },
   source: (book: string) =>
     `“Where did you read that?” It says: in the book called ${quote(book)}.`,
   sure: "How sure it sounds",
@@ -60,6 +81,7 @@ export const words = {
   },
   describe: {
     waiting: "The storyteller is getting ready.",
+    heldBack: "It wasn't sure enough, so it said it doesn't know.",
     done: (answer: string, sure: string, truth: string) => `${answer} ${sure}. ${truth}`,
   },
   drawer: [

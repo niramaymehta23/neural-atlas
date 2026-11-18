@@ -38,6 +38,25 @@ describe("confident but wrong: the storyteller", () => {
     expect(frame.madeUp).toBe(true);
     expect(frame.sure).toBeGreaterThan(0.8);
   });
+
+  it("holds back only when it is less sure than the bar, so a very sure mistake slips through", () => {
+    const hen = at({ animal: "hen", kind: "colour" });
+    const sure = shown(hen).sure;
+    const slips = shown({ ...hen, need: sure - 0.05 });
+    expect(slips.heldBack).toBe(false);
+    expect(slips.madeUp).toBe(true);
+    const held = shown({ ...hen, need: Math.min(1, sure + 0.05), source: true });
+    expect(held.heldBack).toBe(true);
+    expect(held.madeUp).toBe(false);
+    expect(held.answer).toBe("");
+    expect(held.book).toBeNull();
+  });
+
+  it("writes the same adventurous answer every time for the same settings", () => {
+    const wild = at({ animal: "owl", heat: 1.5 });
+    expect(shown(wild).answer).toBe(shown(wild).answer);
+    expect(shown(wild).answer.startsWith("the owl eats")).toBe(true);
+  });
 });
 
 describe("confident but wrong: mission and guess", () => {
@@ -52,17 +71,24 @@ describe("confident but wrong: mission and guess", () => {
   it("answers that it makes up a colour", () => {
     expect(guess.answer(initial, shown(initial))).toBeNull();
     expect(guess.answer(initial, shown(at({ animal: "hen", kind: "colour" })))).toBe("makeUp");
+    const careful = at({ animal: "hen", kind: "colour", need: 0.99 });
+    expect(guess.answer(careful, shown(careful))).toBeNull();
   });
 });
 
 describe("confident but wrong: links", () => {
   it("keeps a hand-made link to a real animal and question", () => {
     expect(
-      definition.parseState!({ animal: "dragon", kind: "flies", source: true }, initial),
+      definition.parseState!(
+        { animal: "dragon", kind: "flies", source: true, need: 3, heat: -2 },
+        initial,
+      ),
     ).toEqual({
       animal: "fox",
       kind: "eats",
       source: true,
+      need: 1,
+      heat: 0,
     });
   });
 });

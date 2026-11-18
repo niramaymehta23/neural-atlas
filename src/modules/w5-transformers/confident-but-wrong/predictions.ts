@@ -13,8 +13,13 @@ export const predictions = [
       { id: "dontKnow", label: predictionWords.dontKnow },
       { id: "makeUp", label: predictionWords.makeUp },
     ],
-    answer: (_state, frame) =>
-      !frame || frame.animal !== "hen" || frame.kind !== "colour"
+    // Told for the storyteller as it starts: answering whatever its sureness, likeliest words only.
+    answer: (state, frame) =>
+      !frame ||
+      state.need > 0 ||
+      state.heat > 0 ||
+      frame.animal !== "hen" ||
+      frame.kind !== "colour"
         ? null
         : frame.madeUp && frame.sure >= SURE
           ? "makeUp"

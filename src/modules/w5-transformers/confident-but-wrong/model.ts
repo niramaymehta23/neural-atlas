@@ -15,6 +15,10 @@ export type TruthState = {
   kind: string;
   /** "Where did you read that?" was asked. */
   source: boolean;
+  /** "How sure it must be before answering": below it, it says it doesn't know. */
+  need: number;
+  /** "How adventurous its words are": 0 always takes the likeliest word. */
+  heat: number;
 };
 
 export type Truth = "right" | "wrong" | "unknown";
@@ -32,12 +36,17 @@ export type TruthFrame = TimelineFrame &
     real: boolean;
     /** It named a colour its book never gave. */
     madeUp: boolean;
+    /** It wasn't sure enough to answer, so it said it doesn't know. */
+    heldBack: boolean;
   };
 
 export const COLOURS = ["brown", "green", "grey", "red", "yellow"];
 const MOST_ANSWER = 5;
 const MOST_TITLE = 3;
 const SOURCE = "where did you read that ? in the book called";
+export const HEAT = { min: 0, max: 1.5 } as const;
+/** The fixed dice for adventurous answers, so a link always gives the same answer. */
+const SEED = 1;
 
 export function questionOf(animal: string, kind: string): { ask: string; prompt: string } {
   if (kind === "lives")
@@ -47,10 +56,10 @@ export function questionOf(animal: string, kind: string): { ask: string; prompt:
   return { ask: `what does the ${animal} eat ?`, prompt: `the ${animal} eats` };
 }
 
-/** The likeliest words after `ids`, up to a full stop. */
-function writeOn(writers: Writers, ids: number[], most: number): string[] {
+/** The words after `ids`, up to a full stop: the likeliest at heat 0, more by chance above it. */
+function writeOn(writers: Writers, ids: number[], most: number, heat: number): string[] {
   const teller = writers.storyteller;
-  const written = continueStory(teller, ids, most, { heat: 0 }, 1).map(
+  const written = continueStory(teller, ids, most, { heat }, SEED).map(
     (id) => teller.words[id] ?? "",
   );
   const stop = written.indexOf(".");
@@ -64,7 +73,8 @@ export function frameOf(writers: Writers, state: TruthState): Omit<TruthFrame, "
   const sure =
     topWords(writers.storyteller, storyChances(writers.storyteller, ids, { heat: 1 }), 1)[0]
       ?.chance ?? 0;
-  const answerWords = writeOn(writers, ids, MOST_ANSWER);
+  const heldBack = sure < state.need;
+  const answerWords = heldBack ? [] : writeOn(writers, ids, MOST_ANSWER, state.heat);
   const answer = answerWords.join(" ");
   const fact = !facts
     ? null
@@ -73,25 +83,28 @@ export function frameOf(writers: Writers, state: TruthState): Omit<TruthFrame, "
       : state.kind === "lives"
         ? facts.lives
         : facts.colour;
-  const truth: Truth = fact === null ? "unknown" : answer === fact ? "right" : "wrong";
+  const truth: Truth = heldBack || fact === null ? "unknown" : answer === fact ? "right" : "wrong";
   const answered = storyIds(writers.storyteller, `${ask} ${prompt} ${answer} .`) ?? [];
-  const book = state.source
-    ? writeOn(
-        writers,
-        [...answered, ...(storyIds(writers.storyteller, SOURCE) ?? [])],
-        MOST_TITLE,
-      ).join(" ")
-    : null;
+  const book =
+    state.source && !heldBack
+      ? writeOn(
+          writers,
+          [...answered, ...(storyIds(writers.storyteller, SOURCE) ?? [])],
+          MOST_TITLE,
+          state.heat,
+        ).join(" ")
+      : null;
   return {
     loss: 0,
     ...state,
     question: `${ask} ${prompt} …`,
-    answer: `${prompt} ${answer}`,
+    answer: heldBack ? "" : `${prompt} ${answer}`,
     sure,
     truth,
     book,
     real: book !== null && book === facts?.book && truth === "right",
     madeUp: state.kind === "colour" && fact === null && COLOURS.includes(answerWords[0] ?? ""),
+    heldBack,
   };
 }
 

@@ -52,8 +52,12 @@ export function TruthScene({ state, update, timeline, side }: Props) {
         <div className="flex min-h-96 flex-col gap-3">
           <section className="flex flex-col gap-1 rounded-card border border-hairline bg-paper p-3">
             <p className="text-sm text-ink-soft">{words.question(frame.question)}</p>
-            <p className="text-base font-semibold" data-answer>
-              {words.answer(frame.answer)}
+            <p
+              className="text-base font-semibold"
+              data-answer
+              data-held-back={frame.heldBack ? "" : undefined}
+            >
+              {frame.heldBack ? words.heldBack : words.answer(frame.answer)}
             </p>
             <p className="min-h-5 text-sm" data-source={frame.book ?? undefined}>
               {frame.book !== null ? words.source(frame.book) : ""}
@@ -62,7 +66,7 @@ export function TruthScene({ state, update, timeline, side }: Props) {
               <button
                 type="button"
                 className={`${BUTTON} self-start`}
-                disabled={state.source}
+                disabled={state.source || frame.heldBack}
                 onClick={() => update({ source: true })}
               >
                 {words.askSource}
@@ -93,7 +97,7 @@ export function TruthScene({ state, update, timeline, side }: Props) {
               data-truth={frame.truth}
             >
               <p className="font-semibold">{words.true}</p>
-              <p>{words.truth[frame.truth]}</p>
+              <p>{frame.heldBack ? words.truthHeldBack : words.truth[frame.truth]}</p>
               {frame.book !== null && (
                 <p data-fake={fakeSource(frame) ? "" : undefined}>
                   {frame.real ? words.sourceTruth.real : words.sourceTruth.fake}
