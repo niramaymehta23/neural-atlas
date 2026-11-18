@@ -12,6 +12,8 @@ export type PicturesState = {
   placed: number[];
   /** How close counts as a match. */
   threshold: number;
+  /** "How many trick captions are in the pile": the last captions, which fit no photo. */
+  tricks: number;
   /** The caption picked up, or -1. */
   holding: number;
 };
@@ -31,6 +33,16 @@ export type PicturesFrame = TimelineFrame & {
 };
 
 export const THRESHOLD = { min: 0.3, max: 0.95, start: 0.6 } as const;
+/** Captions that belong to one of the photos; the rest are tricks. */
+export const FITTING = PHOTOS.length;
+export const TRICKS = CAPTIONS.length - FITTING;
+
+/** The captions in the pile with `tricks` trick captions. */
+export const pileOf = (tricks: number) => CAPTIONS.slice(0, FITTING + tricks);
+
+/** `placed` with any caption no longer in the pile taken off. */
+export const keepInPile = (placed: readonly number[], tricks: number) =>
+  placed.map((caption) => (caption >= FITTING + tricks ? -1 : caption));
 
 export function likenessOf(
   matcher: Matcher,

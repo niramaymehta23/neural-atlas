@@ -8,7 +8,7 @@ import { both, useLanguageFile } from "@/features/language/use-language-file";
 import { useShownFrame } from "@/features/language/use-shown-frame";
 import type { ModuleViewProps } from "@/platform/contract";
 import { CAPTIONS, PHOTOS, words } from "./captions";
-import { fooled, frameOf, place, type PicturesFrame, type PicturesState } from "./model";
+import { fooled, frameOf, pileOf, place, type PicturesFrame, type PicturesState } from "./model";
 
 type Props = ModuleViewProps<PicturesState, PicturesFrame>;
 
@@ -39,7 +39,7 @@ export function PicturesScene({ state, update, timeline, side }: Props) {
         <section className="flex flex-col gap-1 text-sm">
           <p className="text-ink-soft">{words.captions}</p>
           <ul className="flex flex-wrap gap-2">
-            {CAPTIONS.map((caption, at) => (
+            {pileOf(state.tricks).map((caption, at) => (
               <li key={caption.text}>
                 <button
                   type="button"

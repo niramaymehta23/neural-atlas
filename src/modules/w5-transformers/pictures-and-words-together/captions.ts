@@ -1,4 +1,5 @@
 // Every word the learner sees in this lesson, kept here so the 12-year-old review covers it all.
+import { count, sentenceStart } from "@/design/copy";
 
 const quote = (text: string) => `“${text}”`;
 
@@ -54,6 +55,15 @@ export const words = {
   },
   verdict: (match: boolean) => (match ? "It says: a match" : "It says: not a match"),
   truth: (right: boolean) => (right ? "and that's right" : "but that's wrong"),
+  tricks: {
+    label: "How many trick captions are in the pile",
+    describe: (value: number) =>
+      value === 0
+        ? "No tricks"
+        : value === 1
+          ? "One trick"
+          : `${sentenceStart(count(value))} tricks`,
+  },
   threshold: {
     label: "How close counts as a match",
     describe: (value: number) =>

@@ -4,12 +4,25 @@ import { captions, CAPTIONS, PHOTOS, words } from "./captions";
 import { PicturesControls } from "./controls";
 import { PicturesDrawer } from "./drawer";
 import { missions } from "./missions";
-import { EMPTY, fooled, THRESHOLD, type PicturesFrame, type PicturesState } from "./model";
+import {
+  EMPTY,
+  fooled,
+  keepInPile,
+  THRESHOLD,
+  TRICKS,
+  type PicturesFrame,
+  type PicturesState,
+} from "./model";
 import { predictions } from "./predictions";
 import { PicturesScene } from "./scene";
 
 export const definition = defineModule<PicturesState, PicturesFrame>({
-  initialState: { placed: [0, -1, -1, -1, -1, -1], threshold: THRESHOLD.start, holding: -1 },
+  initialState: {
+    placed: [0, -1, -1, -1, -1, -1],
+    threshold: THRESHOLD.start,
+    tricks: TRICKS,
+    holding: -1,
+  },
   scene: PicturesScene,
   controls: PicturesControls,
   captions,
@@ -30,9 +43,11 @@ export const definition = defineModule<PicturesState, PicturesFrame>({
     const kept = placed.map((caption, at) =>
       caption >= 0 && placed.indexOf(caption) !== at ? -1 : caption,
     );
+    const tricks = clampWhole(saved.tricks, 0, TRICKS);
     return {
-      placed: kept.slice(0, PHOTOS.length),
+      placed: keepInPile(kept.slice(0, PHOTOS.length), tricks),
       threshold: clampNumber(saved.threshold, THRESHOLD.min, THRESHOLD.max),
+      tricks,
       holding: -1,
     };
   },

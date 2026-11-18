@@ -21,6 +21,7 @@ beforeAll(async () => {
 
 const initial = definition.initialState as PicturesState;
 const with_ = (caption: string, kind: string, threshold = initial.threshold): PicturesState => ({
+  ...initial,
   placed: place(
     EMPTY,
     PHOTOS.findIndex((photo) => photo.kind === kind),
@@ -65,10 +66,25 @@ describe("pictures and words together: mission and guess", () => {
 describe("pictures and words together: links", () => {
   it("keeps each caption on one photo and the dial in range", () => {
     const safe = definition.parseState!(
-      { placed: [8, 8, 99, -7, "x", 2, 4], threshold: 3, holding: 4 } as unknown as PicturesState,
+      {
+        placed: [8, 8, 99, -7, "x", 2, 4],
+        threshold: 3,
+        tricks: 9,
+        holding: 4,
+      } as unknown as PicturesState,
       initial,
     );
-    expect(safe).toEqual({ placed: [8, -1, -1, -1, -1, 2], threshold: 0.95, holding: -1 });
+    expect(safe).toEqual({
+      placed: [8, -1, -1, -1, -1, 2],
+      threshold: 0.95,
+      tricks: 3,
+      holding: -1,
+    });
+    const fewer = definition.parseState!(
+      { ...initial, placed: [8, 7, 2, -1, -1, -1], tricks: 1 },
+      initial,
+    );
+    expect((fewer as PicturesState).placed).toEqual([-1, -1, 2, -1, -1, -1]);
   });
 });
 
