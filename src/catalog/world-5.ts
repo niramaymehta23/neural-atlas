@@ -101,6 +101,10 @@ export const world5: WorldEntry = {
       idea: "Learns language by guessing next words in mountains of text",
       playWith: "Train a tiny writer on your own text",
       prerequisites: ["guess-the-next-word"],
+      load: () =>
+        import("@/modules/w5-transformers/reading-the-internet").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "bigger-and-bigger",
