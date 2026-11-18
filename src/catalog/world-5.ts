@@ -45,6 +45,10 @@ export const world5: WorldEntry = {
       idea: "Different readers look for different things",
       playWith: "A gallery of readers, each with its own threads",
       prerequisites: ["who-is-looking-at-whom"],
+      load: () =>
+        import("@/modules/w5-transformers/many-readers-at-once").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "knowing-the-order",
