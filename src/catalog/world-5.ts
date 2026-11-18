@@ -155,6 +155,8 @@ export const world5: WorldEntry = {
       idea: "Find the right pages before answering",
       playWith: "A librarian fetching books",
       prerequisites: ["short-term-memory"],
+      load: () =>
+        import("@/modules/w5-transformers/looking-things-up").then(({ definition }) => definition),
     },
     {
       id: "ai-that-takes-actions",
