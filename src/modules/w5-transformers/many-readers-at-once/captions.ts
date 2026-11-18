@@ -32,6 +32,15 @@ export const words = {
     describe: (depth: number) =>
       depth <= 2 ? "A first glance" : depth <= 4 ? "A closer look" : "A deep read",
   },
+  count: {
+    label: "How many readers are on",
+    describe: (value: number) =>
+      value === 0
+        ? "None"
+        : value === 12
+          ? "All twelve"
+          : `${sentenceStart(count(value))} of twelve`,
+  },
   gallery: "The twelve readers. Tap a reader to switch it off or on.",
   reader: {
     next: "Looks at the next word",

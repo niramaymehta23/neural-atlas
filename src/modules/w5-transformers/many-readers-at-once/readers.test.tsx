@@ -79,9 +79,7 @@ describe("many readers at once: links and words", () => {
   });
 
   it("describes how many readers are on", () => {
-    expect(definition.describe?.(initial, shown(initial))).toMatch(
-      /^12 readers are switched on/,
-    );
+    expect(definition.describe?.(initial, shown(initial))).toMatch(/^12 readers are switched on/);
   });
 });
 
@@ -99,5 +97,18 @@ describe("many readers at once: in the lesson", () => {
       timeout: 10_000,
     });
     expect(screen.getByRole("button", { name: words.allOn })).toBeInTheDocument();
+  }, 20_000);
+
+  it("switches readers off from the readers dial", async () => {
+    render(<ModuleShell lesson={{ ...valleyLesson, id: "many-readers-2" }} module={definition} />);
+    await waitFor(() => expect(document.querySelector("[data-reader]")).not.toBeNull(), {
+      timeout: 10_000,
+    });
+    const dial = screen.getAllByRole("slider", { name: words.count.label })[0] as HTMLElement;
+    dial.focus();
+    await userEvent.keyboard("{ArrowLeft>3/}");
+    await waitFor(() =>
+      expect(document.querySelectorAll('[data-reader][aria-pressed="false"]')).toHaveLength(3),
+    );
   }, 20_000);
 });
