@@ -113,6 +113,8 @@ export const world5: WorldEntry = {
       idea: "More brain, more reading, more computing",
       playWith: "Grow three dials and see what helps",
       prerequisites: ["reading-the-internet"],
+      load: () =>
+        import("@/modules/w5-transformers/bigger-and-bigger").then(({ definition }) => definition),
     },
     {
       id: "short-term-memory",
