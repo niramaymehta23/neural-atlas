@@ -77,6 +77,10 @@ export const world5: WorldEntry = {
       idea: "ChatGPT just keeps guessing the next word",
       playWith: "The next-word slot machine",
       prerequisites: ["the-thinking-block", "how-sure-is-it"],
+      load: () =>
+        import("@/modules/w5-transformers/guess-the-next-word").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "safe-vs-adventurous",
