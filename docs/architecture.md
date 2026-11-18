@@ -602,3 +602,51 @@ Plan: `docs/06-autodiff-worlds/plan.md`. Nineteen lessons, each shaped like the 
   Playwright project, one at a time, after `functional` and before `perf`. The live camera loop asks for at most
   `LIVE_RATE` (20) reads a second, with one read in flight. Together these took the full e2e run from 24 minutes
   with eight load failures to under five minutes.
+
+## World 5 hand-over (stage 09)
+
+- **The sixteen lessons** live in `src/modules/w5-transformers/<id>/` with the World 4 file shape (model,
+  captions, missions, predictions, scene, controls, drawer, index, one unit test) and are wired in
+  `src/catalog/world-5.ts`. Who-is-looking-at-whom (stage 05) is unchanged. Every lesson has at least two plain
+  dials; nothing calls a live chatbot or any network service: every model is a file in `public/models/`.
+- **Models** (each in a versioned folder with LICENSE, README with source, revision and SHA-256 lines checked by
+  `pnpm check-model`, and a rebuild script; every file is far under the 24 MiB limit):
+  - `gpt2-pieces-v1/`: GPT-2's `vocab.json` (1.0 MB) and `merges.txt` (456 kB) from openai-community/gpt2 at
+    revision 607a30d (Modified MIT, OpenAI). Fetched by `scripts/fetch-language-files.py`.
+  - `glove-words-v1/`: GloVe 6B 50-d (fse/glove-wiki-gigaword-50 at 6d69f9a, PDDL), cut to 6,036 words and
+    stored as signed bytes with a scale per word: `vectors.bin` 326 kB, `words.txt` 47 kB. Same script. The cut
+    has no rare animals (no "penguin" or "bee"), so lessons use everyday words.
+  - `tiny-writers-v1/`: two tiny GPTs trained here on text `scripts/train-writers.py` generates from a seed
+    (MIT): the word-level storyteller (`storyteller.bin` 473 kB: 117 words, context 48) and the letter writer
+    (`writer.bin` 270 kB: 48 wide, context 32), plus `manifest.json` (10 kB: animal facts, book titles, an
+    everyday sample and PyTorch score fixtures).
+  - `picture-words-v1/`: `matcher.json` (23 kB), a CLIP-style map fitted here (MIT) by
+    `scripts/build-picture-words.ts` from MobileNet features of `photos-v1` and GloVe captions.
+- **Language kit** (`src/engine/language/`): `bpe.ts` (GPT-2 pieces), `word-places.ts` (GloVe reading, analogy,
+  nearest, meaning of a text), `tiny-gpt.ts` (forward, backward and Adam for the tiny GPTs, deterministic),
+  `writers.ts` (weights reader), `sampling.ts` and `story.ts` (heat, top choices, seeded continuation,
+  `goesInCircles`), `baby-gpt.ts` (a seeded training run with moments), `picture-words.ts`, `toy-codes.ts`
+  (seeded toy vectors for the order and thinking-block lessons) and `files.ts` (cached loaders). Training runs
+  in a worker (`writer-worker.ts`, `writer-host.ts`, `writer-client.ts`); `testing/in-process-writer.ts` runs the
+  same host in-process for unit tests.
+- **Shared lesson parts** (`src/features/language/`): `useLanguageFile` and `LanguageFileStatus` (loading line,
+  plain failure message with Try again), `WordChances` (the next-word bars), `useShownFrame` (records a frame
+  when a non-training lesson's picture changes) and `useWriterPractice` (drives a worker run from
+  `{steps, running}` state; any setting change resets to a fresh run, and links never open running).
+- **Measured facts the missions rest on** (each a named constant in the lesson's model with its test): the
+  storyteller is 93% sure the hen is brown, a colour its book never gives; always taking the likeliest word
+  loops within twenty words from "the cat sat on the"; baby GPT learns one sentence by heart (surprise under
+  `BY_HEART`) within 100 steps; the letter writer talks like a pirate within 100 steps and, rereading no
+  everyday text, its everyday surprise passes `FORGOT`; ten compliment-loving picks make the reward model a
+  yes-man at the starting dials.
+- **Shared changes** (small and additive): the sixteen `load` lines in the catalog; the four new folders in
+  `public/models/README.md`; `e2e/a11y.spec.ts` sweeps the World 5 lessons too. Locked-lesson examples moved off
+  World 5: `src/constellation/HomeMap.test.tsx` (focus test filters "Brains made of numbers"),
+  `e2e/platform.spec.ts` (the "Teach by showing" link is scoped to "Good to try first") and `e2e/home.spec.ts`.
+  `src/engine/language/baby-gpt.test.ts` uses a smaller model shape and one-minute waits so it holds under a full
+  parallel run.
+- **Checks**: a unit test per lesson (mission, guess, link clamping, describe, the star in the shell), engine
+  tests against PyTorch fixtures and Transformers.js pieces, `e2e/world-5.spec.ts` (every lesson opens on its
+  story and fits a phone) and an `e2e/w5-<id>.spec.ts` per lesson (interaction, star, exact link replay; shared
+  steps in `e2e/w5.ts`). `w5-safe-vs-adventurous` checks the bars change before the next animation frame;
+  `w5-specialising` has a `@perf` check that pirate talk appears within two minutes (the reference budget).

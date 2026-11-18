@@ -10,6 +10,14 @@ cross-origin isolated, so nothing may be fetched from elsewhere).
   `scripts/fetch-photos.py`.
 - `faces-v1/`: the World 4 face models, trained here on drawn cartoon faces (MIT) by
   `scripts/train-faces.py`.
+- `gpt2-pieces-v1/`: GPT-2's word-piece vocabulary and merges for "Chopping text into pieces"
+  (Modified MIT, OpenAI), fetched by `scripts/fetch-language-files.py`.
+- `glove-words-v1/`: GloVe word places, cut to about 6,000 words, for World 5's word-map lessons
+  (PDDL), fetched and cut by `scripts/fetch-language-files.py`.
+- `tiny-writers-v1/`: World 5's tiny storyteller and letter writer, trained here on generated text
+  (MIT) by `scripts/train-writers.py`.
+- `picture-words-v1/`: the shared picture-and-word map of "Pictures and words together", built here
+  (MIT) by `scripts/build-picture-words.ts`.
 - `ort-<version>/` (gitignored): the ONNX runtime for WebAssembly, copied from `node_modules` by
   `scripts/copy-runtime.ts` before `dev` and `build`. It comes from
   [onnxruntime-web](https://github.com/microsoft/onnxruntime) (MIT, commit
