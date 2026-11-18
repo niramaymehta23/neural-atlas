@@ -123,6 +123,8 @@ export const world5: WorldEntry = {
       idea: "It can only hold so much of a conversation",
       playWith: "A tunnel where old words fall out of view",
       prerequisites: ["guess-the-next-word"],
+      load: () =>
+        import("@/modules/w5-transformers/short-term-memory").then(({ definition }) => definition),
     },
     {
       id: "specialising",
