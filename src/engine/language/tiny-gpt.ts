@@ -364,6 +364,110 @@ export function nextScores(model: Gpt, ids: readonly number[]): Float64Array {
   return Float64Array.from(logits.subarray((n - 1) * vocab, n * vocab));
 }
 
+/**
+ * Reads pieces one at a time and gives the scores for the piece after each, keeping every block's
+ * keys and values so a new piece costs one position rather than a pass over everything read so
+ * far. Each step does the same sums, in the same order and the same number type, as `run`, so the
+ * scores equal `nextScores` exactly. It reads at most `context` pieces.
+ */
+export function createReader(model: Gpt) {
+  const { shape, params: p, at } = model;
+  const { width: w, heads, vocab, context } = shape;
+  const size = w / heads;
+  const scale = 1 / Math.sqrt(size);
+  const tokens = at("tokens");
+  const places = at("places");
+  const keys = Array.from({ length: shape.layers }, () => make(p, context * w));
+  const values = Array.from({ length: shape.layers }, () => make(p, context * w));
+  let count = 0;
+
+  return {
+    /** How many pieces it has read. */
+    count: () => count,
+    /** Reads `id` and returns the scores for the piece after it. */
+    read(id: number): Float64Array {
+      const r = count;
+      if (r >= context) throw new Error(`Read 1 to ${context} pieces, not ${r + 1}.`);
+      if (!(id >= 0 && id < vocab)) throw new Error(`Unknown piece ${id}.`);
+      let x = make(p, w);
+      for (let i = 0; i < w; i += 1)
+        x[i] = (p[tokens + id * w + i] ?? 0) + (p[places + r * w + i] ?? 0);
+      for (let l = 0; l < shape.layers; l += 1) {
+        const ownKeys = keys[l] ?? make(p, 0);
+        const ownValues = values[l] ?? make(p, 0);
+        const normed1 = make(p, w);
+        norm(x, 1, w, p, at(`${l}.ln1.gain`), at(`${l}.ln1.bias`), make(p, w), make(p, 1), normed1);
+        const qkv = make(p, 3 * w);
+        linear(normed1, 1, w, 3 * w, p, at(`${l}.qkv.weight`), at(`${l}.qkv.bias`), qkv);
+        for (let i = 0; i < w; i += 1) {
+          ownKeys[r * w + i] = qkv[w + i] ?? 0;
+          ownValues[r * w + i] = qkv[2 * w + i] ?? 0;
+        }
+        const shares = make(p, r + 1);
+        const mixed = make(p, w);
+        for (let h = 0; h < heads; h += 1) {
+          let top = -Infinity;
+          for (let j = 0; j <= r; j += 1) {
+            let s = 0;
+            for (let d = 0; d < size; d += 1)
+              s += (qkv[h * size + d] ?? 0) * (ownKeys[j * w + h * size + d] ?? 0);
+            s *= scale;
+            shares[j] = s;
+            if (s > top) top = s;
+          }
+          let total = 0;
+          for (let j = 0; j <= r; j += 1) {
+            const e = Math.exp((shares[j] ?? 0) - top);
+            shares[j] = e;
+            total += e;
+          }
+          for (let j = 0; j <= r; j += 1) shares[j] = (shares[j] ?? 0) / total;
+          for (let d = 0; d < size; d += 1) {
+            let sum = 0;
+            for (let j = 0; j <= r; j += 1)
+              sum += (shares[j] ?? 0) * (ownValues[j * w + h * size + d] ?? 0);
+            mixed[h * size + d] = sum;
+          }
+        }
+        const looked = make(p, w);
+        linear(mixed, 1, w, w, p, at(`${l}.proj.weight`), at(`${l}.proj.bias`), looked);
+        const middle = make(p, w);
+        for (let i = 0; i < w; i += 1) middle[i] = (x[i] ?? 0) + (looked[i] ?? 0);
+        const normed2 = make(p, w);
+        norm(
+          middle,
+          1,
+          w,
+          p,
+          at(`${l}.ln2.gain`),
+          at(`${l}.ln2.bias`),
+          make(p, w),
+          make(p, 1),
+          normed2,
+        );
+        const wide = make(p, 4 * w);
+        linear(normed2, 1, w, 4 * w, p, at(`${l}.fc.weight`), at(`${l}.fc.bias`), wide);
+        const bent = make(p, 4 * w);
+        for (let i = 0; i < 4 * w; i += 1) {
+          const v = wide[i] ?? 0;
+          bent[i] = 0.5 * v * (1 + Math.tanh(GELU_C * (v + 0.044715 * v * v * v)));
+        }
+        const thought = make(p, w);
+        linear(bent, 1, 4 * w, w, p, at(`${l}.out.weight`), at(`${l}.out.bias`), thought);
+        const next = make(p, w);
+        for (let i = 0; i < w; i += 1) next[i] = (middle[i] ?? 0) + (thought[i] ?? 0);
+        x = next;
+      }
+      const normedF = make(p, w);
+      norm(x, 1, w, p, at("lnf.gain"), at("lnf.bias"), make(p, w), make(p, 1), normedF);
+      const logits = make(p, vocab);
+      linear(normedF, 1, w, vocab, p, at("head.weight"), at("head.bias"), logits);
+      count += 1;
+      return Float64Array.from(logits);
+    },
+  };
+}
+
 /** Mean surprise (cross-entropy, in nats) of each next piece in `ids`; at least two pieces. */
 export function surpriseOf(model: Gpt, ids: readonly number[]): number {
   const { logits, n } = run(model, ids, false);

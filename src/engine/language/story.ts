@@ -4,7 +4,7 @@
  */
 import { createRandom } from "../random";
 import { chancesOf, likeliest, pick, type Sampling } from "./sampling";
-import { nextScores } from "./tiny-gpt";
+import { createReader, nextScores } from "./tiny-gpt";
 import type { Storyteller } from "./writers";
 
 export type WordChance = { word: string; chance: number };
@@ -37,9 +37,19 @@ export function continueStory(
   sampling: Sampling,
   seed: number,
 ): number[] {
+  const { gpt } = teller;
   const all = [...ids];
+  // While the story fits the storyteller's view, each new word is read on its own; once it is
+  // longer, the view slides along and every word's place changes, so it is read again in full.
+  const reader = createReader(gpt);
+  const fits = () => all.length > 0 && all.length <= gpt.shape.context;
+  let scores: Float64Array = new Float64Array();
+  if (fits()) for (const id of all) scores = reader.read(id);
+  else scores = nextScores(gpt, all);
   for (let step = 0; step < count; step += 1) {
-    all.push(pick(storyChances(teller, all, sampling), rollOf(seed, step)));
+    const id = pick(chancesOf(scores, sampling), rollOf(seed, step));
+    all.push(id);
+    if (step + 1 < count) scores = fits() ? reader.read(id) : nextScores(gpt, all);
   }
   return all.slice(ids.length);
 }
