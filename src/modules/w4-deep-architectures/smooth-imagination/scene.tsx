@@ -57,7 +57,7 @@ export function MapScene({ state, update, timeline }: Props) {
   const ready = shown?.model ?? null;
   const tidy = shown?.tidy ?? state.tidy;
   const view = useMemo(() => (ready ? windowFor(ready.kit.manifest, tidy) : null), [ready, tidy]);
-  const torn = useTornCheck(ready?.weights ?? null, ready?.kit.faces ?? null, view);
+  const torn = useTornCheck(mapName(tidy), ready?.weights ?? null, ready?.kit.faces ?? null, view);
   const marker = useMemo(() => {
     if (!ready || !view) return null;
     const picture = pictureAt(ready.weights, ...spotAt(view, state.x, state.y));
@@ -128,8 +128,12 @@ export function MapScene({ state, update, timeline }: Props) {
   );
 }
 
-/** Works out, a few faces at a time, how many of the fixed 12 × 12 check are nonsense. */
+/**
+ * Works out, a few faces at a time, how many of the fixed 12 × 12 check are nonsense. Each map
+ * gets its own run from its first face, so a map that arrives mid-check is counted whole.
+ */
 function useTornCheck(
+  name: string,
   weights: Weights | null,
   faces: Uint8Array | null,
   view: MapWindow | null,
@@ -138,11 +142,13 @@ function useTornCheck(
   const [, setFound] = useState(0);
   const counted = useRef<{ weights: Weights | null; bad: number }>({ weights: null, bad: 0 });
   const done = useSliced(
-    weights && faces && view && known === undefined ? `check` : null,
+    weights && faces && view && known === undefined ? `check|${name}` : null,
     CHECK * CHECK,
     (index) => {
       if (!weights || !faces || !view) return;
-      if (counted.current.weights !== weights) counted.current = { weights, bad: 0 };
+      if (index === 0) counted.current = { weights, bad: 0 };
+      // A run carried over from another map's faces never counts for this one.
+      if (counted.current.weights !== weights) return;
       const picture = tileAt(weights, view, CHECK, index % CHECK, Math.floor(index / CHECK));
       if (isNonsense(picture, faces)) counted.current.bad += 1;
       if (index === CHECK * CHECK - 1) {
