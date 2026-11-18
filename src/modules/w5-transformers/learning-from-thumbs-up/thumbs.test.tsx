@@ -15,7 +15,9 @@ import {
 } from "./model";
 import { predictions } from "./predictions";
 
-const shown = (picks: number[]): ThumbsFrame => ({ ...frameOf({ picks }), epoch: 1 });
+const base = definition.initialState as ThumbsState;
+
+const shown = (picks: number[]): ThumbsFrame => ({ ...frameOf({ ...base, picks }), epoch: 1 });
 const judged = (count: number) => Array.from({ length: count }, (_, at) => judgePick(at));
 const honest = (count: number) => Array.from({ length: count }, (_, at) => honestPick(at));
 const [mission] = missions;
@@ -37,30 +39,46 @@ describe("learning from thumbs-up: the reward model", () => {
     expect(frame.weights.flatters).toBeGreaterThan(frame.weights.correct);
     expect(frame.yesMan).toBe(true);
   });
+
+  it("holds on to being right longer when it cares more and learns less from each pick", () => {
+    const judgedTen = judged(10);
+    expect(frameOf({ ...base, care: 1, teach: 0.1, picks: judgedTen }).yesMan).toBe(false);
+    // Caring at the start only delays it: ten praise picks at the usual size still win.
+    expect(frameOf({ ...base, care: 2, picks: judgedTen }).yesMan).toBe(true);
+    expect(frameOf({ ...base, care: 2, picks: judgedTen }).weights.correct).toBeGreaterThan(
+      frameOf({ ...base, picks: judgedTen }).weights.correct,
+    );
+  });
 });
 
 describe("learning from thumbs-up: mission and guess", () => {
   it("fires for a yes-man on screen", () => {
-    expect(mission.when({ picks: judged(10) }, shown(judged(10)))).toBe(true);
-    expect(mission.when({ picks: honest(10) }, shown(honest(10)))).toBe(false);
-    expect(mission.when({ picks: judged(9) }, shown(judged(10)))).toBe(false);
+    expect(mission.when({ ...base, picks: judged(10) }, shown(judged(10)))).toBe(true);
+    expect(mission.when({ ...base, picks: honest(10) }, shown(honest(10)))).toBe(false);
+    expect(mission.when({ ...base, picks: judged(9) }, shown(judged(10)))).toBe(false);
   });
 
   it("answers once ten picks all rewarded praise", () => {
-    expect(guess.answer({ picks: [] }, shown(judged(9)))).toBeNull();
-    expect(guess.answer({ picks: [] }, shown(judged(10)))).toBe("please");
-    expect(guess.answer({ picks: [] }, shown(honest(10)))).toBeNull();
+    expect(guess.answer(base, shown(judged(9)))).toBeNull();
+    expect(guess.answer(base, shown(judged(10)))).toBe("please");
+    expect(guess.answer(base, shown(honest(10)))).toBeNull();
   });
 });
 
 describe("learning from thumbs-up: links", () => {
   it("keeps only real picks", () => {
     const safe = definition.parseState!(
-      { picks: [0, 1, 2, "x", 1, ...Array(99).fill(0)] } as unknown as ThumbsState,
-      { picks: [] },
+      {
+        picks: [0, 1, 2, "x", 1, ...Array(99).fill(0)],
+        teach: 9,
+        care: -3,
+      } as unknown as ThumbsState,
+      base,
     );
     expect((safe as ThumbsState).picks.length).toBe(MOST_PICKS);
     expect((safe as ThumbsState).picks.slice(0, 3)).toEqual([0, 1, 1]);
+    expect((safe as ThumbsState).teach).toBe(1.5);
+    expect((safe as ThumbsState).care).toBe(0);
   });
 });
 

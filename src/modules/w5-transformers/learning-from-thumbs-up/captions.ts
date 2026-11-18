@@ -154,6 +154,21 @@ export const CHECKS: Question[] = [
 
 export const words = {
   round: (round: number, total: number) => `Choice ${count(round)} of ${count(total)}`,
+  teach: {
+    label: "How much each pick teaches it",
+    describe: (value: number) => (value < 0.4 ? "A little" : value < 1 ? "A fair amount" : "A lot"),
+  },
+  care: {
+    label: "How much it cares about being right before your picks",
+    describe: (value: number) =>
+      value < 0.05
+        ? "Not at all"
+        : value < 0.8
+          ? "A little"
+          : value < 1.5
+            ? "Quite a lot"
+            : "A lot",
+  },
   made: (picks: number) =>
     picks === 0
       ? "No picks yet."

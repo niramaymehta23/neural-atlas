@@ -9,6 +9,10 @@ import { CHECKS, PRACTICE, type Answer } from "./captions";
 export type ThumbsState = {
   /** For each choice so far: 0 picked the first answer of the pair, 1 the second. */
   picks: number[];
+  /** "How much each pick teaches it": how far one pick moves its reward model. */
+  teach: number;
+  /** "How much it cares about being right before your picks". */
+  care: number;
 };
 
 export type Weights = { correct: number; flatters: number; agrees: number };
@@ -41,17 +45,21 @@ export const PAIRS = (() => {
 })();
 
 export const MOST_PICKS = PAIRS.length;
-/** What it had picked up from reading, before any thumbs-up. */
-export const START: Weights = { correct: 0.5, flatters: 0, agrees: 0 };
-const STEP = 0.6;
+/** How far one pick moves the reward model. */
+export const TEACH = { min: 0.1, max: 1.5, start: 0.6 } as const;
+/** How much it liked right answers from reading, before any thumbs-up. */
+export const CARE = { min: 0, max: 2, start: 0.5 } as const;
 const FEATURES = ["correct", "flatters", "agrees"] as const;
 
 const featuresOf = (answer: Answer) => FEATURES.map((feature) => (answer[feature] ? 1 : 0));
 export const scoreOf = (weights: Weights, answer: Answer) =>
   FEATURES.reduce((sum, feature) => sum + (answer[feature] ? weights[feature] : 0), 0);
 
-export function weightsOf(picks: readonly number[]): Weights {
-  const weights = { ...START };
+export function weightsOf(
+  picks: readonly number[],
+  { teach, care }: Pick<ThumbsState, "teach" | "care">,
+): Weights {
+  const weights: Weights = { correct: care, flatters: 0, agrees: 0 };
   picks.forEach((pick, at) => {
     const pair = PAIRS[at];
     const question = pair ? PRACTICE[pair.question] : undefined;
@@ -64,7 +72,7 @@ export function weightsOf(picks: readonly number[]): Weights {
     const a = featuresOf(winner);
     const b = featuresOf(loser);
     FEATURES.forEach((feature, d) => {
-      weights[feature] += STEP * wrongness * ((a[d] ?? 0) - (b[d] ?? 0));
+      weights[feature] += teach * wrongness * ((a[d] ?? 0) - (b[d] ?? 0));
     });
   });
   return weights;
@@ -80,7 +88,7 @@ export function bestAnswer(weights: Weights, answers: readonly Answer[]): number
 }
 
 export function frameOf(state: ThumbsState): Omit<ThumbsFrame, "epoch"> {
-  const weights = weightsOf(state.picks);
+  const weights = weightsOf(state.picks, state);
   const answers = CHECKS.map((question) => bestAnswer(weights, question.answers));
   const yesMan = CHECKS.every((question, at) => {
     const given = question.answers[answers[at] ?? 0];
