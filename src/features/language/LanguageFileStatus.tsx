@@ -45,7 +45,11 @@ export function LanguageFileStatus<T>({
       data-loading
       className={`flex items-center justify-center rounded-card border border-hairline bg-card p-4 text-sm text-ink-soft ${className}`}
     >
-      <p className="motion-safe:animate-pulse">{words.loading}</p>
+      {/* Only the dot pulses, so the words keep their full contrast. */}
+      <p className="flex items-center gap-2">
+        <span aria-hidden className="size-2 rounded-pill bg-ink-soft motion-safe:animate-pulse" />
+        {words.loading}
+      </p>
     </div>
   );
 }

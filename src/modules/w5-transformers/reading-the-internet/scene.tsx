@@ -98,7 +98,7 @@ export function ReadingScene(props: Props) {
           <p className="text-sm text-ink-soft">{words.writes}</p>
           <p
             aria-label={words.writesLabel}
-            className="min-h-24 rounded-card border border-hairline bg-paper p-3 text-base whitespace-pre-wrap"
+            className="min-h-24 rounded-card border border-hairline bg-paper p-3 text-base whitespace-pre-wrap [overflow-wrap:anywhere]"
             data-sample
           >
             {frame?.sample ?? ""}

@@ -101,7 +101,7 @@ export function ThumbsScene({ state, update, timeline, side }: Props) {
                 key={feature}
                 data-feature={feature}
                 data-weight={value.toFixed(2)}
-                className="grid min-h-7 grid-cols-[9rem_1fr_8rem] items-center gap-2"
+                className="grid min-h-7 grid-cols-[minmax(0,9rem)_minmax(3rem,1fr)_minmax(0,8rem)] items-center gap-2"
               >
                 <span>{words.likes[feature]}</span>
                 <span aria-hidden className="relative h-4 rounded-pill bg-inset">
