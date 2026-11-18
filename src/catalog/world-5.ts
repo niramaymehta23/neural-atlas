@@ -57,6 +57,8 @@ export const world5: WorldEntry = {
       idea: 'Without order, "dog bites man" is the same as "man bites dog"',
       playWith: "Switch word order on and off",
       prerequisites: ["who-is-looking-at-whom"],
+      load: () =>
+        import("@/modules/w5-transformers/knowing-the-order").then(({ definition }) => definition),
     },
     {
       id: "the-thinking-block",
