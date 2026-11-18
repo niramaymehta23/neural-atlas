@@ -1,0 +1,11 @@
+mobilenet-v1-025-v1
+
+This folder contains a copy of MobileNet v1 (width 0.25, 224 x 224 pictures) from the
+TensorFlow.js model store (https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/),
+published with tensorflow/tfjs-models under the Apache License, Version 2.0 (see LICENSE).
+The model was trained by Google on ImageNet.
+
+Changes made for Neural Atlas: the store's 55 weight files were joined, in their manifest order,
+into one weights.bin and model.json was pointed at it; no weight was changed. things.json holds
+the first name of each of the model's 1,000 things, taken from tfjs-models'
+mobilenet/src/imagenet_classes.ts (commit e80d693bb43cb0ef234b808021c4def434ea816a).

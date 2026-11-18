@@ -141,13 +141,13 @@ test("the companion model survives navigation and reload", async ({ page }) => {
 });
 
 test("an unbuilt lesson shows its locked page", async ({ page }) => {
-  await page.goto("/learn/zooming-out");
-  await expect(page.getByRole("heading", { name: "Zooming out" })).toBeVisible();
+  await page.goto("/learn/chopping-text-into-pieces");
+  await expect(page.getByRole("heading", { name: "Chopping text into pieces" })).toBeVisible();
   await expect(page.getByText("Still being drawn")).toBeVisible();
-  await expect(page.getByText("Keep the gist, drop the detail")).toBeVisible();
-  await expect(page.getByText("Pooling")).toHaveCount(0);
-  await page.getByRole("link", { name: "The pattern torch" }).click();
-  await expect(page).toHaveURL(/\/learn\/the-pattern-torch$/);
+  await expect(page.getByText("AI reads in chunks, not words")).toBeVisible();
+  await expect(page.getByText("Tokenisation")).toHaveCount(0);
+  await page.getByRole("link", { name: "Reading one word at a time" }).click();
+  await expect(page).toHaveURL(/\/learn\/reading-one-word-at-a-time$/);
 });
 
 test("the palette jumps to a lesson by its real term", async ({ page }) => {

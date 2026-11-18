@@ -5,8 +5,10 @@ const PORT = Number(process.env.E2E_PORT ?? 4173);
 const CI = Boolean(process.env.CI);
 
 // Runs against the static export (`pnpm build` first), served with the real `_headers`.
-// Two projects: `functional` runs everything not tagged @perf in parallel; `perf` runs the timing
-// tests one at a time once `functional` is done, so nothing else competes for the CPU.
+// Three projects: `functional` runs everything not tagged @perf or @gpu in parallel; `gpu` then runs
+// the tests of lessons that read pictures with a model (WebGL drawn in software keeps several cores
+// busy per page, see e2e/gpu.ts) one at a time; `perf` runs the timing tests one at a time last,
+// so nothing else competes for the CPU.
 export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
@@ -16,14 +18,24 @@ export default defineConfig({
   projects: [
     {
       name: "functional",
+      grepInvert: /@perf|@gpu/,
+      retries: CI ? 1 : 0,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "gpu",
+      grep: /@gpu/,
       grepInvert: /@perf/,
+      dependencies: ["functional"],
+      fullyParallel: false,
+      workers: 1,
       retries: CI ? 1 : 0,
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "perf",
       grep: /@perf/,
-      dependencies: ["functional"],
+      dependencies: ["gpu"],
       fullyParallel: false,
       workers: 1,
       use: { ...devices["Desktop Chrome"] },

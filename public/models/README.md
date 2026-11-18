@@ -4,6 +4,12 @@ Everything the pretrained lessons load comes from this folder on the site's own 
 cross-origin isolated, so nothing may be fetched from elsewhere).
 
 - `attention-minilm-v1/`: the attention lesson's model, with its licence, notice and checksums.
+- `mobilenet-v1-025-v1/`: the World 4 picture lessons' model (MobileNet v1, Apache-2.0), rebuilt by
+  `scripts/export-vision-model.ts`.
+- `photos-v1/`: public-domain and CC0 sample photos for when the camera is not used, fetched by
+  `scripts/fetch-photos.py`.
+- `faces-v1/`: the World 4 face models, trained here on drawn cartoon faces (MIT) by
+  `scripts/train-faces.py`.
 - `ort-<version>/` (gitignored): the ONNX runtime for WebAssembly, copied from `node_modules` by
   `scripts/copy-runtime.ts` before `dev` and `build`. It comes from
   [onnxruntime-web](https://github.com/microsoft/onnxruntime) (MIT, commit
