@@ -165,6 +165,10 @@ export const world5: WorldEntry = {
       idea: "Think, use a tool, check, repeat",
       playWith: "A little stage play of an AI helper at work",
       prerequisites: ["looking-things-up"],
+      load: () =>
+        import("@/modules/w5-transformers/ai-that-takes-actions").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "pictures-and-words-together",
