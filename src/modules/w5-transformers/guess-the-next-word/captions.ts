@@ -32,6 +32,15 @@ export const words = {
   },
   next: "Next word chances",
   likeliest: "Always pick the likeliest word",
+  length: {
+    label: "How many words it writes",
+    describe: (added: number) =>
+      added === 0 ? "None yet" : `${sentenceStart(count(added))} ${added === 1 ? "word" : "words"}`,
+  },
+  roll: {
+    label: "Which dice rolls it uses",
+    describe: (seed: number) => `Dice rolls number ${seed}`,
+  },
   circles: "It's going round in circles: the same words keep coming back.",
   written: (added: number) =>
     added === 0

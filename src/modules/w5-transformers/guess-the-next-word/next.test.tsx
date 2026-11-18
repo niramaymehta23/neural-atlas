@@ -93,4 +93,17 @@ describe("guess the next word: in the lesson", () => {
       timeout: 10_000,
     });
   }, 20_000);
+
+  it("writes more words from the words dial", async () => {
+    render(
+      <ModuleShell lesson={{ ...valleyLesson, id: "guess-the-next-word-2" }} module={definition} />,
+    );
+    await waitFor(() => expect(document.querySelector("[data-chances]")).not.toBeNull(), {
+      timeout: 10_000,
+    });
+    const dial = screen.getAllByRole("slider", { name: words.length.label })[0] as HTMLElement;
+    dial.focus();
+    await userEvent.keyboard("{ArrowRight>5/}");
+    await waitFor(() => expect(screen.getAllByText(words.written(5)).length).toBeGreaterThan(0));
+  }, 20_000);
 });
