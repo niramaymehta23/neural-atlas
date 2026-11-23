@@ -1,9 +1,9 @@
 /** Every word of the journeys: their names, and what each stop says. */
 export const journeyCaptions = {
   begin: "Start this journey",
-  resume: "Carry on",
   stops: (count: string) => `${count} stops`,
   stop: (at: string, of: string) => `Stop ${at} of ${of}`,
+  stopNamed: (at: number, title: string) => `${at}: ${title}`,
   next: "Next stop",
   back: "Back a stop",
   arrived: "You’ve arrived",

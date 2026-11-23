@@ -97,7 +97,7 @@ export function JourneyPage({ journey }: { journey: Journey }) {
               <button
                 type="button"
                 aria-current={at === stop ? "step" : undefined}
-                aria-label={`${words.stop(count(at + 1), count(stops.length))}: ${lessonById(lesson)?.title ?? ""}`}
+                aria-label={words.stopNamed(at + 1, lessonById(lesson)?.title ?? "")}
                 onClick={() => go(at)}
                 className="grid size-11 place-items-center rounded-pill border border-hairline bg-card text-sm text-ink-soft aria-[current=step]:border-2 aria-[current=step]:border-ink aria-[current=step]:text-ink"
               >

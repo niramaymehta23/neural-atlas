@@ -62,21 +62,47 @@ export function useAwake(on: boolean) {
   }, [on]);
 }
 
-/** True once nobody has moved, tapped or pressed a key for a while (never while `keep`). */
+/**
+ * True once nobody has moved, tapped or pressed a key for a while (never while `keep`). The tap
+ * that wakes a sleeping page presses nothing, since what was under it could not be seen.
+ */
 export function useIdle(keep: boolean): boolean {
   const [idle, setIdle] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const asleep = useRef(false);
   useEffect(() => {
+    asleep.current = idle && !keep;
+  }, [idle, keep]);
+  useEffect(() => {
+    let waking = false;
     const wake = () => {
       setIdle(false);
       clearTimeout(timer.current);
       timer.current = setTimeout(() => setIdle(true), IDLE_MS);
     };
+    const onDown = () => {
+      waking = asleep.current;
+    };
+    const onKey = () => {
+      waking = false;
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!waking) return;
+      waking = false;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("click", onClick, true);
     const signs = ["pointermove", "pointerdown", "keydown", "focusin"] as const;
     for (const sign of signs) window.addEventListener(sign, wake);
     timer.current = setTimeout(() => setIdle(true), IDLE_MS);
     return () => {
       clearTimeout(timer.current);
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("click", onClick, true);
       for (const sign of signs) window.removeEventListener(sign, wake);
     };
   }, []);

@@ -110,7 +110,6 @@ export const twoPlayerCaptions = {
   again: "Play another round",
   swap: "Swap places and play again",
   restart: "Start this round over",
-  zero: "Set the score to nothing",
   term: {
     lead: "The real word is",
     race: "compute budget",

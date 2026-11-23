@@ -74,6 +74,8 @@ export function useLab({
   const [attempt, setAttempt] = useState(0);
   const [start, setStart] = useState(0);
   const client = useRef<LabClient | null>(null);
+  /** The worker failed, so it cannot be relied on to run anything else. */
+  const broken = useRef(false);
   /** The run whose moments are arriving, and what it has shown so far. */
   const run = useRef(freshRun(""));
 
@@ -108,8 +110,12 @@ export function useLab({
         }
         if (!frame) frame = requestAnimationFrame(show);
       },
-      onError: (message) => setFailure(message),
+      onError: (message) => {
+        broken.current = true;
+        setFailure(message);
+      },
     });
+    broken.current = false;
     client.current = created;
     return () => {
       cancelAnimationFrame(frame);
@@ -129,6 +135,11 @@ export function useLab({
     run.current = freshRun(runKey);
     if (!now || !client.current) return;
     setFailure(null);
+    if (broken.current) {
+      // A new worker for the new run; making it brings this effect round again.
+      setAttempt((count) => count + 1);
+      return;
+    }
     client.current.start(now);
     if (going) client.current.go(end, pace);
     else client.current.go(Math.min(saved, end));

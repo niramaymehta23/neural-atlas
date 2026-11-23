@@ -5,6 +5,7 @@ import { world3 } from "../src/catalog/world-3";
 import { world4 } from "../src/catalog/world-4";
 import { world5 } from "../src/catalog/world-5";
 import { world6 } from "../src/catalog/world-6";
+import { JOURNEYS } from "../src/experiences/journeys/journeys";
 import { gpuTagFor } from "./gpu";
 
 /**
@@ -33,6 +34,16 @@ const PAGES = [
   { path: "/learn/who-is-looking-at-whom", ready: "[data-region=scene]" },
   { path: "/learn/no-such-idea", ready: "h1" },
   { path: "/styleguide", ready: "h1" },
+  { path: "/explore", ready: "h1" },
+  { path: "/sandbox", ready: "[data-run]" },
+  { path: "/journeys", ready: "h1" },
+  ...JOURNEYS.map((id) => ({
+    path: `/journeys/${id}`,
+    ready: "[data-region=stage] [data-testid]",
+  })),
+  { path: "/museum", ready: "[data-room]" },
+  { path: "/theatre", ready: "[data-playing=true]" },
+  { path: "/two-player", ready: "[data-stage]" },
 ] as const;
 
 const SETUPS = [

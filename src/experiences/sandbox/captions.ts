@@ -158,6 +158,4 @@ export const sandboxCaptions = {
   clear: "Clear it all",
   describe: (learner: string, place: string, verdict: string) =>
     `${learner}, learning ${place}. ${verdict}`,
-  setUp: "Set it up",
-  watch: "How it is going",
 };
