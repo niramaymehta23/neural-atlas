@@ -119,6 +119,8 @@ export const world6: WorldEntry = {
       idea: "How thumbs-up training shapes ChatGPT",
       playWith: "Train a chatbot with thumbs-up",
       prerequisites: ["learning-from-thumbs-up", "player-and-coach"],
+      load: () =>
+        import("@/modules/w6-reinforcement/back-to-chatbots").then(({ definition }) => definition),
     },
   ],
 };
