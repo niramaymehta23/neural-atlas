@@ -36,7 +36,8 @@ export const words = {
       ? "It hasn't practised yet."
       : `${sentenceStart(count(games))} practice ${games === 1 ? "game" : "games"}${done ? ", all it gets here." : "."}`,
   line: "How many test fruit it catches, game after game",
-  lineNote: "The faint line is a basket that moves at random.",
+  lineNote:
+    "The flat dotted line is a basket that moves at random. A dashed line is the run before.",
   memory: {
     label: "How much it remembers",
     describe: (stop: number) =>

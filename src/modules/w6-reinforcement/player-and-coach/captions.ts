@@ -45,7 +45,8 @@ export const words = {
       ? "It hasn't practised yet."
       : `${sentenceStart(count(batches))} ${batches === 1 ? "batch" : "batches"} of tries${done ? ", all it gets here." : "."}`,
   line: "How well the player does, batch after batch",
-  lineNote: "The faint line is a player that picks its moves at random.",
+  lineNote:
+    "The flat dotted line is a player that picks its moves at random. A dashed line is the run before.",
   clip: {
     label: "How small the changes stay",
     describe: (stop: number) =>
