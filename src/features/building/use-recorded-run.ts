@@ -13,8 +13,12 @@ export const SETTLE_MS = 400;
 type RecordedRunOptions<S extends ModuleState, F extends TimelineFrame> = ModuleViewProps<S, F> & {
   /** How many runs have been asked for; 0 records nothing. A link replays the last one. */
   runs: number;
-  /** Every frame of the run `state` describes, in order. Pure: the same state, the same frames. */
-  work: (state: S) => Iterable<F>;
+  /**
+   * Every frame of the run `state` describes, in order. Pure: the same state, the same frames.
+   * It may also yield `null` between frames: a point to pause at that records nothing, for runs
+   * whose frames each take longer than a slice to work out.
+   */
+  work: (state: S) => Iterable<F | null>;
   /**
    * The settings a run depends on, as one string. Changing them after a run asks for one new
    * run once they rest, so the run on screen always matches the dials (the old one stays as
@@ -61,7 +65,7 @@ export function useRecordedRun<S extends ModuleState, F extends TimelineFrame>({
     if (runs === 0) return;
     ranWith.current = latest.current.settings;
     let cancelled = false;
-    let frames: Iterator<F> | null = null;
+    let frames: Iterator<F | null> | null = null;
     const recorded: F[] = [];
     const fail = (error: unknown) => {
       setFailure(error instanceof Error ? error : new Error(String(error)));
@@ -75,7 +79,7 @@ export function useRecordedRun<S extends ModuleState, F extends TimelineFrame>({
         for (;;) {
           const next = frames.next();
           if (next.done) break;
-          recorded.push(next.value);
+          if (next.value !== null) recorded.push(next.value);
           if (performance.now() - started > SLICE_MS) {
             timer = setTimeout(slice, 0);
             return;
