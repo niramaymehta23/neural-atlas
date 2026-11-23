@@ -39,5 +39,8 @@ describe("a lesson page", () => {
       "href",
       "/learn/teach-by-showing",
     );
+    // The first built lesson in curriculum order, for a learner who has mastered nothing.
+    const ready = screen.getByRole("navigation", { name: "Ready to explore now" });
+    expect(within(ready).getByRole("link")).toHaveAttribute("href", "/learn/teach-by-showing");
   });
 });

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { world6 } from "../src/catalog/world-6";
 import { budget, recordPerf } from "./frames";
 import { watch } from "./watch";
 
@@ -84,10 +85,14 @@ test("the home map shows all 74 ideas and a paper label on hover", async ({ page
 test("every idea is drawn now: no star says it is still being drawn", async ({ page }) => {
   // From stage 10 every lesson is built; the locked star and its fade across are unit-tested in
   // src/constellation/HomeMap.test.tsx with one lesson made unbuilt again.
+  // Stars are read by name, not hovered: in the 3D view some stars of a world overlap.
   await openHome(page);
-  await page.locator('[data-star="treats-and-tricks"]').hover(steady);
-  await expect(page.getByRole("tooltip")).toContainText("Treats and tricks");
-  await expect(page.getByRole("tooltip")).not.toContainText("Still being drawn");
+  for (const lesson of world6.lessons)
+    await expect(
+      page.getByRole("link", {
+        name: new RegExp(`^${lesson.title.replace(/[?.*+()[\]]/g, "\\$&")}`),
+      }),
+    ).toBeAttached();
   await expect(page.getByRole("link", { name: /Still being drawn/ })).toHaveCount(0);
 });
 
@@ -263,13 +268,6 @@ test("the palette takes over a flight that has started", async ({ page }) => {
   await page.waitForURL("**/learn/stacking-cells");
   await page.waitForTimeout(1500);
   await expect(page).toHaveURL(/\/learn\/stacking-cells$/);
-});
-
-test("the locked page offers a lesson that is ready now", async ({ page }) => {
-  await page.goto("/learn/treats-and-tricks");
-  const ready = page.getByRole("navigation", { name: "Ready to explore now" });
-  // The first built lesson in curriculum order, for a learner who has mastered nothing.
-  await expect(ready.getByRole("link")).toHaveAttribute("href", "/learn/teach-by-showing");
 });
 
 test("the words paint within 1.5 s; the 3D arrives after", { tag: "@perf" }, async ({ page }) => {
