@@ -3,7 +3,7 @@ import { theatreCaptions as words } from "../src/experiences/theatre/captions";
 import { SHOWS } from "../src/experiences/theatre/programme";
 import { platformCaptions } from "../src/platform/captions";
 import { expectSmooth, measureFrames, settle } from "./frames";
-import { expect, noSidewaysScroll, openPage, RUN, slowed, SOON, test, watch } from "./x";
+import { expect, noSidewaysScroll, openPage, placeOf, RUN, slowed, SOON, test, watch } from "./x";
 
 /** REQ-EXP-03: a full screen of a model thinking, for as long as anybody likes. */
 const READY = "[data-playing=true]";
@@ -113,6 +113,29 @@ test("under reduced motion it is a still picture that changes now and then", asy
   expect(changes).toBeGreaterThan(0);
   expect(changes).toBeLessThanOrEqual(3);
 });
+
+for (const width of [1280, 375])
+  test(`a browser that cannot fill the screen says so, and nothing moves at ${width} px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.addInitScript(() => {
+      Element.prototype.requestFullscreen = () => Promise.reject(new TypeError("refused"));
+    });
+    await openPage(page, "/theatre", READY);
+    const controls = page.locator("[data-controls]");
+    const before = await placeOf(controls);
+    await page.mouse.move(200, 200);
+    await page.getByRole("button", { name: words.full }).click();
+    await expect(page.getByText(words.noFull)).toBeVisible();
+    await expect(page.getByText(words.keys)).toBeHidden();
+    expect(await placeOf(controls)).toEqual(before);
+    for (const show of ["shapes", "explorer", "words"] as const) {
+      await page.getByRole("button", { name: words.programme[show] }).click();
+      await expect(page.locator(stage)).toHaveAttribute("data-theatre", show);
+      expect(await placeOf(controls)).toEqual(before);
+    }
+  });
 
 test("without the storyteller's files it says so, and the other shows still play", async ({
   page,

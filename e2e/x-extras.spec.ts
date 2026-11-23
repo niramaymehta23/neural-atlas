@@ -36,6 +36,41 @@ test("every page leads to more to do, and from there to everything", async ({ pa
   expect(elsewhere).toEqual([]);
 });
 
+for (const size of [
+  { width: 1280, height: 800 },
+  { width: 375, height: 812 },
+])
+  test(`no page jumps as it loads, ${size.width} px wide`, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize(size);
+    await page.addInitScript(() => {
+      const seen = { moved: 0 };
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries())
+          seen.moved += (entry as PerformanceEntry & { value: number }).value;
+      }).observe({ type: "layout-shift", buffered: true });
+      Object.assign(window, { seen });
+    });
+    for (const [path, ready] of [
+      [pages.explore.path, "h1"],
+      [pages.sandbox.path, "[data-multiplications]"],
+      [pages.journeys.path, "h1"],
+      [`${pages.journeys.path}/how-chatgpt-works`, "[data-region=stage] [data-testid]"],
+      [pages.museum.path, "h1"],
+      [pages.theatre.path, "[data-playing=true]"],
+      [pages.twoPlayer.path, "h1"],
+    ] as const) {
+      await openPage(page, path, ready);
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      await page.waitForTimeout(500);
+      // The search button's key hint settles by 9 px (under 0.001); nothing else may move.
+      const moved = await page.evaluate(
+        () => (window as unknown as { seen: { moved: number } }).seen.moved,
+      );
+      expect(moved, path).toBeLessThan(0.002);
+    }
+  });
+
 test("the search box finds the other pages", async ({ page }) => {
   await openPage(page, "/explore", "h1");
   await page.keyboard.press("ControlOrMeta+k");

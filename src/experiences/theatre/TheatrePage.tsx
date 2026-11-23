@@ -102,6 +102,11 @@ export function TheatrePage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const note = refused
+    ? words.noFull
+    : programme === "turns" && fetched.status === "failed"
+      ? words.failed
+      : words.keys;
   const strip = `flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 transition-opacity has-[a:focus-visible,button:focus-visible]:opacity-100 motion-reduce:transition-none ${idle ? "opacity-0" : ""}`;
   return (
     <main
@@ -151,7 +156,9 @@ export function TheatrePage() {
           </div>
         )}
       </div>
-      <p className="px-4 text-center text-sm text-ink-soft">{on && words.under[on]}</p>
+      <p className="min-h-10 px-4 text-center text-sm text-ink-soft md:min-h-5">
+        {on && words.under[on]}
+      </p>
       <div data-controls data-fades className={strip}>
         <div role="group" aria-label={words.programme.label} className="flex flex-wrap gap-2">
           {PROGRAMMES.map((id) => (
@@ -174,20 +181,24 @@ export function TheatrePage() {
           >
             {paused ? words.play : words.pause}
           </button>
-          {on && <IdeaCardButton about={IDEA[on]} />}
-          {able && (
-            <button type="button" className={`${BUTTON} min-w-44`} onClick={() => void toggle()}>
-              {full ? words.shrink : words.full}
-            </button>
-          )}
+          {/* Both hold their place from the first paint, so nothing under the show moves. */}
+          <IdeaCardButton about={IDEA[on ?? "words"]} className={on ? "" : "invisible"} />
+          <button
+            type="button"
+            className={`${BUTTON} min-w-44 ${able ? "" : "invisible"}`}
+            onClick={() => void toggle()}
+          >
+            {full ? words.shrink : words.full}
+          </button>
         </div>
-        <p className="text-sm text-ink-soft">
-          {refused
-            ? words.noFull
-            : programme === "turns" && fetched.status === "failed"
-              ? words.failed
-              : words.keys}
-        </p>
+        {/* Every note it may show has the room of the longest. */}
+        <div className="grid text-sm text-ink-soft">
+          {[words.keys, words.failed, words.noFull].map((text) => (
+            <p key={text} className={`[grid-area:1/1] ${text === note ? "" : "invisible"}`}>
+              {text}
+            </p>
+          ))}
+        </div>
       </div>
     </main>
   );
