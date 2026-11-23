@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { lessons } from "@/catalog";
+import type * as World6 from "@/catalog/world-6";
 import { mockReducedMotion } from "@/design/reduced-motion.mock";
 import { progressStore } from "@/platform/progress/progress";
 import { storageHealth } from "@/platform/storage";
@@ -37,7 +38,7 @@ vi.mock("@/platform/SiteNav", () => ({ SiteNav: () => <nav aria-label="Around th
 // Every lesson is built from stage 10 on. Here Treats and tricks is unbuilt again, so the map's
 // "still being drawn" paths (a locked star, the fade across) stay covered.
 vi.mock("@/catalog/world-6", async (importOriginal) => {
-  const { world6 } = await importOriginal<typeof import("@/catalog/world-6")>();
+  const { world6 } = await importOriginal<typeof World6>();
   return {
     world6: {
       ...world6,

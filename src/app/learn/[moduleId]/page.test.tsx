@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import LearnPage from "./page";
+import type * as World6 from "@/catalog/world-6";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), prefetch: vi.fn() }) }));
 vi.mock("@/platform/SiteNav", () => ({ SiteNav: () => <nav aria-label="Around the atlas" /> }));
@@ -7,7 +8,7 @@ vi.mock("./LessonPage", () => ({ LessonPage: ({ id }: { id: string }) => <p>less
 // Every lesson is built from stage 10 on, so no real page is locked any more. Here Treats and
 // tricks is unbuilt again, so the locked page (once shown in e2e/platform.spec.ts) stays covered.
 vi.mock("@/catalog/world-6", async (importOriginal) => {
-  const { world6 } = await importOriginal<typeof import("@/catalog/world-6")>();
+  const { world6 } = await importOriginal<typeof World6>();
   return {
     world6: {
       ...world6,
