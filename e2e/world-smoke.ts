@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test as playwrightTest } from "@playwright/test";
 import type { WorldEntry } from "../src/platform/contract";
 import { gpuTagFor } from "./gpu";
 import { watch } from "./watch";
@@ -7,9 +7,10 @@ import { watch } from "./watch";
  * The smoke test every built lesson of a world passes: it opens on its own story with the
  * dials, mission and guess in place, the real name held back, nothing sent elsewhere and no
  * errors; and at phone width nothing spills sideways. Each lesson's own spec
- * (e2e/w<world>-<id>.spec.ts) covers its interaction, mission and link.
+ * (e2e/w<world>-<id>.spec.ts) covers its interaction, mission and link. `test` may be swapped
+ * for an extended one (World 6's slows the CPU when a throttled run is asked for).
  */
-export function smokeWorld(world: WorldEntry, folder: string) {
+export function smokeWorld(world: WorldEntry, folder: string, test = playwrightTest) {
   for (const lesson of world.lessons.filter(({ load }) => load)) {
     const tag = gpuTagFor(`/learn/${lesson.id}`);
     test(
