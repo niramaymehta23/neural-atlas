@@ -167,11 +167,16 @@ test("half an hour of it, sped up, keeps no more memory than the first minutes",
   expect(end.listeners - start.listeners).toBeLessThan(20);
 });
 
-test("a show keeps the page at full speed", { tag: "@perf" }, async ({ page }) => {
-  await openPage(page, "/explore", "h1");
-  await settle(page);
-  const idle = await measureFrames(page, 3);
-  await openPage(page, "/theatre#show=shapes", READY);
-  await settle(page);
-  expectSmooth(idle, await measureFrames(page, 3));
-});
+for (const show of SHOWS)
+  test(
+    `${words.programme[show]} keeps the page at full speed`,
+    { tag: "@perf" },
+    async ({ page }) => {
+      await openPage(page, "/explore", "h1");
+      await settle(page);
+      const idle = await measureFrames(page, 3);
+      await openPage(page, `/theatre#show=${show}`, READY);
+      await settle(page);
+      expectSmooth(idle, await measureFrames(page, 3));
+    },
+  );

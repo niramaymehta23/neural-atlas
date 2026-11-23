@@ -92,7 +92,7 @@ export const ideaCards: Record<string, IdeaCard> = {
   },
   "what-the-machine-sees": {
     idea: "A machine knows only the facts it is given. Leave one out and it can never use it.",
-    mini: cells(["Big garden", "Near a school", "Needs fixing"], "a dear house"),
+    mini: cells(["Big garden", "Near a school", "Needs fixing"], "an expensive house"),
   },
   "drawing-the-best-line": {
     idea: "The best line is the one that makes all its misses, added together, as small as they can be.",
