@@ -81,16 +81,14 @@ export const words = {
     now: "For this move",
     last: "How it chose its last move",
     favourite: (place: Place, share: number) =>
-      `It imagined most games through ${PLACE[place]}, and won about ${count(Math.round(share * 10))} in every ten of them.`,
+      `It imagined most games through ${PLACE[place]}${share < 0.05 ? ", and won almost none of them." : `, and won about ${count(Math.round(share * 10))} in every ten of them.`}`,
     looked: "It only checked whether its own next disc would win. It never imagined your reply.",
     differs:
       "With the dials as they are now, it would choose a different column than the one it played.",
-    pickMark: "Its pick",
   },
   key: {
     branch: "Thicker branch: more pretend games",
-    itsMove: "its move",
-    yourReply: "your reply",
+    pick: "Its pick",
   },
   describe: {
     start: "An empty board. Your turn first.",

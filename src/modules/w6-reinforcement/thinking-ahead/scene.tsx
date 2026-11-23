@@ -160,6 +160,12 @@ export function AheadScene({ state, update, timeline, side }: Props) {
             </svg>
             {words.it}
           </span>
+          <span className="flex items-center gap-1">
+            <svg viewBox="0 0 12 12" className="size-3" aria-hidden>
+              <path d="M1 2L11 2L6 10Z" fill="var(--color-ink)" />
+            </svg>
+            {words.key.pick}
+          </span>
         </div>
         {side === "main" && (
           <div className="flex flex-wrap justify-center gap-2">
