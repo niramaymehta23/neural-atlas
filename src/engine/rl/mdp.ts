@@ -6,7 +6,7 @@
  * the slipperiness, the cost of a move and how much the future counts as settings. Pure.
  */
 import type { Random } from "../random";
-import { isEnd, landing, MOVE_COUNT, REWARDS, type World } from "./gridworld";
+import { isEnd, landing, MOVE_COUNT, REWARDS, type Tile, type World } from "./gridworld";
 
 export type BoardRules = {
   /** Chance a move slides to one side instead (each side gets half), 0–1. */
@@ -17,6 +17,8 @@ export type BoardRules = {
   care: number;
   /** What the bowl, the lava and a treat pay; the gridworld's by default. */
   rewards?: { goal: number; trap: number; coin: number };
+  /** What particular bowls pay, by square (a small bowl near and a big one far); others pay `rewards.goal`. */
+  bowls?: ReadonlyMap<number, number>;
 };
 
 export type Transition = { next: number; chance: number; reward: number; done: boolean };
@@ -26,6 +28,90 @@ export const SETTLED = 1e-6;
 /** Sweeps stop here even if a value is still creeping (care near 1 on a board with no way out). */
 export const MOST_SWEEPS = 500;
 
+/**
+ * The landings worked out so far for one world under one set of rules. A sweep asks for the same
+ * square and move hundreds of times, so each is worked out once and shared (frozen, so a caller
+ * cannot change it for the next). Any change to the board or to a rule that a landing depends on
+ * starts a fresh table, so a changed board or dial is always read afresh.
+ */
+type Table = {
+  tiles: readonly Tile[];
+  columns: number;
+  rows: number;
+  slip: number;
+  stepReward: number;
+  goal: number;
+  trap: number;
+  coin: number;
+  bowls: ReadonlyMap<number, number> | undefined;
+  ways: (Transition[] | undefined)[];
+  /** Every square's every landing in flat arrays, for sweeping the whole board fast. */
+  flat?: Flat;
+};
+const tables = new WeakMap<World, Table>();
+
+/** Landings of move `m` from square `c` are entries `from[c * 4 + m]` up to `from[c * 4 + m + 1]`. */
+type Flat = {
+  from: Int32Array;
+  next: Int32Array;
+  chance: Float64Array;
+  reward: Float64Array;
+  done: Uint8Array;
+};
+
+function flatFor(world: World, rules: BoardRules): Flat {
+  const table = tableFor(world, rules);
+  if (table.flat) return table.flat;
+  const all: Transition[] = [];
+  const from = new Int32Array(world.tiles.length * MOVE_COUNT + 1);
+  for (let cell = 0; cell < world.tiles.length; cell += 1)
+    for (let move = 0; move < MOVE_COUNT; move += 1) {
+      from[cell * MOVE_COUNT + move] = all.length;
+      all.push(...transitions(world, cell, move, rules));
+    }
+  from[world.tiles.length * MOVE_COUNT] = all.length;
+  table.flat = {
+    from,
+    next: Int32Array.from(all, (way) => way.next),
+    chance: Float64Array.from(all, (way) => way.chance),
+    reward: Float64Array.from(all, (way) => way.reward),
+    done: Uint8Array.from(all, (way) => (way.done ? 1 : 0)),
+  };
+  return table.flat;
+}
+
+function tableFor(world: World, rules: BoardRules): Table {
+  const rewards = rules.rewards ?? REWARDS;
+  const known = tables.get(world);
+  if (
+    known &&
+    known.tiles === world.tiles &&
+    known.columns === world.columns &&
+    known.rows === world.rows &&
+    known.slip === rules.slip &&
+    known.stepReward === rules.stepReward &&
+    known.goal === rewards.goal &&
+    known.trap === rewards.trap &&
+    known.coin === rewards.coin &&
+    known.bowls === rules.bowls
+  )
+    return known;
+  const table: Table = {
+    tiles: world.tiles,
+    columns: world.columns,
+    rows: world.rows,
+    slip: rules.slip,
+    stepReward: rules.stepReward,
+    goal: rewards.goal,
+    trap: rewards.trap,
+    coin: rewards.coin,
+    bowls: rules.bowls,
+    ways: [],
+  };
+  tables.set(world, table);
+  return table;
+}
+
 /** Every way `move` from `cell` can turn out: where it lands, how likely, what it pays. */
 export function transitions(
   world: World,
@@ -33,6 +119,18 @@ export function transitions(
   move: number,
   rules: BoardRules,
 ): Transition[] {
+  const table = tableFor(world, rules);
+  const key = cell * MOVE_COUNT + move;
+  const known = table.ways[key];
+  if (known) return known;
+  const found = Object.freeze(
+    workOut(world, cell, move, rules).map((way) => Object.freeze(way)),
+  ) as Transition[];
+  if (Number.isInteger(key) && key >= 0) table.ways[key] = found;
+  return found;
+}
+
+function workOut(world: World, cell: number, move: number, rules: BoardRules): Transition[] {
   const rewards = rules.rewards ?? REWARDS;
   const slip = Math.min(1, Math.max(0, rules.slip));
   const ways = [
@@ -47,7 +145,7 @@ export function transitions(
     const tile = world.tiles[next];
     const reward =
       tile === "goal"
-        ? rewards.goal
+        ? (rules.bowls?.get(next) ?? rewards.goal)
         : tile === "trap"
           ? rewards.trap
           : rules.stepReward + (tile === "coin" ? rewards.coin : 0);
@@ -108,11 +206,20 @@ export function sweep(
   rules: BoardRules,
 ): Float64Array<ArrayBuffer> {
   const next = new Float64Array(world.tiles.length);
+  // The same sums as `moveValue`, in the same order, over the board's landings laid out flat.
+  const { from, next: lands, chance, reward, done } = flatFor(world, rules);
   for (let cell = 0; cell < world.tiles.length; cell += 1) {
     if (!isPlayable(world, cell)) continue;
     let best = -Infinity;
-    for (let move = 0; move < MOVE_COUNT; move += 1)
-      best = Math.max(best, moveValue(world, values, cell, move, rules));
+    for (let move = 0; move < MOVE_COUNT; move += 1) {
+      const key = cell * MOVE_COUNT + move;
+      let total = 0;
+      for (let way = from[key] ?? 0; way < (from[key + 1] ?? 0); way += 1)
+        total +=
+          (chance[way] ?? 0) *
+          ((reward[way] ?? 0) + (done[way] ? 0 : rules.care * (values[lands[way] ?? 0] ?? 0)));
+      best = Math.max(best, total);
+    }
     next[cell] = best;
   }
   return next;
@@ -236,4 +343,79 @@ export function walk(
       return { path, slips, end: world.tiles[cell] === "goal" ? "goal" : "trap", reward };
   }
   return { path, slips, end: "limit", reward };
+}
+
+/**
+ * For each square, the chance of ever reaching a bowl when every move is picked to make that
+ * chance as big as it can be (the safest plan: no hurry, no cost, lava and wandering both count as
+ * failing). Below one half, even the safest plan from there fails more often than it works.
+ */
+export function safestChance(world: World, slip: number): Float64Array {
+  return solve(world, { slip, stepReward: 0, care: 1, rewards: { goal: 1, trap: 0, coin: 0 } })
+    .values;
+}
+
+/** A walk that ends with a chance short of one by more than this may wander forever. */
+const ENDS_FOR_SURE = 1e-3;
+
+/**
+ * For each square, how many moves a walk following `policy` lasts on average before it reaches
+ * the bowl or the lava; Infinity where it may never end (a plan that paces or waits forever), or
+ * where the average is still growing after `MOST_SWEEPS` rounds (walks hundreds of moves long).
+ */
+export function averageMoves(
+  world: World,
+  policy: ArrayLike<number>,
+  rules: BoardRules,
+): Float64Array {
+  const size = world.tiles.length;
+  const plays = (cell: number) => isPlayable(world, cell) && (policy[cell] ?? -1) >= 0;
+  // First the chance each square's walk ever ends at all.
+  let ends = new Float64Array(size);
+  let endsSettled = false;
+  for (let round = 0; round < MOST_SWEEPS && !endsSettled; round += 1) {
+    const next = new Float64Array(size);
+    for (let cell = 0; cell < size; cell += 1) {
+      if (!plays(cell)) continue;
+      for (const way of transitions(world, cell, policy[cell] ?? 0, rules))
+        next[cell] = (next[cell] ?? 0) + way.chance * (way.done ? 1 : (ends[way.next] ?? 0));
+    }
+    endsSettled = biggestChange(ends, next) < SETTLED;
+    ends = next;
+  }
+  // Then the average length, over the squares whose walks surely end and whose every landing's
+  // walk surely ends too.
+  const sureSet = new Set<number>();
+  if (endsSettled)
+    for (let cell = 0; cell < size; cell += 1)
+      if (plays(cell) && (ends[cell] ?? 0) >= 1 - ENDS_FOR_SURE) sureSet.add(cell);
+  for (let dropped = true; dropped;) {
+    dropped = false;
+    for (const cell of sureSet)
+      if (
+        transitions(world, cell, policy[cell] ?? 0, rules).some(
+          (way) => !way.done && !sureSet.has(way.next),
+        )
+      ) {
+        sureSet.delete(cell);
+        dropped = true;
+      }
+  }
+  const sure = (cell: number) => sureSet.has(cell);
+  let moves = new Float64Array(size);
+  let settled = false;
+  for (let round = 0; round < MOST_SWEEPS && !settled; round += 1) {
+    const next = new Float64Array(size);
+    for (let cell = 0; cell < size; cell += 1) {
+      if (!sure(cell)) continue;
+      next[cell] = 1;
+      for (const way of transitions(world, cell, policy[cell] ?? 0, rules))
+        if (!way.done) next[cell] = (next[cell] ?? 0) + way.chance * (moves[way.next] ?? 0);
+    }
+    settled = biggestChange(moves, next) < SETTLED;
+    moves = next;
+  }
+  return moves.map((average, cell) =>
+    plays(cell) && (!sure(cell) || !settled) ? Infinity : average,
+  );
 }
