@@ -18,7 +18,7 @@ const lessons: Pick<Lesson, "id" | "prerequisites" | "load">[] = [
   { id: "c", prerequisites: ["a"], load },
   { id: "d", prerequisites: ["b", "c"], load },
 ];
-const progressOf = (lessons: Progress["lessons"]): Progress => ({ lessons });
+const progressOf = (lessons: Progress["lessons"]): Progress => ({ lessons, achievements: [] });
 
 describe("mastery", () => {
   it("needs a visit, a mission and a prediction", () => {
