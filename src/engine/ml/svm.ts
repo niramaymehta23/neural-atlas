@@ -1,3 +1,4 @@
+import { multiplied } from "../multiplications";
 import type { Dot } from "./types";
 
 /**
@@ -43,6 +44,9 @@ export function kernelOf(kernel: Kernel, lift: number) {
   return (a: Dot, b: Dot) => Math.exp(-lift * ((a.x - b.x) ** 2 + (a.y - b.y) ** 2));
 }
 
+/** How many multiplications comparing one pair of dots takes. */
+const kernelCost = (kernel: Kernel) => (kernel === "flat" ? 2 : kernel === "bowl" ? 9 : 3);
+
 /**
  * The widest road between two groups (a soft-margin support vector machine), solved by SMO with
  * the maximal violating pair (as libsvm does): deterministic, ties to the lower index.
@@ -59,6 +63,8 @@ export function buildRoad(dots: readonly Dot[], options: RoadOptions): Road {
       q[i * n + j] = value;
       q[j * n + i] = value;
     }
+  // Comparing every pair of dots once.
+  multiplied(((n * (n + 1)) / 2) * kernelCost(kernel));
   const alpha = new Float64Array(n);
   const gradient = new Float64Array(n).fill(-1);
   const c = strict;
@@ -149,6 +155,7 @@ export function buildRoad(dots: readonly Dot[], options: RoadOptions): Road {
     alpha[j] = aj;
     const di = ai - oldI;
     const dj = aj - oldJ;
+    multiplied(2 * n);
     for (let t = 0; t < n; t += 1)
       gradient[t] = (gradient[t] ?? 0) + (q[t * n + i] ?? 0) * di + (q[t * n + j] ?? 0) * dj;
   }
@@ -199,9 +206,11 @@ export function lampPosts(road: Road): number[] {
 export function roadSide(road: Road) {
   const k = kernelOf(road.kernel, road.lift);
   const posts = lampPosts(road);
+  const cost = kernelCost(road.kernel);
   return (x: number, y: number): number => {
     let total = road.bias;
     const spot = { x, y, label: 0 };
+    multiplied(posts.length * (1 + cost));
     for (const index of posts)
       total +=
         (road.alpha[index] ?? 0) * (road.side[index] ?? 1) * k(road.dots[index] as Dot, spot);

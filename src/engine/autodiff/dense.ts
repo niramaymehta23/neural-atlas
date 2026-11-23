@@ -6,6 +6,7 @@
  * (dropout), a step size that changes over the run, and per-layer reports of the blame that
  * reaches each layer and of what each cell says. `dense.test.ts` holds its gradients to `Value`.
  */
+import { multiplied } from "../multiplications";
 import { createRandom, type Random } from "../random";
 import type { Activation } from "./nn";
 import type { OptimiserKind } from "./optimisers";
@@ -173,6 +174,7 @@ function forwardInto(
       totals[cell] = sum + (params[at] ?? 0);
       at += 1;
     }
+    multiplied(fanIn * size);
     calmed.set(totals);
     if (calmsLayer(spec, layer)) calm(calmed, size);
     const bend = BEND[bendOf(spec, layer)];
@@ -373,6 +375,8 @@ function accumulate(
         grads[index] = (grads[index] ?? 0) + d;
         index += 1;
       }
+      // One per weight for its slope, and one per weight to pass the blame back a layer.
+      multiplied(fanIn * size * (below ? 2 : 1));
     }
   }
 }

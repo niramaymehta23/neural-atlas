@@ -1,3 +1,4 @@
+import { multiplied } from "../multiplications";
 import type { Dot } from "./types";
 
 /** A small regression tree: each box holds a nudge to the running score. */
@@ -66,6 +67,7 @@ function fitRunner(
         const next = valueOf(dots[sorted[at + 1] as number] as Dot, feature);
         const count = at + 1;
         if (next === here || count < minLeaf || sorted.length - count < minLeaf) continue;
+        multiplied(2);
         const gr = g - gl;
         const hr = h - hl;
         const gain = (gl * gl) / (hl + DAMPING) + (gr * gr) / (hr + DAMPING) - whole;
@@ -122,6 +124,7 @@ export function runRelay(dots: readonly Dot[], options: RelayOptions): Relay {
   for (let runner = 0; runner < runners; runner += 1) {
     const chances = scores.map(sigmoid);
     const pull = dots.map((dot, index) => dot.label - (chances[index] ?? 0.5));
+    multiplied(chances.length);
     const sureness = chances.map((chance) => chance * (1 - chance));
     const nudge = scale(fitRunner(dots, pull, sureness, Math.max(1, depth), minLeaf), rate);
     team.push(nudge);

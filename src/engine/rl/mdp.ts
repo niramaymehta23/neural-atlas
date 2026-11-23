@@ -5,6 +5,7 @@
  * it stops changing (value iteration). The same squares, moves and rewards as `gridworld.ts`, with
  * the slipperiness, the cost of a move and how much the future counts as settings. Pure.
  */
+import { multiplied } from "../multiplications";
 import type { Random } from "../random";
 import { isEnd, landing, MOVE_COUNT, REWARDS, type Tile, type World } from "./gridworld";
 
@@ -218,6 +219,8 @@ export function sweep(
         total +=
           (chance[way] ?? 0) *
           ((reward[way] ?? 0) + (done[way] ? 0 : rules.care * (values[lands[way] ?? 0] ?? 0)));
+      // Per landing: its chance, and how much the future counts (unless the try ended there).
+      multiplied(2 * ((from[key + 1] ?? 0) - (from[key] ?? 0)));
       best = Math.max(best, total);
     }
     next[cell] = best;

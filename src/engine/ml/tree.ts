@@ -1,3 +1,4 @@
+import { multiplied } from "../multiplications";
 import type { Random } from "../random";
 import type { Dot } from "./types";
 
@@ -46,6 +47,7 @@ function sharesOf(dots: readonly Dot[], groups: number): number[] {
 function gini(counts: readonly number[], total: number): number {
   if (total === 0) return 0;
   let sum = 0;
+  multiplied(counts.length);
   for (const value of counts) sum += (value / total) ** 2;
   return 1 - sum;
 }

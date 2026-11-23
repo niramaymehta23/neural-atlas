@@ -8,6 +8,7 @@
  * in the browser for baby GPT: `trainStep` is a full backward pass and an Adam step. Pure and
  * deterministic: the same weights, batch and settings give the same numbers every time.
  */
+import { multiplied } from "../multiplications";
 import { createRandom } from "../random";
 
 export type GptShape = {
@@ -119,6 +120,7 @@ function linear(
     for (let i = 0; i < inputs; i += 1) {
       const xi = x[r * inputs + i] ?? 0;
       if (xi === 0) continue;
+      multiplied(outputs);
       const wRow = wAt + i * outputs;
       for (let o = 0; o < outputs; o += 1)
         y[yRow + o] = (y[yRow + o] ?? 0) + xi * (p[wRow + o] ?? 0);
@@ -146,6 +148,7 @@ function linearBack(
       const xi = x[r * inputs + i] ?? 0;
       const wRow = wAt + i * outputs;
       let sum = 0;
+      multiplied(2 * outputs);
       for (let o = 0; o < outputs; o += 1) {
         const d = dy[dyRow + o] ?? 0;
         g[wRow + o] = (g[wRow + o] ?? 0) + xi * d;
@@ -281,6 +284,8 @@ function run(model: Gpt, ids: readonly number[], keep: boolean): Pass {
       for (let i = 0; i < n; i += 1) {
         let top = -Infinity;
         const row = h * n * n + i * n;
+        // Comparing with every piece so far, then mixing what they say.
+        multiplied(2 * size * (i + 1));
         for (let j = 0; j <= i; j += 1) {
           let s = 0;
           for (let d = 0; d < size; d += 1) {
@@ -407,6 +412,7 @@ export function createReader(model: Gpt) {
         const mixed = make(p, w);
         for (let h = 0; h < heads; h += 1) {
           let top = -Infinity;
+          multiplied(2 * size * (r + 1));
           for (let j = 0; j <= r; j += 1) {
             let s = 0;
             for (let d = 0; d < size; d += 1)
@@ -606,6 +612,7 @@ export function accumulate(
       for (let i = 0; i < n; i += 1) {
         const row = h * n * n + i * n;
         const dShare = make(p, i + 1);
+        multiplied(4 * size * (i + 1));
         let weighted = 0;
         for (let j = 0; j <= i; j += 1) {
           let s = 0;

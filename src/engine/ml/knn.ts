@@ -1,3 +1,4 @@
+import { multiplied } from "../multiplications";
 import type { Dot } from "./types";
 
 export type Neighbour = { index: number; distance: number; weight: number };
@@ -28,6 +29,8 @@ export function vote(
   closeness = 0,
   groups = 2,
 ): Vote {
+  // Two squares per distance.
+  multiplied(2 * dots.length);
   const ranked = dots
     .map((dot, index) => ({ index, distance: Math.hypot(dot.x - x, dot.y - y) }))
     .sort((a, b) => a.distance - b.distance || a.index - b.index)
