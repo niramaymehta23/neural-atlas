@@ -205,6 +205,48 @@ describe("ModuleShell hardening", () => {
     expect(seen.main!.getState().live).toBe(true);
   });
 
+  it("finds a link's moment in a run the scene works out after it opens, but not in a later run", async () => {
+    const { seen, Scene } = timelineSpy();
+    const restored = {
+      v: 2 as const,
+      id: valleyLesson.id,
+      state: { step: 0.2, steps: 0 },
+      touched: false,
+      guesses: {},
+      momentEpoch: 5,
+    };
+    const { unmount } = render(
+      <ModuleShell
+        lesson={lessonFor()}
+        module={{ ...valleyModule, scene: Scene }}
+        restored={restored}
+      />,
+    );
+    // A recorded run: worked out first, then recorded at once as a new run.
+    act(() => {
+      seen.main!.newRun();
+      for (let epoch = 0; epoch <= 8; epoch += 1) seen.main!.record({ epoch, loss: 1 });
+    });
+    expect(seen.main!.current()?.epoch).toBe(5);
+    expect(seen.main!.getState().live).toBe(false);
+    unmount();
+
+    render(
+      <ModuleShell
+        lesson={lessonFor()}
+        module={{ ...valleyModule, scene: Scene }}
+        restored={restored}
+      />,
+    );
+    act(() => {
+      seen.main!.newRun();
+      seen.main!.record({ epoch: 0, loss: 1 });
+      seen.main!.newRun();
+      for (let epoch = 0; epoch <= 8; epoch += 1) seen.main!.record({ epoch, loss: 1 });
+    });
+    expect(seen.main!.getState().live).toBe(true);
+  });
+
   it("keeps the compare halves on one moment (PLT-17)", async () => {
     const recorded: Record<string, Timeline<TimelineFrame>> = {};
     const Recorder = ({ timeline, side }: ModuleViewProps<ModuleState>) => {

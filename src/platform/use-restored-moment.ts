@@ -18,11 +18,16 @@ export function useRestoredMoment(
     const epoch = restored?.momentEpoch ?? null;
     const index = restored?.momentIndex ?? null;
     if (epoch === null && index === null) return;
-    const run = timeline.getState().run;
+    let run = timeline.getState().run;
+    let recorded = timeline.getState().length > 0;
     pending.current = true;
     const trySeek = () => {
       const { length, run: now } = timeline.getState();
+      // A scene that works its run out first (in slices) starts its first run after this wait
+      // began: a new run that replaces one that never recorded a frame is still the link's own.
+      if (now !== run && !recorded) run = now;
       if (!pending.current || now !== run) return true;
+      if (length > 0) recorded = true;
       if (epoch !== null) {
         if ((timeline.at(length - 1)?.epoch ?? -1) < epoch) return false;
         pending.current = false;

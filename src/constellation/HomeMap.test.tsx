@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { lessons } from "@/catalog";
+import type * as World6 from "@/catalog/world-6";
 import { mockReducedMotion } from "@/design/reduced-motion.mock";
 import { progressStore } from "@/platform/progress/progress";
 import { storageHealth } from "@/platform/storage";
@@ -34,6 +35,19 @@ vi.mock("./ConstellationScene", () => ({
   },
 }));
 vi.mock("@/platform/SiteNav", () => ({ SiteNav: () => <nav aria-label="Around the atlas" /> }));
+// Every lesson is built from stage 10 on. Here Treats and tricks is unbuilt again, so the map's
+// "still being drawn" paths (a locked star, the fade across) stay covered.
+vi.mock("@/catalog/world-6", async (importOriginal) => {
+  const { world6 } = await importOriginal<typeof World6>();
+  return {
+    world6: {
+      ...world6,
+      lessons: world6.lessons.map((lesson) =>
+        lesson.id === "treats-and-tricks" ? { ...lesson, load: undefined } : lesson,
+      ),
+    },
+  };
+});
 
 describe("HomeMap", () => {
   beforeEach(() => {

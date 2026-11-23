@@ -79,9 +79,13 @@ export function ModuleShell({
     if (restored) created.restore({ ...restored, guesses: {} });
     return created;
   });
-  const [timeline] = useState(() => new Timeline<TimelineFrame>());
+  const [timeline] = useState(
+    () => new Timeline<TimelineFrame>({ framesPerSecond: module.framesPerSecond }),
+  );
   // The compare split's right half records into its own timeline, kept on the main one's moment.
-  const [alternativeTimeline] = useState(() => new Timeline<TimelineFrame>());
+  const [alternativeTimeline] = useState(
+    () => new Timeline<TimelineFrame>({ framesPerSecond: module.framesPerSecond }),
+  );
   const [watch] = useState(() => createMissionWatcher(module.missions));
   const state = useStore(store, (view) => view.state);
   const touched = useStore(store, (view) => view.touched);
@@ -162,13 +166,20 @@ export function ModuleShell({
   // While comparing, the right half shows the same moment as the left (or follows live).
   useEffect(() => {
     if (!comparing) return;
+    // Moving the right half notifies its listeners, this one included: one move per change, so
+    // a right half with no frame at that moment (empty, or still working out its run) cannot
+    // send it round in circles.
+    let syncing = false;
     const sync = () => {
+      if (syncing) return;
+      syncing = true;
       const shown = timeline.current();
       if (timeline.getState().live || !shown) {
         if (!alternativeTimeline.getState().live) alternativeTimeline.goLive();
       } else if (alternativeTimeline.current()?.epoch !== shown.epoch) {
         alternativeTimeline.scrub(shown.epoch);
       }
+      syncing = false;
     };
     sync();
     const stopMain = timeline.subscribe(sync);

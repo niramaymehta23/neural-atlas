@@ -11,6 +11,8 @@ export const world6: WorldEntry = {
       idea: "Learn by trying things and getting rewards",
       playWith: "Train a puppy with treats",
       prerequisites: ["teach-by-showing"],
+      load: () =>
+        import("@/modules/w6-reinforcement/treats-and-tricks").then(({ definition }) => definition),
     },
     {
       id: "new-or-favourite",
@@ -19,6 +21,8 @@ export const world6: WorldEntry = {
       idea: "Try a new restaurant or go back to your favourite?",
       playWith: "A casino of mystery slot machines",
       prerequisites: ["treats-and-tricks"],
+      load: () =>
+        import("@/modules/w6-reinforcement/new-or-favourite").then(({ definition }) => definition),
     },
     {
       id: "the-game-board",
@@ -27,6 +31,8 @@ export const world6: WorldEntry = {
       idea: "A world of places, moves and rewards",
       playWith: "Build your own little board",
       prerequisites: ["treats-and-tricks"],
+      load: () =>
+        import("@/modules/w6-reinforcement/the-game-board").then(({ definition }) => definition),
     },
     {
       id: "now-vs-later",
@@ -35,6 +41,8 @@ export const world6: WorldEntry = {
       idea: "How much to care about future rewards",
       playWith: 'A telescope dial from "right now" to "long term"',
       prerequisites: ["the-game-board"],
+      load: () =>
+        import("@/modules/w6-reinforcement/now-vs-later").then(({ definition }) => definition),
     },
     {
       id: "good-places-to-be",
@@ -43,6 +51,8 @@ export const world6: WorldEntry = {
       idea: "Some spots are closer to reward than others",
       playWith: "A warm glow spreads across the board",
       prerequisites: ["now-vs-later"],
+      load: () =>
+        import("@/modules/w6-reinforcement/good-places-to-be").then(({ definition }) => definition),
     },
     {
       id: "scoring-every-move",
@@ -63,6 +73,10 @@ export const world6: WorldEntry = {
       idea: "A thinking network replaces the score table",
       playWith: "Watch it learn a simple arcade game",
       prerequisites: ["scoring-every-move", "stacking-cells"],
+      load: () =>
+        import("@/modules/w6-reinforcement/a-brain-for-the-game").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "nudging-habits",
@@ -71,6 +85,8 @@ export const world6: WorldEntry = {
       idea: "Do more of what worked",
       playWith: "A field of arrows bending over time",
       prerequisites: ["treats-and-tricks", "rolling-downhill"],
+      load: () =>
+        import("@/modules/w6-reinforcement/nudging-habits").then(({ definition }) => definition),
     },
     {
       id: "player-and-coach",
@@ -79,6 +95,8 @@ export const world6: WorldEntry = {
       idea: "One plays, one judges, changes stay small",
       playWith: "Player and coach side by side",
       prerequisites: ["nudging-habits", "good-places-to-be"],
+      load: () =>
+        import("@/modules/w6-reinforcement/player-and-coach").then(({ definition }) => definition),
     },
     {
       id: "survival-of-the-fittest",
@@ -87,6 +105,10 @@ export const world6: WorldEntry = {
       idea: "Breed the best performers",
       playWith: "Draw a racetrack; cars evolve to drive it",
       prerequisites: ["treats-and-tricks"],
+      load: () =>
+        import("@/modules/w6-reinforcement/survival-of-the-fittest").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "thinking-ahead",
@@ -95,6 +117,8 @@ export const world6: WorldEntry = {
       idea: "Imagine moves before making them",
       playWith: "A tree of possible futures in Connect Four",
       prerequisites: ["the-game-board"],
+      load: () =>
+        import("@/modules/w6-reinforcement/thinking-ahead").then(({ definition }) => definition),
     },
     {
       id: "practising-against-yourself",
@@ -103,6 +127,10 @@ export const world6: WorldEntry = {
       idea: "Improve by playing a copy of yourself",
       playWith: "Two players trading wins",
       prerequisites: ["thinking-ahead"],
+      load: () =>
+        import("@/modules/w6-reinforcement/practising-against-yourself").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "loopholes",
@@ -111,6 +139,8 @@ export const world6: WorldEntry = {
       idea: "It does what you rewarded, not what you meant",
       playWith: "Design a reward; watch it cheat",
       prerequisites: ["treats-and-tricks"],
+      load: () =>
+        import("@/modules/w6-reinforcement/loopholes").then(({ definition }) => definition),
     },
     {
       id: "back-to-chatbots",
@@ -119,6 +149,8 @@ export const world6: WorldEntry = {
       idea: "How thumbs-up training shapes ChatGPT",
       playWith: "Train a chatbot with thumbs-up",
       prerequisites: ["learning-from-thumbs-up", "player-and-coach"],
+      load: () =>
+        import("@/modules/w6-reinforcement/back-to-chatbots").then(({ definition }) => definition),
     },
   ],
 };

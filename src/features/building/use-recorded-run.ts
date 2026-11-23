@@ -13,8 +13,12 @@ export const SETTLE_MS = 400;
 type RecordedRunOptions<S extends ModuleState, F extends TimelineFrame> = ModuleViewProps<S, F> & {
   /** How many runs have been asked for; 0 records nothing. A link replays the last one. */
   runs: number;
-  /** Every frame of the run `state` describes, in order. Pure: the same state, the same frames. */
-  work: (state: S) => Iterable<F>;
+  /**
+   * Every frame of the run `state` describes, in order. Pure: the same state, the same frames.
+   * A `null` is a breath: work done with nothing to record yet (a plan still being worked out, or
+   * a frame that takes longer than a slice), so long work can be spread over several slices.
+   */
+  work: (state: S) => Iterable<F | null>;
   /**
    * The settings a run depends on, as one string. Changing them after a run asks for one new
    * run once they rest, so the run on screen always matches the dials (the old one stays as
@@ -35,7 +39,7 @@ export type RecordedRun = {
 /**
  * Works out a whole run in short slices, records it on the timeline at once as a new run (the
  * last one stays as the ghost), then plays it from the start; with reduced motion it simply
- * shows the end. A hidden or throttled tab still finishes it (DH-01). The run is rebuilt from
+ * shows the end, and a run a link opened with shows the moment the link was shared at. A hidden or throttled tab still finishes it (DH-01). The run is rebuilt from
  * state, so a shared link replays it exactly, and the shell seeks to the saved moment.
  */
 export function useRecordedRun<S extends ModuleState, F extends TimelineFrame>({
@@ -50,6 +54,8 @@ export function useRecordedRun<S extends ModuleState, F extends TimelineFrame>({
   const reduced = useReducedMotion();
   const latest = useRef({ state, reduced, work, settings });
   const ranWith = useRef<string | undefined>(undefined);
+  /** A run already asked for when the scene opens is a link's replay: it shows the saved moment. */
+  const opening = useRef(runs > 0);
   /** The run counter the timeline holds a finished run for. */
   const [finished, setFinished] = useState(0);
   const [failure, setFailure] = useState<Error | null>(null);
@@ -59,9 +65,11 @@ export function useRecordedRun<S extends ModuleState, F extends TimelineFrame>({
 
   useEffect(() => {
     if (runs === 0) return;
+    const replaying = opening.current;
+    opening.current = false;
     ranWith.current = latest.current.settings;
     let cancelled = false;
-    let frames: Iterator<F> | null = null;
+    let frames: Iterator<F | null> | null = null;
     const recorded: F[] = [];
     const fail = (error: unknown) => {
       setFailure(error instanceof Error ? error : new Error(String(error)));
@@ -75,7 +83,7 @@ export function useRecordedRun<S extends ModuleState, F extends TimelineFrame>({
         for (;;) {
           const next = frames.next();
           if (next.done) break;
-          recorded.push(next.value);
+          if (next.value !== null) recorded.push(next.value);
           if (performance.now() - started > SLICE_MS) {
             timer = setTimeout(slice, 0);
             return;
@@ -87,8 +95,9 @@ export function useRecordedRun<S extends ModuleState, F extends TimelineFrame>({
       timeline.newRun();
       for (const frame of recorded) timeline.record(frame);
       setFinished(runs);
-      // The compare half follows the main timeline's moment; only the main one plays.
-      if (side === "main" && !latest.current.reduced && recorded.length > 1) {
+      // The compare half follows the main timeline's moment; only the main one plays. A link's
+      // replay is not played: the shell shows the moment it was shared at (or the end).
+      if (side === "main" && !replaying && !latest.current.reduced && recorded.length > 1) {
         timeline.seek(0);
         timeline.play();
       }

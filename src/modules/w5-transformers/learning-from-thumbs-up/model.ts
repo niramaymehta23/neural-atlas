@@ -1,10 +1,14 @@
 /**
- * Learning from picks: a three-number reward model (right, praising, agreeing) is fitted to the
- * learner's choices between pairs of answers, Bradley–Terry style, and the chatbot then gives the
- * answer its reward model scores highest.
+ * Learning from picks: the shared preference ranker (`features/language/ranker.ts`), a
+ * three-number reward model (right, praising, agreeing), is fitted to the learner's choices between
+ * pairs of answers, and the chatbot then gives the answer its reward model scores highest.
  */
+import { bestAnswer, learnFromPicks, scoreOf, type Weights } from "@/features/language/ranker";
 import type { TimelineFrame } from "@/platform/contract";
 import { CHECKS, PRACTICE, type Answer } from "./captions";
+
+/** The reward model is the shared preference ranker (World 6's Back to chatbots uses it too). */
+export { bestAnswer, scoreOf, type Weights };
 
 export type ThumbsState = {
   /** For each choice so far: 0 picked the first answer of the pair, 1 the second. */
@@ -14,8 +18,6 @@ export type ThumbsState = {
   /** "How much it cares about being right before your picks". */
   care: number;
 };
-
-export type Weights = { correct: number; flatters: number; agrees: number };
 
 export type ThumbsFrame = TimelineFrame & {
   picks: number[];
@@ -49,42 +51,23 @@ export const MOST_PICKS = PAIRS.length;
 export const TEACH = { min: 0.1, max: 1.5, start: 0.6 } as const;
 /** How much it liked right answers from reading, before any thumbs-up. */
 export const CARE = { min: 0, max: 2, start: 0.5 } as const;
-const FEATURES = ["correct", "flatters", "agrees"] as const;
-
-const featuresOf = (answer: Answer) => FEATURES.map((feature) => (answer[feature] ? 1 : 0));
-export const scoreOf = (weights: Weights, answer: Answer) =>
-  FEATURES.reduce((sum, feature) => sum + (answer[feature] ? weights[feature] : 0), 0);
-
+/**
+ * The reward model after `picks` (0 picked the first answer of that round's pair, 1 the second):
+ * the shared preference ranker, taught with this lesson's practice pairs.
+ */
 export function weightsOf(
   picks: readonly number[],
-  { teach, care }: Pick<ThumbsState, "teach" | "care">,
+  settings: Pick<ThumbsState, "teach" | "care">,
 ): Weights {
-  const weights: Weights = { correct: care, flatters: 0, agrees: 0 };
-  picks.forEach((pick, at) => {
+  const taught = picks.flatMap((pick, at) => {
     const pair = PAIRS[at];
     const question = pair ? PRACTICE[pair.question] : undefined;
     const first = question?.answers[pair?.first ?? 0];
     const second = question?.answers[pair?.second ?? 0];
-    if (!first || !second) return;
-    const [winner, loser] = pick === 0 ? [first, second] : [second, first];
-    const gap = scoreOf(weights, winner) - scoreOf(weights, loser);
-    const wrongness = 1 - 1 / (1 + Math.exp(-gap));
-    const a = featuresOf(winner);
-    const b = featuresOf(loser);
-    FEATURES.forEach((feature, d) => {
-      weights[feature] += teach * wrongness * ((a[d] ?? 0) - (b[d] ?? 0));
-    });
+    if (!first || !second) return [];
+    return [pick === 0 ? { winner: first, loser: second } : { winner: second, loser: first }];
   });
-  return weights;
-}
-
-/** The answer it gives: the one its reward model scores highest (the first, on a tie). */
-export function bestAnswer(weights: Weights, answers: readonly Answer[]): number {
-  let best = 0;
-  answers.forEach((answer, at) => {
-    if (scoreOf(weights, answer) > scoreOf(weights, answers[best] ?? answer) + 1e-9) best = at;
-  });
-  return best;
+  return learnFromPicks(taught, settings);
 }
 
 export function frameOf(state: ThumbsState): Omit<ThumbsFrame, "epoch"> {
