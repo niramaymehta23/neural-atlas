@@ -111,6 +111,8 @@ export const world6: WorldEntry = {
       idea: "It does what you rewarded, not what you meant",
       playWith: "Design a reward; watch it cheat",
       prerequisites: ["treats-and-tricks"],
+      load: () =>
+        import("@/modules/w6-reinforcement/loopholes").then(({ definition }) => definition),
     },
     {
       id: "back-to-chatbots",
