@@ -1,4 +1,5 @@
-import { beadScale, BEAD_GROW } from "./StarMark";
+import { BEAD_GROW } from "./bead";
+import { beadScale } from "./StarMark";
 import { starName, starStatus } from "./status";
 
 describe("star status", () => {

@@ -3,6 +3,7 @@
  * nudged after each move towards "what I got plus the best score from where I landed".
  * Seeded; how the moves are chunked into calls never changes the run.
  */
+import { multiplied } from "../multiplications";
 import { createRandom } from "../random";
 import { isEnd, landing, MOVE_COUNT, step, type World } from "./gridworld";
 
@@ -121,6 +122,8 @@ export function createQRunner(world: World, settings: LearnerSettings, seed: num
         const target = outcome.done
           ? outcome.reward
           : outcome.reward + options.lookAhead * squareValue(q, outcome.next);
+        // How much the future counts (unless the try ended), and how fast it learns.
+        multiplied(outcome.done ? 1 : 2);
         const at = position * MOVE_COUNT + move;
         const change = options.learnRate * (target - (q[at] ?? 0));
         q[at] = (q[at] ?? 0) + change;

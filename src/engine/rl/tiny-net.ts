@@ -7,6 +7,7 @@
  * Parameter order: hidden weights (row per hidden cell, `inputs` long), hidden biases, output
  * weights (row per output, `hidden` long), output biases.
  */
+import { multiplied } from "../multiplications";
 import { createRandom } from "../random";
 
 export type NetShape = { inputs: number; hidden: number; outputs: number };
@@ -85,6 +86,10 @@ export function forward(net: TinyNet, input: ArrayLike<number>): Pass {
   const p = net.params;
   const hidden = new Float64Array(cells);
   const biasStart = cells * inputs;
+  // A one-place input (which square the player stands on) costs one multiplication per cell.
+  let lit = 0;
+  for (let at = 0; at < inputs; at += 1) if ((input[at] ?? 0) !== 0) lit += 1;
+  multiplied(lit * cells + outputs * cells);
   for (let cell = 0; cell < cells; cell += 1) {
     let sum = p[biasStart + cell] ?? 0;
     const row = cell * inputs;
@@ -125,6 +130,7 @@ export function backward(
   for (let out = 0; out < outputs; out += 1) {
     const g = outputGrad[out] ?? 0;
     if (g === 0) continue;
+    multiplied(2 * cells);
     grads[outBias + out] = (grads[outBias + out] ?? 0) + g;
     const row = secondStart + out * cells;
     for (let cell = 0; cell < cells; cell += 1) {
@@ -132,10 +138,13 @@ export function backward(
       hiddenGrad[cell] = (hiddenGrad[cell] ?? 0) + g * (p[row + cell] ?? 0);
     }
   }
+  let lit = 0;
+  for (let at = 0; at < inputs; at += 1) if ((pass.input[at] ?? 0) !== 0) lit += 1;
   for (let cell = 0; cell < cells; cell += 1) {
     const h = pass.hidden[cell] ?? 0;
     const g = (hiddenGrad[cell] ?? 0) * (1 - h * h);
     if (g === 0) continue;
+    multiplied(lit);
     grads[biasStart + cell] = (grads[biasStart + cell] ?? 0) + g;
     const row = cell * inputs;
     for (let at = 0; at < inputs; at += 1) {

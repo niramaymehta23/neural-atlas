@@ -718,3 +718,50 @@ Plan: `docs/06-autodiff-worlds/plan.md`. Nineteen lessons, each shaped like the 
   lesson (interaction, star, exact link replay; shared steps in `e2e/w6.ts`). Every World 6 spec also passes with
   `E2E_CPU_THROTTLE=4`. `w6-thinking-ahead` checks a tap is answered within a frame while it thinks, and
   `w6-survival-of-the-fittest` has a `@perf` check (a targeted run including it needs `--no-deps`).
+
+## Experiences hand-over (stage 11)
+
+- **Routes**: `/explore` (the hub, "More to do" in the site navigation), `/sandbox`, `/journeys` and
+  `/journeys/<id>`, `/museum`, `/theatre`, `/two-player`. All are static, in the sitemap and in the search box
+  (`CatalogPalette`, whose page entries have their address as id). Code lives in `src/experiences/<name>/`, each
+  with its own `captions.ts`; nothing there imports `src/modules` or `src/constellation`.
+- **Shell** (`src/experiences/shell/`):
+  - `ExperiencePage` + `useExperience(spec)`: a page whose whole view fits in a link. It reuses the platform's
+    snapshot codec, `ShareControl` and failure notes; `spec.parseState` clamps everything a link says.
+  - `useLab`: practises in the lab's worker and hands back the newest moment, once a frame at most. `runKey`
+    names everything a run depends on: a change starts a new run (a new run number, so late messages of the old
+    one are ignored). A saved `steps` is replayed flat out; pressing start carries on at `perSecond`. A worker
+    that died is replaced for the next run.
+  - `LessonStage`: a lesson's own scene and dials inside another page, through the catalog's loader (journeys,
+    museum). `Workbench` and `PageFrame` give the stage, dock, error boundaries and status line.
+- **Lab** (`src/engine/lab/`): `createLabRun(config)` for a garden (eight learners), a board (five learners), a
+  race and a repair; `lab-worker.ts` hosts it. The pacing host, client and protocol are the RL worker's, moved to
+  `src/engine/practice/` and shared by both; `engine/rl/agent-*` keep their names and behaviour.
+- **Compute meter**: `src/engine/multiplications.ts` is a tally; kernels call `multiplied(n)` where they multiply
+  (dense, tiny GPT, boosting, neighbours, roads, trees, tiny net, boards, policy gradient, score table), and a run
+  reads it with `counting`. `multiplications.test.ts` checks counts against hand counts. The scale's
+  ring is 175 billion weights × 100 pieces of text (GPT-3, Brown et al. 2020).
+- **Journeys and museum** hold only words, years and catalog ids (`journeys.ts`, `rooms.ts`). Museum dates and
+  facts were checked; the sources are in the stage 11 notes. A stop or room is in the address (`#stop=`, `#room=`).
+- **Theatre**: three shows (`Show`: `advance`, `draw`, `describe`) on one canvas, 30 pictures a second, stopped
+  while hidden or paused, a still picture every 2.5 s under reduced motion. Everything a show keeps is bounded.
+  `x-theatre.spec.ts` plays 30 minutes by the page's clock after a warm-up and compares heap, nodes and listeners
+  after forced collection. The tap that wakes faded controls presses nothing.
+- **Two players**: a race on an equal budget of multiplications (`BUDGETS` per garden) and break and repair (three
+  threads cut, two cells practise). Choices are hidden behind a pass-the-screen stage; a round counts once, even
+  when its link is opened.
+- **Sound**: `sound.ts` makes the audio context inside the tap that asks for it and closes it when turned off or
+  when the page leaves; notes follow `off`, chimes follow tenths right. Lessons with `trains` get the switch
+  through `ModuleShell`'s `trainingExtras`.
+- **Idea cards**: `IdeaCardScope`, `useIdeaCard` and `IdeaCardButton` in `src/ui/glossary/`; `IdeaCards`
+  (root layout) fetches the dialog with the first card. `glossary/captions.ts` holds a line and a small thing to
+  play with (`minis.ts`, 13 kinds) for each of the 74 ideas; the real name shows after a touch.
+- **Achievements**: seventeen; some follow from lesson progress, the rest are recorded in `Progress.achievements`
+  (`recordAchievement`). `HomePageMap` passes the earned ones to `HomeMap` as `extras`; they sit in two staggered
+  rows along the map's far edge (`extraPlaces`) and in the plain list. A new achievement needs a place there
+  (`HomePageMap.test.tsx` says so).
+- **Map layout**: groups are laid out evenly as the camera sees them, trading height along the line of sight;
+  `layout.test.ts` projects every pair at five view sizes and asserts that no bead or link covers another.
+- **Checks**: a unit test per part; `e2e/x-*.spec.ts` (shared steps in `e2e/x.ts`), also run with
+  `E2E_CPU_THROTTLE=4`; the new routes are in `e2e/a11y.spec.ts`. Frame checks for the sandbox and theatre carry
+  `@perf`.

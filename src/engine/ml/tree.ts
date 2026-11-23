@@ -1,3 +1,4 @@
+import { multiplied } from "../multiplications";
 import type { Random } from "../random";
 import type { Dot } from "./types";
 
@@ -46,6 +47,7 @@ function sharesOf(dots: readonly Dot[], groups: number): number[] {
 function gini(counts: readonly number[], total: number): number {
   if (total === 0) return 0;
   let sum = 0;
+  multiplied(counts.length);
   for (const value of counts) sum += (value / total) ** 2;
   return 1 - sum;
 }
@@ -77,6 +79,8 @@ function bestSplit(
       const next = valueOf(sorted[at + 1] as Dot, feature);
       const lowCount = at + 1;
       if (next === here || lowCount < minLeaf || total - lowCount < minLeaf) continue;
+      // Each side's impurity, weighted by its size.
+      multiplied(2);
       const high = allCounts.map((value, group) => value - (low[group] ?? 0));
       const impurity =
         (lowCount * gini(low, lowCount) + (total - lowCount) * gini(high, total - lowCount)) /

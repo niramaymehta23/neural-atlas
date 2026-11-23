@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { fontVariables } from "@/design/fonts";
 import { themeInitScript } from "@/design/theme";
+import { AwardNote } from "@/experiences/achievements/AwardNote";
+import { IdeaCards } from "@/experiences/glossary/IdeaCards";
 import { platformCaptions } from "@/platform/captions";
 import { CatalogPalette } from "./CatalogPalette";
 import "./globals.css";
@@ -18,8 +20,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
-        {children}
+        <IdeaCards>{children}</IdeaCards>
         <CatalogPalette />
+        <AwardNote />
       </body>
     </html>
   );

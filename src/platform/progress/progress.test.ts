@@ -18,7 +18,7 @@ const lessons: Pick<Lesson, "id" | "prerequisites" | "load">[] = [
   { id: "c", prerequisites: ["a"], load },
   { id: "d", prerequisites: ["b", "c"], load },
 ];
-const progressOf = (lessons: Progress["lessons"]): Progress => ({ lessons });
+const progressOf = (lessons: Progress["lessons"]): Progress => ({ lessons, achievements: [] });
 
 describe("mastery", () => {
   it("needs a visit, a mission and a prediction", () => {
@@ -157,5 +157,38 @@ describe("progress store", () => {
     await vi.advanceTimersByTimeAsync(2000);
     expect(settled).toBe(true);
     vi.useRealTimers();
+  });
+});
+
+describe("achievements", () => {
+  it("are kept once each, beside the lessons", async () => {
+    const storage = memoryStorage();
+    const store = createProgressStore(storage);
+    await store.ready;
+    await store.recordAchievement("race");
+    await store.recordAchievement("race");
+    await store.recordVisit("a");
+    expect(store.getState().achievements).toEqual(["race"]);
+    expect(store.getState().lessons.a?.visited).toBe(true);
+    const again = createProgressStore(storage);
+    await again.ready;
+    expect(again.getState().achievements).toEqual(["race"]);
+  });
+
+  it("are none in older records, and a damaged list keeps what it can", async () => {
+    for (const [achievements, kept] of [
+      [undefined, []],
+      ["race", []],
+      [
+        ["race", 4, null, "race", "mend"],
+        ["race", "mend"],
+      ],
+    ] as const) {
+      const store = createProgressStore(
+        memoryStorage(new Map([["progress-v1", { lessons: {}, achievements }]])),
+      );
+      await store.ready;
+      expect(store.getState().achievements).toEqual(kept);
+    }
   });
 });

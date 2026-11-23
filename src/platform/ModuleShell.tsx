@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useStore } from "zustand";
 import { Timeline } from "@/engine/timeline/timeline";
 import { CompareSplit } from "@/ui/CompareSplit";
+import { IdeaCardButton } from "@/ui/glossary/idea-cards";
 import { PaperCard } from "@/ui/PaperCard";
 import { StoryCaption } from "@/ui/StoryCaption";
 import { TermTag } from "@/ui/TermTag";
@@ -43,6 +44,8 @@ type ModuleShellProps = {
   nextIdea?: { id: string; title: string } | null;
   /** Drops a restored link's view and starts afresh. */
   onStartOwn?: () => void;
+  /** Extra dials for a lesson that trains (such as hearing it learn), given its timeline. */
+  trainingExtras?: (timeline: Timeline<TimelineFrame>) => ReactNode;
 };
 
 type Fired = { mission: Mission<ModuleState>; window: ReplayWindow | null };
@@ -72,6 +75,7 @@ export function ModuleShell({
   initialState,
   nextIdea,
   onStartOwn,
+  trainingExtras,
 }: ModuleShellProps) {
   const [store] = useState(() => {
     const created = createModuleStore(initialState ?? module.initialState);
@@ -249,13 +253,16 @@ export function ModuleShell({
             </button>
           </div>
         )}
-        <ShareControl
-          key={edits}
-          lessonId={lesson.id}
-          store={store}
-          timeline={timeline}
-          announce={announce}
-        />
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-1">
+          <ShareControl
+            key={edits}
+            lessonId={lesson.id}
+            store={store}
+            timeline={timeline}
+            announce={announce}
+          />
+          <IdeaCardButton about={lesson.id} className="md:min-h-9" />
+        </div>
       </header>
 
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_20rem]">
@@ -332,11 +339,16 @@ export function ModuleShell({
             />
           )}
           {!cardOnTop && predictionSlot}
+          {module.trains && trainingExtras?.(timeline)}
         </aside>
       </div>
 
       <div data-region="caption" className="flex min-h-12 flex-col items-start gap-3">
         <StoryCaption shown={touched}>{captions.story}</StoryCaption>
+        {/* Its space is kept, so nothing moves when the story arrives. */}
+        <div className={touched ? "" : "invisible"}>
+          <IdeaCardButton about={lesson.id} />
+        </div>
         {doneMissions.length > 0 || everFired.size > 0 ? <TermTag term={lesson.realTerm} /> : null}
       </div>
 

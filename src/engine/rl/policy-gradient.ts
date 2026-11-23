@@ -6,6 +6,7 @@
  * usually go (the baseline), and down when it went worse; the nudge's size is the step. Seeded:
  * the same world, settings and seed give the same tries, nudges and chances every time. Pure.
  */
+import { multiplied } from "../multiplications";
 import { createRandom, type Random } from "../random";
 import { MOVE_COUNT, step, type World } from "./gridworld";
 
@@ -129,6 +130,7 @@ export type HabitLearner = {
 export function returnsOf(rewards: readonly number[], care: number): number[] {
   const returns = new Array<number>(rewards.length);
   let ahead = 0;
+  multiplied(rewards.length);
   for (let at = rewards.length - 1; at >= 0; at -= 1) {
     ahead = (rewards[at] ?? 0) + care * ahead;
     returns[at] = ahead;
@@ -182,17 +184,20 @@ export function createHabitLearner(
       // Better than usual from here: more of this move; worse: less of it.
       const advantage = got - (seen[cell] ? (usual[cell] ?? 0) : meanAt(cell));
       const chances = chancesAt(preferences, cell);
+      multiplied(MOVE_COUNT);
       for (let other = 0; other < MOVE_COUNT; other += 1) {
         const index = cell * MOVE_COUNT + other;
         change[index] =
           (change[index] ?? 0) + advantage * ((other === move ? 1 : 0) - (chances[other] ?? 0));
       }
     }
+    multiplied(preferences.length);
     for (let index = 0; index < preferences.length; index += 1)
       preferences[index] = (preferences[index] ?? 0) + (nudge * (change[index] ?? 0)) / batch;
     // The usual return from each square follows what this batch got there.
     for (const cell of batchMean.keys()) {
       const mean = meanAt(cell);
+      if (seen[cell]) multiplied(1);
       usual[cell] = seen[cell]
         ? (usual[cell] ?? 0) + BASELINE_RATE * (mean - (usual[cell] ?? 0))
         : mean;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
 import { platformCaptions } from "./captions";
 import { companionStore } from "./companion/companion";
 import { fetchedLesson, fetchLesson } from "./lesson-cache";
@@ -26,6 +26,8 @@ type LessonViewProps = {
   lesson: Lesson;
   /** The lesson to suggest once this one's missions are done. */
   nextIdea?: { id: string; title: string } | null;
+  /** Extra dials for a lesson that trains. */
+  trainingExtras?: ComponentProps<typeof ModuleShell>["trainingExtras"];
 };
 
 const BUTTON =
@@ -89,7 +91,7 @@ async function loadLesson(lesson: Lesson, hash: string): Promise<Loaded> {
  * network), then hands it to the shell. A failed load offers to try again; a link that cannot be
  * opened says why.
  */
-export function LessonView({ lesson, nextIdea }: LessonViewProps) {
+export function LessonView({ lesson, nextIdea, trainingExtras }: LessonViewProps) {
   const [attempt, setAttempt] = useState(0);
   // A lesson fetched early opens at once; otherwise it loads after the first paint.
   const [opened] = useState(() => loadedAlready(lesson));
@@ -145,6 +147,7 @@ export function LessonView({ lesson, nextIdea }: LessonViewProps) {
         key={attempt}
         lesson={lesson}
         nextIdea={nextIdea}
+        trainingExtras={trainingExtras}
         onStartOwn={() => {
           dropSnapshotFromUrl();
           reload();

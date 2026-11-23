@@ -17,6 +17,7 @@ const SMALL = [
   "ten",
 ];
 const SCALES = [
+  { size: 1e12, word: "trillion" },
   { size: 1e9, word: "billion" },
   { size: 1e6, word: "million" },
   { size: 1e3, word: "thousand" },

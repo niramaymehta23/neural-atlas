@@ -7,7 +7,7 @@ import { platformCaptions } from "./captions";
 
 type SiteNavProps = {
   /** The page it sits on; that page's own link is left out. */
-  current: "home" | "lesson" | "puzzle" | "other";
+  current: "home" | "lesson" | "puzzle" | "explore" | "other";
   className?: string;
 };
 
@@ -30,6 +30,11 @@ export function SiteNav({ current, className = "" }: SiteNavProps) {
       {current !== "puzzle" && (
         <Link href="/puzzle" className={LINK}>
           {words.puzzle}
+        </Link>
+      )}
+      {current !== "explore" && (
+        <Link href="/explore" className={LINK}>
+          {words.explore}
         </Link>
       )}
       <div className="ml-auto flex flex-wrap items-center gap-3">

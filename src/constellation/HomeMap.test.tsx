@@ -9,6 +9,7 @@ import { storageHealth } from "@/platform/storage";
 import { setPaletteOpen } from "@/ui/palette-store";
 import type { ConstellationScene } from "./ConstellationScene";
 import { HomeMap } from "./HomeMap";
+import { LessonList } from "./LessonList";
 
 /** Every lesson with a module, read from the catalog so a newly built lesson needs no edit here. */
 const builtIds = lessons.filter(({ load }) => load).map(({ id }) => id);
@@ -198,5 +199,18 @@ describe("HomeMap", () => {
     expect(screen.queryByText("This browser won’t remember your progress.")).toBeNull();
     act(() => storageHealth.setState({ persistent: false }));
     expect(screen.getByText("This browser won’t remember your progress.")).toBeInTheDocument();
+  });
+
+  it("passes the stars earned elsewhere to the 3D view, and lists them beneath the ideas", async () => {
+    const extras = [{ id: "race", title: "Racer", href: "/two-player", mark: <svg /> }];
+    const { container } = render(<HomeMap extras={extras} />);
+    await screen.findByText("choose");
+    expect(scene.props?.extras).toBe(extras);
+    expect(container.querySelector('[data-achievement="race"]')).toBeNull();
+    const { container: list } = render(
+      <LessonList learned={new Set()} suggested={null} extras={extras} />,
+    );
+    expect(screen.getByRole("link", { name: "Racer" })).toHaveAttribute("href", "/two-player");
+    expect(list.querySelector('[data-achievement="race"]')).not.toBeNull();
   });
 });

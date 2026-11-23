@@ -18,7 +18,12 @@ export const platformCaptions = {
     title: "This lesson could not start.",
     note: "Try again. If it keeps happening, another lesson may work on this browser.",
   },
-  nav: { label: "Around the atlas", home: "Back to the map", puzzle: "Today’s puzzle" },
+  nav: {
+    label: "Around the atlas",
+    home: "Back to the map",
+    puzzle: "Today’s puzzle",
+    explore: "More to do",
+  },
   loading: "Setting the scene…",
   loadFailed: "This lesson couldn’t load. Check the connection, then try again.",
   problem: { title: "Something went wrong here.", retry: "Try again" },

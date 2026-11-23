@@ -3,7 +3,11 @@ import type { Lesson } from "../contract";
 import { browserStorage, createPersistedStore, type KeyValueStorage } from "../storage";
 
 export type LessonProgress = { visited: boolean; missions: string[]; predicted: boolean };
-export type Progress = { lessons: Record<string, LessonProgress> };
+export type Progress = {
+  lessons: Record<string, LessonProgress>;
+  /** Achievements earned away from the lessons, by id. */
+  achievements: string[];
+};
 
 const KEY = "progress-v1";
 const EMPTY: LessonProgress = { visited: false, missions: [], predicted: false };
@@ -39,6 +43,12 @@ export function nextSuggested(
   );
 }
 
+/** The strings in a saved list, each once. */
+const strings = (list: unknown): string[] =>
+  Array.isArray(list)
+    ? [...new Set(list.filter((item): item is string => typeof item === "string"))]
+    : [];
+
 /** One lesson's record, coerced field by field so one bad value never loses the rest. */
 function salvageLesson(entry: unknown): LessonProgress {
   const { visited, missions, predicted } = (
@@ -62,13 +72,21 @@ function parseProgress(saved: unknown): Progress | null {
     lessons: Object.fromEntries(
       Object.entries(lessons).map(([id, entry]) => [id, salvageLesson(entry)]),
     ),
+    // Records from before there were achievements simply have none.
+    achievements: "achievements" in saved ? strings(saved.achievements) : [],
   };
 }
 
 export function createProgressStore(storage: KeyValueStorage) {
-  const store = createPersistedStore<Progress>(KEY, { lessons: {} }, parseProgress, storage);
+  const store = createPersistedStore<Progress>(
+    KEY,
+    { lessons: {}, achievements: [] },
+    parseProgress,
+    storage,
+  );
   const edit = (id: string, change: (lesson: LessonProgress) => LessonProgress) =>
-    store.change(({ lessons }) => ({
+    store.change(({ lessons, achievements }) => ({
+      achievements,
       lessons: { ...lessons, [id]: change(lessons[id] ?? EMPTY) },
     }));
   return {
@@ -79,6 +97,13 @@ export function createProgressStore(storage: KeyValueStorage) {
         lesson.missions.includes(mission)
           ? lesson
           : { ...lesson, missions: [...lesson.missions, mission] },
+      ),
+    /** An achievement, once. */
+    recordAchievement: (id: string) =>
+      store.change((progress) =>
+        progress.achievements.includes(id)
+          ? progress
+          : { ...progress, achievements: [...progress.achievements, id] },
       ),
     recordPrediction: (id: string) => edit(id, (lesson) => ({ ...lesson, predicted: true })),
   };

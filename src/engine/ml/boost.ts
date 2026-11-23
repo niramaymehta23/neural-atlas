@@ -1,3 +1,4 @@
+import { multiplied } from "../multiplications";
 import type { Dot } from "./types";
 
 /** A small regression tree: each box holds a nudge to the running score. */
@@ -50,6 +51,7 @@ function fitRunner(
     }
     const leaf: Nudge = { kind: "leaf", value: g / (h + DAMPING) };
     if (left <= 0 || indices.length < 2 * minLeaf) return leaf;
+    multiplied(1);
     const whole = (g * g) / (h + DAMPING);
     let best: { feature: 0 | 1; threshold: number; gain: number } | null = null;
     for (const feature of [0, 1] as const) {
@@ -66,6 +68,7 @@ function fitRunner(
         const next = valueOf(dots[sorted[at + 1] as number] as Dot, feature);
         const count = at + 1;
         if (next === here || count < minLeaf || sorted.length - count < minLeaf) continue;
+        multiplied(2);
         const gr = g - gl;
         const hr = h - hl;
         const gain = (gl * gl) / (hl + DAMPING) + (gr * gr) / (hr + DAMPING) - whole;
@@ -95,10 +98,12 @@ function fitRunner(
   );
 }
 
-const scale = (nudge: Nudge, by: number): Nudge =>
-  nudge.kind === "leaf"
-    ? { kind: "leaf", value: nudge.value * by }
-    : { ...nudge, low: scale(nudge.low, by), high: scale(nudge.high, by) };
+function scale(nudge: Nudge, by: number): Nudge {
+  if (nudge.kind === "split")
+    return { ...nudge, low: scale(nudge.low, by), high: scale(nudge.high, by) };
+  multiplied(1);
+  return { kind: "leaf", value: nudge.value * by };
+}
 
 export function nudgeAt(nudge: Nudge, x: number, y: number): number {
   let node = nudge;
@@ -122,6 +127,7 @@ export function runRelay(dots: readonly Dot[], options: RelayOptions): Relay {
   for (let runner = 0; runner < runners; runner += 1) {
     const chances = scores.map(sigmoid);
     const pull = dots.map((dot, index) => dot.label - (chances[index] ?? 0.5));
+    multiplied(chances.length);
     const sureness = chances.map((chance) => chance * (1 - chance));
     const nudge = scale(fitRunner(dots, pull, sureness, Math.max(1, depth), minLeaf), rate);
     team.push(nudge);
