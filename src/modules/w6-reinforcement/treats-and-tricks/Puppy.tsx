@@ -81,13 +81,30 @@ export function Puppy({ trick }: { trick: Trick }) {
       return (
         <g data-pose={trick}>
           <Swish d="M28 22a26 16 0 0 1 44 0" x={72} y={22} angle={50} />
-          {[38, 46, 56, 64].map((x) => (
-            <rect key={x} x={x - 3} y={34} width={6} height={14} rx={3} {...BODY} />
+          {[
+            [37, -20],
+            [45, -6],
+            [57, 6],
+            [65, 20],
+          ].map(([x = 0, tilt = 0]) => (
+            <rect
+              key={x}
+              x={x - 2.5}
+              y={35}
+              width={5}
+              height={11}
+              rx={2.5}
+              {...BODY}
+              transform={`rotate(${tilt} ${x} 46)`}
+            />
           ))}
           <ellipse cx={51} cy={54} rx={21} ry={12} {...BODY} />
           <ellipse cx={51} cy={50} rx={12} ry={5} fill="var(--color-card)" />
           <path d="M30 58q-8 4 -12 0" {...LINE} strokeWidth={3} stroke="var(--color-ink)" />
-          <Face x={76} y={58} r={11} />
+          {/* On its back, so its face is upside down. */}
+          <g transform="rotate(180 76 57)">
+            <Face x={76} y={57} r={11} />
+          </g>
         </g>
       );
   }

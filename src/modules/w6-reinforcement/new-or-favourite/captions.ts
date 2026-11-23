@@ -58,16 +58,12 @@ export const words = {
     favourite: (machine: string) => `Plays the ${machine} machine most.`,
     stuck: (machine: string) => `Stuck on the ${machine} machine: it never tries anything else.`,
     spread: "Which machines it pulled",
-    ahead: {
-      curious: "“Curious sometimes” is ahead.",
-      hopeful: "“Hopeful about the unknown” is ahead.",
-      tied: "The bots are level.",
-    },
   },
   bots: {
     curious: "Curious sometimes",
     hopeful: "Hopeful about the unknown",
     curiousNote: "Mostly plays its best machine so far; sometimes tries one at random.",
+    neverNote: "Always plays its best machine so far.",
     hopefulNote: "Gives machines it has hardly tried the benefit of the doubt.",
   },
   secret: {

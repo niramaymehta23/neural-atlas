@@ -94,28 +94,30 @@ export function TreatsScene({ state, update, timeline, side }: Props) {
             </p>
           </div>
           <div className="flex w-full min-w-0 flex-col justify-center gap-3">
-            {editable && (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={full}
-                  onClick={() => give(1)}
-                  className={`${BIG_BUTTON} bg-accent text-on-accent`}
-                  data-give="treat"
-                >
-                  {words.treat}
-                </button>
-                <button
-                  type="button"
-                  disabled={full}
-                  onClick={() => give(0)}
-                  className={`${BIG_BUTTON} bg-paper text-ink`}
-                  data-give="none"
-                >
-                  {words.noTreat}
-                </button>
-              </div>
-            )}
+            {/* The other half of a comparison keeps the space, so both halves line up. */}
+            <div
+              className={`flex flex-wrap gap-2 ${editable ? "" : "invisible"}`}
+              inert={!editable}
+            >
+              <button
+                type="button"
+                disabled={full}
+                onClick={() => give(1)}
+                className={`${BIG_BUTTON} bg-accent text-on-accent`}
+                data-give="treat"
+              >
+                {words.treat}
+              </button>
+              <button
+                type="button"
+                disabled={full}
+                onClick={() => give(0)}
+                className={`${BIG_BUTTON} bg-paper text-ink`}
+                data-give="none"
+              >
+                {words.noTreat}
+              </button>
+            </div>
             {/* Reserved lines, so nothing jumps as the words change. */}
             <p className="min-h-10 text-sm" data-last>
               {lastLine}
@@ -137,42 +139,43 @@ export function TreatsScene({ state, update, timeline, side }: Props) {
           ))}
         </ul>
       </section>
-      {editable && (
-        <section className="flex flex-col gap-2 text-sm">
-          <SegmentedControl<Rule>
-            label={words.trainer.label}
-            showLabel
-            vertical={false}
-            options={RULES.map((rule) => ({ value: rule, label: words.trainer.rules[rule] }))}
-            value={state.rule}
-            onChange={(rule) => update({ rule })}
-          />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={BUTTON}
-              disabled={full}
-              onClick={() => {
-                timeline.goLive();
-                update((now) => ({ treats: trainerTreats(now, now.rule) }));
-              }}
-            >
-              {words.trainer.play(TRAINER_ROUNDS)}
-            </button>
-            <button
-              type="button"
-              className={BUTTON}
-              disabled={state.treats.length === 0 && state.log.length === 0}
-              onClick={() => {
-                timeline.goLive();
-                update(({ puppy }) => ({ treats: [], log: [], puppy: puppy + 1 }));
-              }}
-            >
-              {words.fresh}
-            </button>
-          </div>
-        </section>
-      )}
+      <section
+        className={`flex flex-col gap-2 text-sm ${editable ? "" : "invisible"}`}
+        inert={!editable}
+      >
+        <SegmentedControl<Rule>
+          label={words.trainer.label}
+          showLabel
+          vertical={false}
+          options={RULES.map((rule) => ({ value: rule, label: words.trainer.rules[rule] }))}
+          value={state.rule}
+          onChange={(rule) => update({ rule })}
+        />
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={BUTTON}
+            disabled={full}
+            onClick={() => {
+              timeline.goLive();
+              update((now) => ({ treats: trainerTreats(now, now.rule) }));
+            }}
+          >
+            {words.trainer.play(TRAINER_ROUNDS)}
+          </button>
+          <button
+            type="button"
+            className={BUTTON}
+            disabled={state.treats.length === 0 && state.log.length === 0}
+            onClick={() => {
+              timeline.goLive();
+              update(({ puppy }) => ({ treats: [], log: [], puppy: puppy + 1 }));
+            }}
+          >
+            {words.fresh}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

@@ -43,7 +43,7 @@ function Token({ bot, x, y }: { bot: 0 | 1; x: number; y: number }) {
 const machineName = (machine: number) => words.machines[MACHINES[machine] ?? "star"];
 
 /** One bot's line under the track: its coins, the machine it plays most, and its spread of pulls. */
-function BotLine({ bot, run }: { bot: 0 | 1; run: BotRun }) {
+function BotLine({ bot, run, never }: { bot: 0 | 1; run: BotRun; never: boolean }) {
   const total = run.counts.reduce((sum, pulls) => sum + pulls, 0);
   const { machine, share } = favouriteOf(run);
   const name = bot === 0 ? words.bots.curious : words.bots.hopeful;
@@ -57,7 +57,7 @@ function BotLine({ bot, run }: { bot: 0 | 1; run: BotRun }) {
         <span>{words.race.botCoins(name, run.wins)}</span>
       </p>
       <p className="min-h-10 text-ink-soft" data-stuck={bot === 0 && stuck ? "" : undefined}>
-        {bot === 0 ? words.bots.curiousNote : words.bots.hopefulNote}{" "}
+        {bot === 1 ? words.bots.hopefulNote : never ? words.bots.neverNote : words.bots.curiousNote}{" "}
         {total === 0
           ? ""
           : stuck
@@ -86,7 +86,8 @@ function BotLine({ bot, run }: { bot: 0 | 1; run: BotRun }) {
 }
 
 /** The bots' race: tokens moving along a track by coins won, against a random player's pace. */
-export function RaceView({ frame }: { frame: RaceFrame }) {
+/** `never`: the curious bot has no curiosity at all. */
+export function RaceView({ frame, never }: { frame: RaceFrame; never: boolean }) {
   const scale = (wins: number) =>
     LEFT + Math.min(1, wins / Math.max(1, bestWins(frame.budget))) * (RIGHT - LEFT);
   const random = scale(randomWins(frame.epoch));
@@ -172,8 +173,8 @@ export function RaceView({ frame }: { frame: RaceFrame }) {
       </figure>
       <p className="text-sm text-ink-soft">{words.race.pulls(frame.epoch, frame.budget)}</p>
       <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-        <BotLine bot={0} run={curious} />
-        <BotLine bot={1} run={hopeful} />
+        <BotLine bot={0} run={curious} never={never} />
+        <BotLine bot={1} run={hopeful} never={never} />
       </div>
       {/* Reserved space, so the page does not jump when the secret appears. */}
       <div className="min-h-28 text-sm" data-secret={finished || undefined}>
