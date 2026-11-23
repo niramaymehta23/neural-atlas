@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { lessonById, lessons } from "@/catalog";
 import { progressStore } from "@/platform/progress/progress";
 import { IdeaCardButton } from "@/ui/glossary/idea-cards";
@@ -7,11 +7,16 @@ import { nearby } from "./IdeaCardDialog";
 import { cardConnection, CARDS_FOR_STAR, IdeaCards } from "./IdeaCards";
 import { Mini } from "./Mini";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), prefetch: vi.fn() }) }));
+const at = vi.hoisted(() => ({ path: "/explore" }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => at.path,
+}));
 const WAIT = { timeout: 10_000 };
 const realLoad = cardConnection.load;
 afterEach(() => {
   cardConnection.load = realLoad;
+  at.path = "/explore";
 });
 
 describe("the cards", () => {
@@ -79,6 +84,41 @@ describe("opening a card", () => {
     await screen.findByRole("dialog", { name: lessonById(near ?? "")?.title }, WAIT);
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
+    // The focus is back where the first card was opened.
+    await vi.waitFor(
+      () => expect(screen.getByRole("button", { name: "Idea card" })).toHaveFocus(),
+      WAIT,
+    );
+  });
+
+  it("is put away by Back, and never follows you to another page", async () => {
+    await open("rolling-downhill");
+    fireEvent.popState(window);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("does not turn up on the page after the one it was asked for on", async () => {
+    let arrive = () => undefined as void;
+    cardConnection.load = () =>
+      new Promise((resolve) => {
+        arrive = () => void realLoad().then(resolve);
+      });
+    const page = () => (
+      <IdeaCards>
+        <IdeaCardButton about="zooming-out" />
+      </IdeaCards>
+    );
+    const { rerender } = render(page());
+    fireEvent.click(screen.getByRole("button", { name: "Idea card" }));
+    expect(screen.getByRole("status")).toBeVisible();
+    at.path = "/museum";
+    rerender(page());
+    await act(async () => {
+      arrive();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("says so when the cards cannot be fetched, and tries again", async () => {

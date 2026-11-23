@@ -28,15 +28,27 @@ export function JourneyPage({ journey }: { journey: Journey }) {
   const { announcement, announce } = useAnnouncer();
 
   useEffect(() => {
+    const here = window.location.pathname;
     const read = () => setStop(stopFromHash(window.location.hash, stops.length));
+    const onPop = () => {
+      // Back to another page altogether: this one is on its way out.
+      if (window.location.pathname !== here) return;
+      moved.current = true;
+      read();
+    };
     read();
+    // Back and Forward arrive as hash changes only for links; pushed states need `popstate`.
     window.addEventListener("hashchange", read);
-    return () => window.removeEventListener("hashchange", read);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("hashchange", read);
+      window.removeEventListener("popstate", onPop);
+    };
   }, [stops]);
 
   const go = useCallback(
     (next: number) => {
-      if (next < 0 || next >= stops.length) return;
+      if (next < 0 || next >= stops.length || next === stop) return;
       moved.current = true;
       // A step of its own in the history, so Back goes back a stop.
       window.history.pushState(null, "", hashForStop(next));
@@ -44,7 +56,7 @@ export function JourneyPage({ journey }: { journey: Journey }) {
       // Walking to the end earns the star; opening a link there does not.
       if (next === stops.length - 1) void award("journey");
     },
-    [stops],
+    [stop, stops],
   );
 
   useEffect(() => {
@@ -60,21 +72,21 @@ export function JourneyPage({ journey }: { journey: Journey }) {
 
   useEffect(() => {
     if (!auto || stop === null || stop >= stops.length - 1) return;
-    const timer = setTimeout(() => go(stop + 1), AUTO_MS);
-    return () => clearTimeout(timer);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Nobody is reading a hidden page: its wait starts over once it is back.
+    const wait = () => {
+      clearTimeout(timer);
+      if (document.visibilityState !== "hidden") timer = setTimeout(() => go(stop + 1), AUTO_MS);
+    };
+    wait();
+    document.addEventListener("visibilitychange", wait);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", wait);
+    };
   }, [auto, stop, stops, go]);
 
   const pauseAuto = useCallback(() => setAuto(false), []);
-  // Back and Forward arrive as hash changes only for links; pushed states need this one.
-  useEffect(() => {
-    const onPop = () => {
-      moved.current = true;
-      setStop(stopFromHash(window.location.hash, stops.length));
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, [stops]);
-
   const here = stop === null ? undefined : stops[stop];
   const last = stop === stops.length - 1;
   return (
@@ -152,7 +164,14 @@ export function JourneyPage({ journey }: { journey: Journey }) {
                 </button>
               </div>
             )}
-            <LessonStage key={here.lesson} id={here.lesson} onTouch={pauseAuto} />
+            <div
+              // Any touch of the lesson, its timeline or its card, not only a change of its state.
+              onPointerDownCapture={pauseAuto}
+              onKeyDownCapture={pauseAuto}
+              onClickCapture={pauseAuto}
+            >
+              <LessonStage key={here.lesson} id={here.lesson} />
+            </div>
           </>
         )}
       </section>

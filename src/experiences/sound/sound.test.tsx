@@ -97,6 +97,18 @@ describe("the sound of learning", () => {
     expect(fake.notes).toHaveLength(2);
   });
 
+  it("saves nothing up while the page is hidden", () => {
+    turnSoundOn();
+    fake.audio.state = "suspended";
+    playNote(0.5);
+    playChime();
+    playChime();
+    expect(fake.notes).toEqual([]);
+    fake.audio.state = "running";
+    playChime();
+    expect(fake.notes).toHaveLength(2);
+  });
+
   it("plays a note for each new moment and a chime for each tenth gained, and falls silent on leaving", () => {
     const Learner = ({ step, off, right }: { step: number; off: number; right: number }) => {
       useSoundOf({ step, off, right }, true);

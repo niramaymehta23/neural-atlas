@@ -79,6 +79,8 @@ function bestSplit(
       const next = valueOf(sorted[at + 1] as Dot, feature);
       const lowCount = at + 1;
       if (next === here || lowCount < minLeaf || total - lowCount < minLeaf) continue;
+      // Each side's impurity, weighted by its size.
+      multiplied(2);
       const high = allCounts.map((value, group) => value - (low[group] ?? 0));
       const impurity =
         (lowCount * gini(low, lowCount) + (total - lowCount) * gini(high, total - lowCount)) /

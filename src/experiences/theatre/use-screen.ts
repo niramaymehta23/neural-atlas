@@ -23,16 +23,28 @@ export function useFullScreen() {
     () => false,
   );
   const [refused, setRefused] = useState(false);
+  const ours = useRef(false);
   const toggle = useCallback(async () => {
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
-      // The whole page, so an idea card can open over the show.
-      else await document.documentElement.requestFullscreen();
+      else {
+        // The whole page, so an idea card can open over the show.
+        await document.documentElement.requestFullscreen();
+        ours.current = true;
+      }
       setRefused(false);
     } catch {
       setRefused(true);
     }
   }, []);
+  // The next page has no button to leave with.
+  useEffect(
+    () => () => {
+      if (ours.current && document.fullscreenElement)
+        void document.exitFullscreen().catch(() => undefined);
+    },
+    [],
+  );
   return { able, full, refused, toggle };
 }
 
@@ -64,7 +76,8 @@ export function useAwake(on: boolean) {
 
 /**
  * True once nobody has moved, tapped or pressed a key for a while (never while `keep`). The tap
- * that wakes a sleeping page presses nothing, since what was under it could not be seen.
+ * that wakes a sleeping page presses nothing in its faded strips (`data-fades`), since what was
+ * under it could not be seen.
  */
 export function useIdle(keep: boolean): boolean {
   const [idle, setIdle] = useState(false);
@@ -89,6 +102,7 @@ export function useIdle(keep: boolean): boolean {
     const onClick = (event: MouseEvent) => {
       if (!waking) return;
       waking = false;
+      if (!(event.target instanceof Element && event.target.closest("[data-fades]"))) return;
       event.preventDefault();
       event.stopPropagation();
     };

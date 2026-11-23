@@ -234,6 +234,31 @@ describe("the page", () => {
   );
 
   it(
+    "a round started over with the same choices is played again before it is won again",
+    async () => {
+      render(<TwoPlayerPage />);
+      await screen.findByRole("heading", { name: "Player one, pick your team" }, WAIT);
+      const choose = () => {
+        press("Hide my choice");
+        press("I’m ready");
+        fireEvent.click(screen.getByRole("radio", { name: "Careful steps" }));
+        press("Hide my choice");
+      };
+      choose();
+      press("Start the race");
+      await vi.waitFor(() => expect(game().dataset.winner).toBe("0"), WAIT);
+      press("Start this round over");
+      choose();
+      expect(game().dataset.winner).toBeUndefined();
+      expect(document.querySelector("[data-score]")).toHaveAttribute("data-score", "1-0");
+      press("Start the race");
+      await vi.waitFor(() => expect(game().dataset.winner).toBe("0"), WAIT);
+      expect(document.querySelector("[data-score]")).toHaveAttribute("data-score", "2-0");
+    },
+    LIMIT,
+  );
+
+  it(
     "plays a break and a repair to a counted win, then swaps places",
     async () => {
       render(<TwoPlayerPage />);

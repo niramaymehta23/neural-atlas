@@ -66,6 +66,12 @@ test("fills the screen, and the controls fade until somebody moves", async ({ pa
   await expect(page.locator("[data-controls]")).toHaveCSS("opacity", "1");
   await page.getByRole("button", { name: words.shrink }).click();
   await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBeNull();
+  // Leaving by the link leaves the full screen too.
+  await page.getByRole("button", { name: words.full }).click();
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true);
+  await page.getByRole("link", { name: words.back }).click();
+  await expect(page).toHaveURL(/\/explore$/);
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBeNull();
 });
 
 test("a tap that wakes the controls presses none of them", async ({ browser }) => {

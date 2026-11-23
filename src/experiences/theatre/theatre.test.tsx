@@ -17,6 +17,7 @@ const LIMIT = 30_000;
 function fakeContext(): CanvasRenderingContext2D {
   const kept: Record<string, unknown> = {
     measureText: (text: string) => ({ width: text.length * 10 }),
+    getImageData: () => ({ data: [0, 0, 0, 255] }),
   };
   return new Proxy(kept, {
     get: (target, name: string) => target[name] ?? (() => undefined),
@@ -217,5 +218,55 @@ describe("the theatre page", () => {
   it("does not hand out its star for opening the page", () => {
     render(<TheatrePage />);
     expect(progressStore.getState().achievements).not.toContain("theatre");
+  });
+
+  it(
+    "hands out its star after a minute of watching, and not while paused",
+    async () => {
+      vi.useFakeTimers();
+      vi.stubGlobal("Path2D", class {});
+      vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+        fakeContext() as unknown as null,
+      );
+      window.history.replaceState(null, "", "/theatre#show=explorer");
+      render(<TheatrePage />);
+      fireEvent.keyDown(window, { key: " " });
+      await act(() => vi.advanceTimersByTimeAsync(70_000));
+      expect(progressStore.getState().achievements).not.toContain("theatre");
+      fireEvent.keyDown(window, { key: " " });
+      await act(() => vi.advanceTimersByTimeAsync(40_000));
+      expect(progressStore.getState().achievements).not.toContain("theatre");
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      expect(progressStore.getState().achievements).toContain("theatre");
+    },
+    LIMIT,
+  );
+
+  it("a tap that wakes the faded controls presses none of them, but anything else it can", () => {
+    vi.useFakeTimers();
+    window.history.replaceState(null, "", "/theatre#show=explorer");
+    const elsewhere = vi.fn();
+    render(
+      <>
+        <TheatrePage />
+        <button type="button" onClick={elsewhere}>
+          on top
+        </button>
+      </>,
+    );
+    const tap = (name: string) => {
+      const button = screen.getByRole("button", { name });
+      fireEvent.pointerDown(button);
+      fireEvent.click(button);
+    };
+    act(() => void vi.advanceTimersByTime(IDLE_MS + 10));
+    tap("Pause");
+    expect(stage()).toHaveAttribute("data-playing", "true");
+    tap("Pause");
+    expect(stage()).toHaveAttribute("data-playing", "false");
+    tap("Carry on");
+    act(() => void vi.advanceTimersByTime(IDLE_MS + 10));
+    tap("on top");
+    expect(elsewhere).toHaveBeenCalledTimes(1);
   });
 });

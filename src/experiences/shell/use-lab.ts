@@ -36,8 +36,8 @@ const START: LabHistory = { right: [], off: [] };
 const measures = (moment: LabMoment) =>
   (moment.kind === "race" ? moment.teams : [moment]).map(({ right, off }) => ({ right, off }));
 
-const freshRun = (key: string) => ({
-  key,
+const freshRun = (turn: number) => ({
+  turn,
   right: [] as number[][],
   off: [] as number[][],
   waiting: null as LabMoment | null,
@@ -66,28 +66,36 @@ export function useLab({
     latest.current = { config, steps, running, most, perSecond, onStep, onFinished, endsAt };
   });
   const [shown, setShown] = useState<{
-    key: string;
+    /** The run it is from, by its turn. */
+    turn: number;
     moment: LabMoment;
     history: LabHistory;
   } | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [start, setStart] = useState(0);
+  /**
+   * Every run is a turn of its own, though it may be called the same as an earlier one: started
+   * over, or put aside and come back to. What was shown of an earlier turn is never this one's.
+   */
+  const id = `${config === null} ${start} ${runKey}`;
+  const [turn, setTurn] = useState({ id, count: 1 });
+  if (turn.id !== id) setTurn({ id, count: turn.count + 1 });
   const client = useRef<LabClient | null>(null);
   /** The worker failed, so it cannot be relied on to run anything else. */
   const broken = useRef(false);
   /** The run whose moments are arriving, and what it has shown so far. */
-  const run = useRef(freshRun(""));
+  const run = useRef(freshRun(0));
 
   useEffect(() => {
     let frame = 0;
     const show = () => {
       frame = 0;
-      const { key, waiting: moment, right, off } = run.current;
+      const { turn, waiting: moment, right, off } = run.current;
       if (!moment) return;
       run.current.waiting = null;
       setShown({
-        key,
+        turn,
         moment,
         history: { right: right.map((line) => [...line]), off: off.map((line) => [...line]) },
       });
@@ -132,8 +140,13 @@ export function useLab({
       most: end,
       perSecond: pace,
     } = latest.current;
-    run.current = freshRun(runKey);
-    if (!now || !client.current) return;
+    run.current = freshRun(turn.count);
+    if (!now || !client.current) {
+      // Nothing to practise: the old run stops, and its moments still on their way are ignored.
+      run.current.ended = true;
+      client.current?.pause();
+      return;
+    }
     setFailure(null);
     if (broken.current) {
       // A new worker for the new run; making it brings this effect round again.
@@ -143,7 +156,7 @@ export function useLab({
     client.current.start(now);
     if (going) client.current.go(end, pace);
     else client.current.go(Math.min(saved, end));
-  }, [runKey, attempt, start]);
+  }, [turn, attempt]);
 
   const wasRunning = useRef(running);
   useEffect(() => {
@@ -159,7 +172,7 @@ export function useLab({
     setAttempt((count) => count + 1);
   }, []);
 
-  const current = config !== null && shown?.key === runKey;
+  const current = config !== null && shown?.turn === turn.count;
   /** The same run again, from its beginning (set the saved step back to 0 with it). */
   const restart = useCallback(() => setStart((count) => count + 1), []);
 

@@ -197,6 +197,7 @@ export function createHabitLearner(
     // The usual return from each square follows what this batch got there.
     for (const cell of batchMean.keys()) {
       const mean = meanAt(cell);
+      if (seen[cell]) multiplied(1);
       usual[cell] = seen[cell]
         ? (usual[cell] ?? 0) + BASELINE_RATE * (mean - (usual[cell] ?? 0))
         : mean;

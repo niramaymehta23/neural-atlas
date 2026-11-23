@@ -19,16 +19,15 @@ describe("a lesson's scene inside another page", () => {
   it(
     "plays the lesson's own scene and dials, with a way to the whole lesson",
     async () => {
-      const onTouch = vi.fn();
-      render(<LessonStage id="safe-vs-adventurous" onTouch={onTouch} />);
+      render(<LessonStage id="safe-vs-adventurous" />);
       const [slider] = await screen.findAllByRole("slider", undefined, WAIT);
       expect(screen.getByRole("link", { name: /Open the whole lesson/ })).toHaveAttribute(
         "href",
         "/learn/safe-vs-adventurous",
       );
-      expect(onTouch).not.toHaveBeenCalled();
+      const before = slider?.getAttribute("aria-valuenow");
       fireEvent.keyDown(slider as HTMLElement, { key: "ArrowRight" });
-      expect(onTouch).toHaveBeenCalled();
+      expect(screen.getAllByRole("slider")[0]?.getAttribute("aria-valuenow")).not.toBe(before);
     },
     LIMIT,
   );
@@ -94,6 +93,69 @@ describe("practising in the lab's worker", () => {
       expect(dead.terminate).toHaveBeenCalled();
       await vi.waitFor(() => expect(result.current.moment).not.toBeNull(), WAIT);
       expect(result.current.failure).toBeNull();
+    },
+    LIMIT,
+  );
+
+  it(
+    "never shows a run that is over as the next one, though it is called the same",
+    async () => {
+      labConnection.connect = inProcessLab;
+      const seen: (number | null)[] = [];
+      const still = () => undefined;
+      const { rerender } = renderHook(
+        ({ now, steps }: { now: LabConfig | null; steps: number }) => {
+          const lab = useLab({
+            config: now,
+            runKey: now ? "same" : "",
+            steps,
+            running: false,
+            most: 10,
+            perSecond: 5,
+            onStep: still,
+            onFinished: still,
+          });
+          seen.push(lab.moment?.step ?? null);
+          return lab;
+        },
+        { initialProps: { now: config as LabConfig | null, steps: 10 } },
+      );
+      await vi.waitFor(() => expect(seen.at(-1)).toBe(10), WAIT);
+      rerender({ now: null, steps: 0 });
+      expect(seen.at(-1)).toBeNull();
+      seen.length = 0;
+      rerender({ now: config, steps: 0 });
+      await vi.waitFor(() => expect(seen.at(-1)).toBe(0), WAIT);
+      expect(seen).not.toContain(10);
+    },
+    LIMIT,
+  );
+
+  it(
+    "stops a run whose setting went away, steps on their way and all",
+    async () => {
+      labConnection.connect = inProcessLab;
+      const onStep = vi.fn();
+      const still = () => undefined;
+      const { rerender } = renderHook(
+        ({ now }: { now: LabConfig | null }) =>
+          useLab({
+            config: now,
+            runKey: now ? "one" : "none",
+            steps: 0,
+            running: now !== null,
+            most: 10,
+            perSecond: 50,
+            onStep,
+            onFinished: still,
+          }),
+        { initialProps: { now: config as LabConfig | null } },
+      );
+      await vi.waitFor(() => expect(onStep).toHaveBeenCalled(), WAIT);
+      rerender({ now: null });
+      onStep.mockClear();
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(onStep).not.toHaveBeenCalled();
     },
     LIMIT,
   );

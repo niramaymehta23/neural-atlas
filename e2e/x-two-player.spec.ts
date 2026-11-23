@@ -71,6 +71,28 @@ test("a race to train is won on equal computing, scored once, and played again",
   expect(elsewhere).toEqual([]);
 });
 
+test("a round started over with the same teams is raced again before it counts", async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await openPage(page, "/two-player", READY);
+  const teams = [
+    [words.race.sizes.middle, words.race.paces.steady],
+    [words.race.sizes.small, words.race.paces.careful],
+  ] as const;
+  await pickTeams(page, [...teams[0]], [...teams[1]]);
+  await press(page, words.race.start);
+  await expect(page.locator(game)).toHaveAttribute("data-winner", "0", RUN);
+  await press(page, words.restart);
+  await pickTeams(page, [...teams[0]], [...teams[1]]);
+  await page.waitForTimeout(500);
+  await expect(page.locator(game)).not.toHaveAttribute("data-winner");
+  await expect(page.locator("[data-score]")).toHaveAttribute("data-score", "1-0");
+  await press(page, words.race.start);
+  await expect(page.locator(game)).toHaveAttribute("data-winner", "0", RUN);
+  await expect(page.locator("[data-score]")).toHaveAttribute("data-score", "2-0");
+});
+
 test("the same team against itself is a tie, and says why", async ({ page }) => {
   test.setTimeout(120_000);
   await openPage(page, "/two-player", READY);

@@ -20,15 +20,13 @@ import { Workbench } from "./Workbench";
 type LessonStageProps = {
   /** A lesson's catalog id. Mount it afresh (by key) for another lesson. */
   id: string;
-  /** The learner touched the scene or a dial. */
-  onTouch?: () => void;
 };
 
 /**
  * A lesson's own scene and dials, played inside another page: the same module, fetched through
  * the catalog and started afresh, with its story line and a link to the whole lesson.
  */
-export function LessonStage({ id, onTouch }: LessonStageProps) {
+export function LessonStage({ id }: LessonStageProps) {
   const lesson = lessonById(id);
   const [module, setModule] = useState<LessonModule | "failed" | null>(() =>
     typeof window === "undefined" ? null : (fetchedLesson(id) ?? null),
@@ -65,7 +63,7 @@ export function LessonStage({ id, onTouch }: LessonStageProps) {
           </button>
         </div>
       ) : module ? (
-        <Playing key={attempt} module={module} onTouch={onTouch} />
+        <Playing key={attempt} module={module} />
       ) : (
         <p role="status" className="grid min-h-96 place-items-center text-ink-soft">
           {shellCaptions.lessonLoading}
@@ -89,7 +87,7 @@ export function preloadLesson(lesson: Pick<Lesson, "id" | "load"> | undefined) {
 
 const ignoreReplay = () => undefined;
 
-function Playing({ module, onTouch }: { module: LessonModule; onTouch?: () => void }) {
+function Playing({ module }: { module: LessonModule }) {
   const [store] = useState(() => createModuleStore(module.initialState));
   const [timeline] = useState(
     () => new Timeline<TimelineFrame>({ framesPerSecond: module.framesPerSecond }),
@@ -99,9 +97,8 @@ function Playing({ module, onTouch }: { module: LessonModule; onTouch?: () => vo
   const update = useCallback<Update<ModuleState>>(
     (change, options) => {
       store.update(change, options);
-      if (options?.touch !== false) onTouch?.();
     },
-    [store, onTouch],
+    [store],
   );
   const props = useMemo(
     () => ({ state, update, timeline, side: "main" as const }),

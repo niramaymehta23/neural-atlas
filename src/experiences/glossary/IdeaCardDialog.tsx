@@ -22,16 +22,22 @@ type IdeaCardDialogProps = {
   id: string;
   onOpen: (id: string) => void;
   onClose: () => void;
+  /** It has closed: the focus goes back to where it was. */
+  onClosed?: () => void;
 };
 
 /** One idea on a card: a line about it, a small thing to try, and then its real name. */
-export function IdeaCardDialog({ id, onOpen, onClose }: IdeaCardDialogProps) {
+export function IdeaCardDialog({ id, onOpen, onClose, onClosed }: IdeaCardDialogProps) {
   return (
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-scrim" />
         <Dialog.Content
           aria-describedby={undefined}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            onClosed?.();
+          }}
           data-card={id}
           className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-card border border-hairline bg-card p-5 text-ink outline-none sm:top-[8vh] sm:bottom-auto sm:max-h-[84vh] sm:rounded-card"
         >

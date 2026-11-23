@@ -46,7 +46,8 @@ test("the search box finds the other pages", async ({ page }) => {
 
 test("a lesson's caption opens its card, whose real name waits for a touch", async ({ page }) => {
   await openPage(page, "/learn/rolling-downhill", "[data-region=scene]");
-  await page.getByRole("button", { name: uiCaptions.ideaCard }).first().click();
+  const opener = page.getByRole("button", { name: uiCaptions.ideaCard }).first();
+  await opener.click();
   const open = card(page, "rolling-downhill");
   await expect(open).toBeVisible(SOON);
   await expect(open.getByText("Gradient descent")).toHaveCount(0);
@@ -56,6 +57,18 @@ test("a lesson's caption opens its card, whose real name waits for a touch", asy
   await open.getByRole("navigation", { name: cards.nearby }).getByRole("button").first().click();
   await expect(card(page, "rolling-downhill")).toHaveCount(0);
   await page.keyboard.press("Escape");
+  await expect(page.locator("[data-card]")).toHaveCount(0);
+  await expect(opener).toBeFocused();
+});
+
+test("Back puts an open card away with the page it was opened on", async ({ page }) => {
+  await openPage(page, "/museum", "[data-room]");
+  await page.getByRole("link", { name: platformCaptions.nav.explore }).click();
+  await expect(page).toHaveURL(/\/explore$/);
+  await page.getByRole("button", { name: exploreCaptions.openCard("Zooming out") }).click();
+  await expect(card(page, "zooming-out")).toBeVisible(SOON);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/museum$/);
   await expect(page.locator("[data-card]")).toHaveCount(0);
 });
 

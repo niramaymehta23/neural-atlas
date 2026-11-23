@@ -79,6 +79,11 @@ test("a year leads to its room, and putting an exhibit away moves nothing", asyn
   await page.getByRole("link", { name: /^2016/ }).click();
   await expect(page.locator("[data-room=go]").getByRole("heading")).toBeInViewport();
   await expect(page).toHaveURL(/#room=go$/);
+  // The same year again, from somewhere else, goes there again.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.locator("[data-room=go]").getByRole("heading")).not.toBeInViewport();
+  await page.getByRole("link", { name: /^2016/ }).click();
+  await expect(page.locator("[data-room=go]").getByRole("heading")).toBeInViewport();
   const room = page.locator("[data-room=words]");
   await room.getByRole("button", { name: words.play }).click();
   await expect(room.locator("[data-region=stage] [data-testid]").first()).toBeVisible(SOON);

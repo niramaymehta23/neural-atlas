@@ -8,8 +8,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), prefetch:
 // The lessons have their own tests; here only that the stop's lesson is the one put on stage.
 vi.mock("../shell/LessonStage", () => ({
   preloadLesson: () => undefined,
-  LessonStage: ({ id, onTouch }: { id: string; onTouch?: () => void }) => (
-    <button type="button" data-lesson={id} onClick={onTouch}>
+  LessonStage: ({ id }: { id: string }) => (
+    <button type="button" data-lesson={id}>
       {id}
     </button>
   ),
@@ -94,5 +94,38 @@ describe("a journey's page", () => {
     fireEvent.click(screen.getByRole("button", { name: journey.stops[1]?.lesson }));
     act(() => void vi.advanceTimersByTime(AUTO_MS * 2));
     expect(stopNow()).toBe("2");
+  });
+
+  it("waits while nobody can see it", () => {
+    vi.useFakeTimers();
+    const sight = vi.spyOn(document, "visibilityState", "get");
+    render(<JourneyPage journey={journey} />);
+    fireEvent.click(screen.getByRole("switch", { name: "Move on by itself" }));
+    sight.mockReturnValue("hidden");
+    fireEvent(document, new Event("visibilitychange"));
+    act(() => void vi.advanceTimersByTime(AUTO_MS * 3));
+    expect(stopNow()).toBe("1");
+    sight.mockReturnValue("visible");
+    fireEvent(document, new Event("visibilitychange"));
+    act(() => void vi.advanceTimersByTime(AUTO_MS));
+    expect(stopNow()).toBe("2");
+    sight.mockRestore();
+  });
+
+  it("tapping the stop it is at goes nowhere, and earns nothing", () => {
+    window.history.replaceState(null, "", `/journeys/${journey.id}#stop=15`);
+    render(<JourneyPage journey={journey} />);
+    const before = window.history.length;
+    fireEvent.click(screen.getByRole("button", { name: /^15: / }));
+    expect(window.history.length).toBe(before);
+    expect(stopNow()).toBe("15");
+  });
+
+  it("stays where it is while Back leaves for another page", () => {
+    window.history.replaceState(null, "", `/journeys/${journey.id}#stop=3`);
+    render(<JourneyPage journey={journey} />);
+    window.history.replaceState(null, "", "/journeys");
+    fireEvent.popState(window);
+    expect(stopNow()).toBe("3");
   });
 });

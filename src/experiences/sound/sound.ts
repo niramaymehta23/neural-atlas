@@ -68,7 +68,8 @@ export function turnSoundOff(): void {
 }
 
 function ring(frequency: number, loudness: number, seconds: number, delay = 0) {
-  if (!context || context.state === "closed") return;
+  // Asleep (a hidden page), it would save every note up and play them all at once on waking.
+  if (context?.state !== "running") return;
   const start = context.currentTime + delay;
   const oscillator = context.createOscillator();
   const gain = context.createGain();

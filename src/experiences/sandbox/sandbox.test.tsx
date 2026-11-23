@@ -157,14 +157,20 @@ describe("the sandbox page", () => {
   it(
     "a link replays to the very same moment, without running",
     async () => {
-      const first = await openAt({ model: "relay", garden: "moons", steps: 25 });
-      await waitFor(() => expect(Number(right())).toBeGreaterThan(0.6), WAIT);
-      const seen = right();
+      const link = { model: "relay", garden: "moons", steps: 25 } as const;
+      const config = configOf({ ...initialState, ...link });
+      if (!config) throw new Error("nothing to practise on");
+      const run = createLabRun(config);
+      for (let step = 0; step < link.steps; step += 1) run.advance();
+      const moment = run.moment();
+      const expected = moment.kind === "garden" ? `${moment.right}` : "";
+      const first = await openAt(link);
+      await waitFor(() => expect(right()).toBe(expected), WAIT);
       expect(document.querySelector("[data-run]")).toHaveAttribute("data-run", "off");
       expect(screen.getByText("You are looking at someone else’s view.")).toBeInTheDocument();
       first.unmount();
-      await openAt({ model: "relay", garden: "moons", steps: 25 });
-      await waitFor(() => expect(right()).toBe(seen), WAIT);
+      await openAt(link);
+      await waitFor(() => expect(right()).toBe(expected), WAIT);
       expect(steps()).toBe(25);
       fireEvent.click(button("Start from your own view"));
       await waitFor(() => expect(steps()).toBe(0), WAIT);

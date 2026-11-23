@@ -56,9 +56,10 @@ export function TheatrePage() {
   const teller = fetched.status === "ready" ? fetched.teller : null;
   const on = programme && showAt(programme, turn, fetched.status !== "failed");
   // A show that broke is built afresh with another seed, since the same one would break again.
+  const cast = on === "words" ? teller : null;
   const show = useMemo(
-    () => (on ? buildShow(on, on === "words" ? teller : null, 1 + turn + attempt) : null),
-    [on, teller, turn, attempt],
+    () => (on ? buildShow(on, cast, 1 + turn + attempt) : null),
+    [on, cast, turn, attempt],
   );
   const playing = !paused && !broken && show !== null;
   const idle = useIdle(paused || broken || show === null);
@@ -109,7 +110,7 @@ export function TheatrePage() {
       data-idle={idle}
       className={`flex h-dvh min-h-96 flex-col bg-paper ${idle ? "cursor-none" : ""}`}
     >
-      <header className={`${strip} justify-between`}>
+      <header data-fades className={`${strip} justify-between`}>
         <h1 tabIndex={-1} className="text-2xl outline-none">
           {pages.theatre.title}
         </h1>
@@ -151,7 +152,7 @@ export function TheatrePage() {
         )}
       </div>
       <p className="px-4 text-center text-sm text-ink-soft">{on && words.under[on]}</p>
-      <div data-controls className={strip}>
+      <div data-controls data-fades className={strip}>
         <div role="group" aria-label={words.programme.label} className="flex flex-wrap gap-2">
           {PROGRAMMES.map((id) => (
             <button

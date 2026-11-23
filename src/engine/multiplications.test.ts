@@ -2,10 +2,15 @@ import { gradient, paramCount, predict, type DenseSpec } from "./autodiff/dense"
 import { MLP } from "./autodiff/nn";
 import type { Value } from "./autodiff/value";
 import { createReader, freshGpt, scoresOf } from "./language/tiny-gpt";
+import { runRelay } from "./ml/boost";
 import { vote } from "./ml/knn";
 import { buildRoad } from "./ml/svm";
+import { growTree } from "./ml/tree";
 import { counting, multiplications, multiplied } from "./multiplications";
 import { createRandom } from "./random";
+import type { World } from "./rl/gridworld";
+import { sweep } from "./rl/mdp";
+import { createHabitLearner, returnsOf } from "./rl/policy-gradient";
 import { createQRunner } from "./rl/q-learning";
 import { createNet, forward } from "./rl/tiny-net";
 
@@ -90,5 +95,29 @@ describe("the compute meter's count", () => {
     const net = createNet({ inputs: 9, hidden: 4, outputs: 2 }, 1);
     const square = [0, 0, 1, 0, 0, 0, 0, 0, 0];
     expect(counting(() => forward(net, square)).times).toBe(4 + 8);
+  });
+
+  it("questions, relays, the planner and the habit follower count by hand", () => {
+    // Four dots in a row: three places to cut across, none up or down.
+    const row = [0, 1, 2, 3].map((x) => ({ x, y: 0, label: x < 2 ? 0 : 1 }));
+    // The box's impurity squares two shares; a cut squares four and weighs two sides.
+    expect(counting(() => growTree(row, { depth: 1 })).times).toBe(2 + 3 * (4 + 2));
+    // How sure about each dot, the whole, two squares a cut, and the rate on both leaves.
+    expect(counting(() => runRelay(row, { runners: 1, depth: 1, rate: 0.5 })).times).toBe(
+      4 + 1 + 3 * 2 + 2,
+    );
+    // One floor square beside the bowl and no sliding: three moves stay, one ends the try.
+    const world: World = { columns: 2, rows: 1, tiles: ["floor", "goal"], start: 0 };
+    const rules = { slip: 0, stepReward: 0, care: 0.9 };
+    expect(counting(() => sweep(world, [0, 0], rules)).times).toBe(3 * 2 + 1);
+    expect(counting(() => returnsOf([0, 0, 1], 0.9)).times).toBe(3);
+    const learner = createHabitLearner(world, { batch: 1, nudge: 0.5 }, 1);
+    const moves = (times: number) => {
+      const { result, times: counted } = counting(() => learner.play());
+      // Its returns, four moves' shares a step, every preference; then the usual, once known.
+      expect(counted).toBe(result.moves.length * 5 + 8 + times);
+    };
+    moves(0);
+    moves(1);
   });
 });

@@ -16,6 +16,14 @@ import { ideaOf, roomFromHash, rooms, type Room, type RoomId } from "./rooms";
 /** Rooms to try before the visit counts. */
 export const ROOMS_FOR_STAR = 5;
 
+/** Brings a room into view and gives its heading the focus. */
+function visitRoom(id: RoomId | null) {
+  const element = id && document.getElementById(id);
+  if (!element) return;
+  element.scrollIntoView({ block: "start" });
+  element.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+}
+
 type RoomViewProps = { room: Room; open: boolean; onOpen: (id: RoomId | null) => void };
 
 function RoomView({ room, open, onOpen }: RoomViewProps) {
@@ -108,13 +116,7 @@ export function MuseumPage() {
 
   // An address with a room goes to that room (its exhibit waits to be asked for).
   useEffect(() => {
-    const visit = () => {
-      const room = roomFromHash(window.location.hash);
-      const element = room && document.getElementById(room);
-      if (!element) return;
-      element.scrollIntoView({ block: "start" });
-      element.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
-    };
+    const visit = () => visitRoom(roomFromHash(window.location.hash));
     visit();
     window.addEventListener("hashchange", visit);
     return () => window.removeEventListener("hashchange", visit);
@@ -124,13 +126,16 @@ export function MuseumPage() {
     <PageFrame title={pages.museum.title} opening={pages.museum.opening}>
       <nav
         aria-label={words.years}
-        className="sticky top-0 z-20 -mx-4 overflow-x-auto border-b border-hairline bg-paper px-4 py-2 md:mx-0 md:px-0"
+        // On a phone the top belongs to the exhibit, which stays in view there.
+        className="-mx-4 overflow-x-auto border-b border-hairline bg-paper px-4 py-2 md:sticky md:top-0 md:z-20 md:mx-0 md:px-0"
       >
         <ul className="flex w-max gap-1">
           {rooms.map(({ id, year, title }) => (
             <li key={id}>
               <a
                 href={`#room=${id}`}
+                // The address changes only the first time; a second tap goes there too.
+                onClick={() => visitRoom(id)}
                 aria-label={`${year}: ${title}`}
                 className="inline-flex min-h-11 items-center rounded-pill px-3 text-sm text-accent-ink underline-offset-4 hover:underline"
               >

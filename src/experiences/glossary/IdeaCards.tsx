@@ -1,7 +1,9 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ComponentProps,
@@ -32,10 +34,15 @@ export const CARDS_FOR_STAR = 3;
  * first one opened, so pages that open none pay nothing.
  */
 export function IdeaCards({ children }: { children: ReactNode }) {
-  const [id, setId] = useState<string | null>(null);
+  const path = usePathname();
+  /** The card asked for, and the page it was asked for on: it never follows you to another. */
+  const [asked, setAsked] = useState<{ id: string; path: string } | null>(null);
+  const id = asked?.path === path ? asked.id : null;
   const [Loaded, setLoaded] = useState<Dialog | null>(null);
   const [failed, setFailed] = useState(false);
   const seen = useRef(new Set<string>());
+  /** What had the focus when the first card opened, and gets it back when the last one closes. */
+  const opener = useRef<Element | null>(null);
 
   const load = useCallback(() => {
     setFailed(false);
@@ -46,19 +53,32 @@ export function IdeaCards({ children }: { children: ReactNode }) {
   }, []);
   const open = useCallback(
     (next: string) => {
-      setId(next);
+      if (id === null) opener.current = document.activeElement;
+      setAsked({ id: next, path });
       seen.current.add(next);
-      if (seen.current.size >= CARDS_FOR_STAR) void award("words");
       load();
     },
-    [load],
+    [load, id, path],
   );
-  const close = useCallback(() => setId(null), []);
+  const close = useCallback(() => {
+    setAsked(null);
+    // Said once the card is out of the way, so the note is not hidden beneath it.
+    if (seen.current.size >= CARDS_FOR_STAR) void award("words");
+  }, []);
+  const giveFocusBack = useCallback(() => {
+    if (opener.current instanceof HTMLElement && opener.current.isConnected) opener.current.focus();
+  }, []);
+
+  // Back or Forward puts the card away, on the same page too (a journey's stops).
+  useEffect(() => {
+    window.addEventListener("popstate", close);
+    return () => window.removeEventListener("popstate", close);
+  }, [close]);
 
   return (
     <IdeaCardScope open={open}>
       {children}
-      {id && Loaded && <Loaded id={id} onOpen={open} onClose={close} />}
+      {id && Loaded && <Loaded id={id} onOpen={open} onClose={close} onClosed={giveFocusBack} />}
       {id && !Loaded && (
         <div
           role={failed ? "alert" : "status"}

@@ -51,6 +51,7 @@ function fitRunner(
     }
     const leaf: Nudge = { kind: "leaf", value: g / (h + DAMPING) };
     if (left <= 0 || indices.length < 2 * minLeaf) return leaf;
+    multiplied(1);
     const whole = (g * g) / (h + DAMPING);
     let best: { feature: 0 | 1; threshold: number; gain: number } | null = null;
     for (const feature of [0, 1] as const) {
@@ -97,10 +98,12 @@ function fitRunner(
   );
 }
 
-const scale = (nudge: Nudge, by: number): Nudge =>
-  nudge.kind === "leaf"
-    ? { kind: "leaf", value: nudge.value * by }
-    : { ...nudge, low: scale(nudge.low, by), high: scale(nudge.high, by) };
+function scale(nudge: Nudge, by: number): Nudge {
+  if (nudge.kind === "split")
+    return { ...nudge, low: scale(nudge.low, by), high: scale(nudge.high, by) };
+  multiplied(1);
+  return { kind: "leaf", value: nudge.value * by };
+}
 
 export function nudgeAt(nudge: Nudge, x: number, y: number): number {
   let node = nudge;
