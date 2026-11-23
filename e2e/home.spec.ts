@@ -1,6 +1,7 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { world6 } from "../src/catalog/world-6";
 import { budget, recordPerf } from "./frames";
+import { expect, test } from "./slowed";
 import { watch } from "./watch";
 
 // The stars float, so their links never hold still: pointer actions skip the stability wait.
@@ -51,6 +52,26 @@ async function seedProgress(page: Page, lessons: Record<string, typeof done>) {
       }),
     { lessons },
   );
+}
+
+/**
+ * Runs the map without painting it: every frame still moves the stars and places the labels, but
+ * the triangles are only counted. Drawn in software, as on CI, one painting of the map costs about
+ * 140 ms of CPU, so a check that reads only labels should not wait through hundreds of them.
+ */
+async function unpainted(page: Page) {
+  await page.addInitScript(() => {
+    const unpaintedDraws = { count: 0 };
+    Object.assign(window, { unpaintedDraws });
+    const count = () => {
+      unpaintedDraws.count += 1;
+    };
+    Object.assign(WebGL2RenderingContext.prototype, { drawElements: count, drawArrays: count });
+  });
+  return () =>
+    page.evaluate(
+      () => (window as unknown as { unpaintedDraws: { count: number } }).unpaintedDraws.count,
+    );
 }
 
 /** Whether the element at the centre of each star is that star's own link (or another star). */
@@ -364,6 +385,7 @@ for (const size of [
 
 test("every star's label stays inside a 375px screen", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 740 });
+  const draws = await unpainted(page);
   await openHome(page);
   // One loop inside the page, so 74 stars cost 74 label renders, not hundreds of round trips
   // (a software-drawn map on CI made the per-star version outrun the test's time).
@@ -396,6 +418,8 @@ test("every star's label stays inside a 375px screen", async ({ page }) => {
     return failed;
   });
   expect(outside).toEqual([]);
+  // The map was running all along: it asked for its 74 beads frame after frame.
+  expect(await draws()).toBeGreaterThan(74 * 10);
 });
 
 test.describe("on a touch screen", () => {

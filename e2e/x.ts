@@ -6,9 +6,9 @@ import type { Reader } from "./w5";
 
 /**
  * Shared steps for the experiences' browser tests (`e2e/x-*.spec.ts`). Like World 6's, they run on
- * a CPU slowed four times with `E2E_CPU_THROTTLE=4` (see `e2e/w6.ts`).
+ * a CPU slowed four times with `E2E_CPU_THROTTLE=4` (see `e2e/slowed.ts`).
  */
-export { expect, slowed, test } from "./w6";
+export { expect, slowed, test } from "./slowed";
 export { attributeOf, textOf, type Reader } from "./w5";
 export { watch } from "./watch";
 
