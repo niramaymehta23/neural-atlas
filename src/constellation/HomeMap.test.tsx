@@ -34,6 +34,19 @@ vi.mock("./ConstellationScene", () => ({
   },
 }));
 vi.mock("@/platform/SiteNav", () => ({ SiteNav: () => <nav aria-label="Around the atlas" /> }));
+// Every lesson is built from stage 10 on. Here Treats and tricks is unbuilt again, so the map's
+// "still being drawn" paths (a locked star, the fade across) stay covered.
+vi.mock("@/catalog/world-6", async (importOriginal) => {
+  const { world6 } = await importOriginal<typeof import("@/catalog/world-6")>();
+  return {
+    world6: {
+      ...world6,
+      lessons: world6.lessons.map((lesson) =>
+        lesson.id === "treats-and-tricks" ? { ...lesson, load: undefined } : lesson,
+      ),
+    },
+  };
+});
 
 describe("HomeMap", () => {
   beforeEach(() => {

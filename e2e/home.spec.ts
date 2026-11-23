@@ -81,17 +81,14 @@ test("the home map shows all 74 ideas and a paper label on hover", async ({ page
   expect(errors).toEqual([]);
 });
 
-test("ideas still being drawn say so; built ones don't", async ({ page }) => {
+test("every idea is drawn now: no star says it is still being drawn", async ({ page }) => {
+  // From stage 10 every lesson is built; the locked star and its fade across are unit-tested in
+  // src/constellation/HomeMap.test.tsx with one lesson made unbuilt again.
   await openHome(page);
   await page.locator('[data-star="treats-and-tricks"]').hover(steady);
-  await expect(page.getByRole("tooltip")).toContainText("Still being drawn");
-  await expect(
-    page.getByRole("link", { name: "Treats and tricks, Still being drawn" }),
-  ).toBeAttached();
-  await page.mouse.move(0, 0);
-  await page.locator('[data-star="stacking-cells"]').hover(steady);
-  await expect(page.getByRole("tooltip")).toContainText("Stacking cells");
+  await expect(page.getByRole("tooltip")).toContainText("Treats and tricks");
   await expect(page.getByRole("tooltip")).not.toContainText("Still being drawn");
+  await expect(page.getByRole("link", { name: /Still being drawn/ })).toHaveCount(0);
 });
 
 test("a learned idea is announced as learned", async ({ page }) => {
@@ -212,18 +209,6 @@ test("clicking a built idea flies in, with its lesson already fetched", async ({
   expect(
     await page.evaluate(() => (window as typeof window & { sawLoading?: boolean }).sawLoading),
   ).toBe(false);
-});
-
-test("an idea still being drawn fades across instead of flying", async ({ page }) => {
-  await openHome(page);
-  // Treats and tricks is still being drawn. Other stars are drawn over parts of it, so it is opened
-  // from the keyboard, which reaches it whatever lies in front.
-  const idea = page.getByRole("link", { name: "Treats and tricks, Still being drawn" });
-  await settled(idea);
-  await idea.focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("main")).toHaveAttribute("data-leaving", "fade");
-  await page.waitForURL("**/learn/treats-and-tricks");
 });
 
 test("a modifier-click on a star opens it in a new tab", async ({ page, context }) => {
