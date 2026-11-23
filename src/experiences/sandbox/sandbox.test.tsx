@@ -138,7 +138,7 @@ describe("the sandbox page", () => {
       expect(steps()).toBe(0);
       fireEvent.click(button("Start practising"));
       await waitFor(() => expect(steps()).toBe(mostSteps(initialState)), WAIT);
-      await screen.findAllByText(/in the right place/, undefined, WAIT);
+      await screen.findAllByText(/in the right group/, undefined, WAIT);
       const times = document
         .querySelector("[data-multiplications]")
         ?.getAttribute("data-multiplications");

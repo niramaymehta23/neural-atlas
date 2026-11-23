@@ -120,9 +120,9 @@ export const sandboxCaptions = {
   result: {
     gardenStart: "It has not practised yet.",
     fresh: (right: number) =>
-      `${outOf(right, { total: 100, noun: "new dots" })} in the right place.`,
+      `It puts ${outOf(right, { total: 100, noun: "new dots" })} in the right group.`,
     own: (right: number) =>
-      `${outOf(right, { total: 100, noun: "of your dots" })} in the right place.`,
+      `It puts ${outOf(right, { total: 100, noun: "of your dots" })} in the right group.`,
     board: (right: number) =>
       `It would reach the bowl ${outOf(right, { total: 100, noun: "times" })}.`,
   },
