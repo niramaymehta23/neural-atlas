@@ -11,6 +11,8 @@ export const world6: WorldEntry = {
       idea: "Learn by trying things and getting rewards",
       playWith: "Train a puppy with treats",
       prerequisites: ["teach-by-showing"],
+      load: () =>
+        import("@/modules/w6-reinforcement/treats-and-tricks").then(({ definition }) => definition),
     },
     {
       id: "new-or-favourite",
@@ -19,6 +21,8 @@ export const world6: WorldEntry = {
       idea: "Try a new restaurant or go back to your favourite?",
       playWith: "A casino of mystery slot machines",
       prerequisites: ["treats-and-tricks"],
+      load: () =>
+        import("@/modules/w6-reinforcement/new-or-favourite").then(({ definition }) => definition),
     },
     {
       id: "the-game-board",
