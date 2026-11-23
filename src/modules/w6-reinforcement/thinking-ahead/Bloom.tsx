@@ -4,7 +4,7 @@ import type { Branch } from "@/engine/rl/mcts";
 import { Disc } from "./Disc";
 import { IT, YOU } from "./model";
 
-const ROOT = { x: 100, y: 102 };
+const ROOT = { x: 100, y: 118 };
 /** Its moves fan over this arc, left column on the left, like the board above. */
 const FAN = { from: 168, to: 12 };
 /** Replies fan this far either side of the move they answer, then answers to those. */
@@ -44,7 +44,7 @@ function grow(branches: readonly Branch[], total: number, favourite: number): Tw
           ? FAN.from + ((FAN.to - FAN.from) * branch.column) / 6
           : angle + ((branch.column - 3) / 3) * (SPREAD[depth] ?? 20);
       const reach =
-        [22 + 28 * Math.sqrt(share), 7 + 16 * Math.sqrt(share), 4 + 10 * Math.sqrt(share)][depth] ??
+        [26 + 38 * Math.sqrt(share), 9 + 22 * Math.sqrt(share), 5 + 13 * Math.sqrt(share)][depth] ??
         4;
       // Rounded, so the picture is the same wherever the maths ran.
       const to = {
@@ -82,7 +82,7 @@ type BloomProps = {
 export function Bloom({ branches, total, favourite, label }: BloomProps) {
   const twigs = grow(branches, total, favourite);
   return (
-    <svg role="img" aria-label={label} viewBox="0 0 200 108" className="h-auto w-full" data-bloom>
+    <svg role="img" aria-label={label} viewBox="0 0 200 122" className="h-auto w-full" data-bloom>
       {twigs.map((twig) => (
         <line
           key={twig.key}

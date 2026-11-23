@@ -32,7 +32,7 @@ export function HabitStrip({ takes, label }: { takes: readonly number[]; label: 
             {Array.from({ length: take }, (_, at) => (
               <rect
                 key={at}
-                x={left + CELL / 2 - 3.5 + at * 3}
+                x={left + CELL / 2 - 0.8 + (at - (take - 1) / 2) * 2.6}
                 y={4}
                 width={1.6}
                 height={12}

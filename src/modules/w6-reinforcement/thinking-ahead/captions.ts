@@ -51,8 +51,8 @@ export const words = {
     ],
   },
   board: "The game board: seven columns, six holes high",
-  you: "Your discs (plain, with a ring)",
-  it: "Its discs (dark, with a cross)",
+  you: "Your discs: with a ring",
+  it: "Its discs: with a cross",
   column: (column: number, room: number) =>
     room > 0
       ? `Drop a disc in the ${ORDINAL[column] ?? ""} column (room for ${count(room)} more)`

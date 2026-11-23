@@ -14,6 +14,28 @@ export const captions = {
   },
 };
 
+/** Pile counts in words, up to all sixteen piles that have a perfect move. */
+const PILES = [
+  "none",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "all sixteen",
+];
+const piles = (known: number) => PILES[known] ?? count(known);
+
 export const words = {
   games: {
     label: "How many practice games",
@@ -53,13 +75,13 @@ export const words = {
   habits: {
     title: "What each one takes, from twenty-one sticks down to one",
     picture: (name: string, knows: number) =>
-      `${name}'s favourite take for every number of sticks left. It makes the perfect move from ${count(knows)} of the sixteen piles where one exists.`,
+      `${name}'s favourite take for every number of sticks left. It makes the perfect move from ${piles(knows)} of the sixteen piles where one exists.`,
     star: "Starred: the move a perfect player would make",
     none: "Dash: no move wins from here against a perfect player",
     frozen: "Pop is frozen: its habits never change",
     before: "Before practice, each copy has its own random little habits.",
     knows: (name: string, knows: number) =>
-      `${name} makes the perfect move from ${count(knows)} of sixteen piles.`,
+      `${name} makes the perfect move from ${piles(knows)} of the sixteen piles where one exists.`,
   },
   chart: {
     title: "How Pip is doing",

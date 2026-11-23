@@ -29,7 +29,7 @@ export function PracticeScene(props: Props) {
   const shown = state.runs > 0 ? timeline.at(cursor) : undefined;
   const ours = shown && shown.key === keyOf(state) ? shown : undefined;
   const upTo = ours ? timeline.frames().slice(0, cursor + 1) : [];
-  const partner = upTo.flatMap(({ pipShare }) => (pipShare === null ? [] : [pipShare]));
+  const partner = upTo.map(({ pipShare }) => pipShare);
   const newcomer = upTo.map(({ testShare }) => testShare);
   const lastTaker = ours?.last?.winner === 0 ? words.names.pip : words.names.pop;
 
@@ -89,7 +89,11 @@ export function PracticeScene(props: Props) {
       </section>
       <section className="flex flex-col gap-1">
         <h3 className="font-serif text-base">{words.chart.title}</h3>
-        <PracticeChart partner={partner} newcomer={newcomer} />
+        <PracticeChart
+          partner={partner}
+          newcomer={newcomer}
+          moments={ours ? timeline.getState().length : 0}
+        />
         <div className="flex flex-wrap gap-x-4 text-xs text-ink-soft">
           <span>{words.chart.partner}</span>
           <span>{words.chart.newcomer}</span>

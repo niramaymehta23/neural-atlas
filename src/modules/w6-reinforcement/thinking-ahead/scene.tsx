@@ -181,14 +181,10 @@ export function AheadScene({ state, update, timeline, side }: Props) {
         </p>
       </section>
       <section className="flex min-w-0 flex-col gap-2 md:w-1/2" data-tree>
-        <h3 className="font-serif text-base">
-          {words.tree.title}
-          {position && (
-            <span className="ml-2 text-sm font-normal text-ink-soft">
-              {thinkingNow ? words.tree.now : words.tree.last}
-            </span>
-          )}
-        </h3>
+        <h3 className="font-serif text-base">{words.tree.title}</h3>
+        <p className="min-h-5 text-sm text-ink-soft">
+          {position ? (thinkingNow ? words.tree.now : words.tree.last) : ""}
+        </p>
         {position ? (
           <Bloom
             branches={thinking?.bloom ?? []}
@@ -197,7 +193,7 @@ export function AheadScene({ state, update, timeline, side }: Props) {
             label={words.tree.picture}
           />
         ) : (
-          <div className="flex aspect-[200/108] items-center justify-center rounded-card border border-dashed border-hairline p-4 text-center text-sm text-ink-soft">
+          <div className="flex aspect-[200/122] items-center justify-center rounded-card border border-dashed border-hairline p-4 text-center text-sm text-ink-soft">
             {words.tree.empty}
           </div>
         )}

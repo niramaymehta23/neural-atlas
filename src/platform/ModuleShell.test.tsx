@@ -159,4 +159,25 @@ describe("ModuleShell", () => {
       screen.getByRole("slider", { name: "How big a step" }).getAttribute("aria-valuenow"),
     ).toBe("0.2");
   });
+
+  it("keeps a compare half with no frame at the shown moment still (no endless re-sync)", async () => {
+    const seen: ModuleViewProps<{ step: number; steps: number }>[] = [];
+    const Spy = (props: ModuleViewProps<{ step: number; steps: number }>) => {
+      seen.push(props);
+      return null;
+    };
+    const spying: LessonModule = { ...valleyModule, scene: Spy as LessonModule["scene"] };
+    render(<ModuleShell lesson={{ ...valleyLesson, id: "shell-empty-compare" }} module={spying} />);
+    const main = seen.findLast(({ side }) => side === "main");
+    act(() => {
+      for (const epoch of [0, 10, 20]) main?.timeline.record({ epoch, loss: 1 });
+      main?.timeline.seek(1);
+    });
+    // The right half has recorded nothing yet: scrubbing it finds no frame at epoch 10.
+    await userEvent.click(screen.getByRole("switch", { name: "Compare side by side" }));
+    const alternative = seen.findLast(({ side }) => side === "alternative");
+    expect(alternative?.timeline.current()).toBeUndefined();
+    act(() => main?.timeline.seek(2));
+    expect(main?.timeline.current()?.epoch).toBe(20);
+  });
 });
