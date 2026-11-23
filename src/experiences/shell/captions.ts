@@ -8,6 +8,11 @@ export const shellCaptions = {
   replay: "Practise again",
   pause: "Pause",
   again: "Start over",
+  card: {
+    close: "Close the card",
+    loading: "Finding the card…",
+    failed: "The card couldn’t load. Check the connection, then try again.",
+  },
   workerFailed: "The practice stopped because something went wrong. Start over to try once more.",
 };
 

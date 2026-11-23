@@ -19,6 +19,7 @@ import type { WorldNumber } from "@/platform/contract";
 import type { Vec3 } from "@/scene3d/CameraRig";
 import { SoftStage } from "@/scene3d/SoftStage";
 import { constellationCaptions as captions } from "./captions";
+import { ExtraStars, type ExtraStar } from "./ExtraStars";
 import { startFloating } from "./floating";
 import {
   DIMMED,
@@ -46,6 +47,8 @@ type ConstellationSceneProps = {
   /** The learner pointed at or focused an idea (a good moment to fetch its lesson). */
   onPoint: (id: string) => void;
   onChoose: (id: string) => void;
+  /** Stars earned beyond the ideas, in the order they take their places. */
+  extras?: readonly ExtraStar[];
   /** Shown instead of the map where 3D cannot run (no WebGL, or it failed). */
   fallback: ReactNode;
 };
@@ -125,6 +128,7 @@ export function ConstellationScene({
   flyingTo,
   onPoint,
   onChoose,
+  extras = [],
   fallback,
 }: ConstellationSceneProps) {
   const still = useReducedMotion();
@@ -196,6 +200,7 @@ export function ConstellationScene({
                   ))}
               </Drift>
             ))}
+            {world === null && !flyingTo && <ExtraStars extras={extras} overlay={portal} />}
             <Links stars={stars} links={lines.chosen} colour={link} opacity={0.85} still={still} />
             <Links stars={stars} links={lines.other} colour={link} opacity={DIMMED} still={still} />
           </Parallax>

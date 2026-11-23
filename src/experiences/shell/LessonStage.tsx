@@ -11,6 +11,7 @@ import { fetchedLesson, fetchLesson } from "@/platform/lesson-cache";
 import { createModuleStore } from "@/platform/module-store";
 import { SceneDescription } from "@/platform/SceneDescription";
 import { TimelineBar } from "@/platform/TimelineBar";
+import { IdeaCardButton } from "@/ui/glossary/idea-cards";
 import { StoryCaption } from "@/ui/StoryCaption";
 import { BUTTON, LINK } from "./buttons";
 import { shellCaptions } from "./captions";
@@ -70,11 +71,12 @@ export function LessonStage({ id, onTouch }: LessonStageProps) {
           {shellCaptions.lessonLoading}
         </p>
       )}
-      <p className="text-sm">
+      <div className="flex flex-wrap items-center gap-x-6 text-sm">
+        <IdeaCardButton about={id} />
         <Link href={`/learn/${id}`} className={`inline-flex min-h-11 items-center ${LINK}`}>
           {shellCaptions.openLesson(lesson.title)}
         </Link>
-      </p>
+      </div>
     </div>
   );
 }

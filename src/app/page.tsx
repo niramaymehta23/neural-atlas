@@ -1,5 +1,5 @@
-import { HomeMap } from "@/constellation/HomeMap";
+import { HomePageMap } from "./HomePageMap";
 
 export default function HomePage() {
-  return <HomeMap />;
+  return <HomePageMap />;
 }

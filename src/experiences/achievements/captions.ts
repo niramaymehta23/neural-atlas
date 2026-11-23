@@ -27,6 +27,6 @@ export const achievementCaptions = {
     race: { title: "Racer", how: "Finish a race between two players." },
     mend: { title: "Breaker and fixer", how: "Finish a round of break and repair." },
     sound: { title: "Listener", how: "Listen to a learner learning." },
-    words: { title: "Word collector", how: "Open three word cards." },
+    words: { title: "Idea collector", how: "Open three idea cards." },
   },
 };

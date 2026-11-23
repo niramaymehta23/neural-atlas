@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type RefObject,
-} from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /** Controls fade after this long without a touch, a move or a key. */
 export const IDLE_MS = 4_000;
@@ -18,7 +11,7 @@ function subscribeToFull(onChange: () => void) {
 }
 
 /** Filling the screen, where the browser can. Elsewhere the page already fills its window. */
-export function useFullScreen(stage: RefObject<HTMLElement | null>) {
+export function useFullScreen() {
   const able = useSyncExternalStore(
     () => () => {},
     () => document.fullscreenEnabled === true,
@@ -33,12 +26,13 @@ export function useFullScreen(stage: RefObject<HTMLElement | null>) {
   const toggle = useCallback(async () => {
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
-      else await stage.current?.requestFullscreen();
+      // The whole page, so an idea card can open over the show.
+      else await document.documentElement.requestFullscreen();
       setRefused(false);
     } catch {
       setRefused(true);
     }
-  }, [stage]);
+  }, []);
   return { able, full, refused, toggle };
 }
 

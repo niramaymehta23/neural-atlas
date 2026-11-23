@@ -124,6 +124,22 @@ export function layoutConstellation(lessons: readonly Lesson[]): { stars: Star[]
   return { stars, links };
 }
 
+/** Two staggered rows along the far edge of the map; the nearer one leaves room for the top group. */
+const SKY = [
+  { back: -4.95, across: [0, 1.2, 2.4, 3.6, 4.8] },
+  { back: -3.7, across: [1.69, 2.8, 3.92, 5.04] },
+] as const;
+
+/** Where extra stars (achievements) go: a sky along the far edge, clear of every idea, its rows staggered. */
+export function extraPlaces(): Vec3[] {
+  return SKY.flatMap(({ back, across }) =>
+    across
+      .flatMap((x) => (x === 0 ? [0] : [-x, x]))
+      .sort((a, b) => a - b)
+      .map((x): Vec3 => [x, MIDDLE_HEIGHT, back]),
+  );
+}
+
 /** How far a world's group has drifted up or down at this moment: a slow, gentle bob. */
 export function floatOffset(world: WorldNumber, seconds: number): number {
   return FLOAT.height * Math.sin((seconds / FLOAT.seconds) * Math.PI * 2 + world);

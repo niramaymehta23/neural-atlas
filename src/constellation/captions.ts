@@ -12,6 +12,8 @@ export const constellationCaptions = {
   locked: "Still being drawn",
   open: "Open",
   skip: "Skip to the map",
+  extras: "Stars you have earned",
+  extra: (title: string) => `A star you earned: ${title}`,
   list: "Every idea, group by group",
   allDone: "You have learned every idea that is ready. More ideas are being drawn.",
   forgetful: "This browser won’t remember your progress.",

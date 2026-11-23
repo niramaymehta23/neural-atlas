@@ -45,6 +45,10 @@ const PLACES: readonly { id: RoomId; year: number; exhibit: Exhibit }[] = [
 
 export const rooms: readonly Room[] = PLACES.map((place) => ({ ...place, ...words[place.id] }));
 
+/** The idea a room is about, for its card. */
+export const ideaOf = (exhibit: Exhibit) =>
+  exhibit.kind === "lesson" ? exhibit.lesson : "splitting-into-groups";
+
 /** The room an address asks for (`#room=go`), if there is one. */
 export function roomFromHash(hash: string): RoomId | null {
   const asked = new URLSearchParams(hash.replace(/^#/, "")).get("room");

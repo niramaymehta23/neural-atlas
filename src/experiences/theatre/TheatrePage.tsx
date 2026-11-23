@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { platformCaptions } from "@/platform/captions";
+import { IdeaCardButton } from "@/ui/glossary/idea-cards";
 import { award } from "../achievements/achievements";
 import { BUTTON, LINK } from "../shell/buttons";
 import { pages } from "../shell/captions";
@@ -15,6 +16,7 @@ import {
   showAt,
   TURN_SECONDS,
   type Programme,
+  type ShowId,
 } from "./programme";
 import { useAwake, useFullScreen, useIdle } from "./use-screen";
 import { useTeller } from "./use-teller";
@@ -22,13 +24,18 @@ import { useTheatre } from "./use-theatre";
 
 /** A minute of watching earns the star. */
 const STAR_SECONDS = 60;
+/** The lesson each show comes from, for its idea card. */
+const IDEA: Record<ShowId, string> = {
+  words: "guess-the-next-word",
+  shapes: "stacking-cells",
+  explorer: "scoring-every-move",
+};
 
 /**
  * A whole screen of a small model thinking. The controls sit on their own strips, so nothing is
  * ever drawn under them, and fade when nobody is touching anything.
  */
 export function TheatrePage() {
-  const stage = useRef<HTMLElement>(null);
   const [programme, setProgramme] = useState<Programme | null>(null);
   const [turn, setTurn] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -37,7 +44,7 @@ export function TheatrePage() {
   const [label, setLabel] = useState("");
   const watched = useRef({ turn: 0, all: 0 });
   const { fetched, retry } = useTeller();
-  const { able, full, refused, toggle } = useFullScreen(stage);
+  const { able, full, refused, toggle } = useFullScreen();
 
   useEffect(() => {
     const read = () => setProgramme(programmeFromHash(window.location.hash));
@@ -97,7 +104,6 @@ export function TheatrePage() {
   const strip = `flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 transition-opacity has-[a:focus-visible,button:focus-visible]:opacity-100 motion-reduce:transition-none ${idle ? "opacity-0" : ""}`;
   return (
     <main
-      ref={stage}
       data-theatre={on ?? undefined}
       data-playing={playing}
       data-idle={idle}
@@ -167,6 +173,7 @@ export function TheatrePage() {
           >
             {paused ? words.play : words.pause}
           </button>
+          {on && <IdeaCardButton about={IDEA[on]} />}
           {able && (
             <button type="button" className={`${BUTTON} min-w-44`} onClick={() => void toggle()}>
               {full ? words.shrink : words.full}

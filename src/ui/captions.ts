@@ -12,6 +12,7 @@ export const uiCaptions = {
     hideHint: "Hide the hint",
   },
   termLead: "You just did",
+  ideaCard: "Idea card",
   drawer: "Peek under the hood",
   theme: { label: "Page colour", day: "Day", night: "Night" },
   timeline: {

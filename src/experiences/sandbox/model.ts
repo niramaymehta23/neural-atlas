@@ -104,13 +104,30 @@ export const mostSteps = (state: Pick<SandboxState, "place" | "model" | "agent">
 export const stepsPerSecond = (state: Pick<SandboxState, "place" | "model" | "agent">) =>
   Math.max(1, mostSteps(state) / WATCH_SECONDS);
 
-/** What to practise, or null while there is nothing to learn from. */
+/** The lesson each learner comes from, for its idea card. */
+export const IDEAS: Record<GardenModel | BoardAgent, string> = {
+  line: "splitting-into-groups",
+  team: "stacking-cells",
+  bigTeam: "it-can-draw-anything",
+  neighbours: "ask-the-neighbours",
+  questions: "twenty-questions",
+  crowd: "wisdom-of-the-crowd",
+  relay: "the-mistake-relay",
+  road: "the-widest-road",
+  scores: "scoring-every-move",
+  habits: "nudging-habits",
+  planner: "good-places-to-be",
+  coach: "player-and-coach",
+  wanderer: "new-or-favourite",
+};
+
 /** The parts of the state a run depends on. */
 export type RunState = Pick<
   SandboxState,
   "place" | "garden" | "points" | "model" | "board" | "tiles" | "agent" | "seed"
 >;
 
+/** What to practise, or null while there is nothing to learn from. */
 export function configOf(state: RunState): LabConfig | null {
   if (state.place === "board")
     return { kind: "board", agent: state.agent, world: worldOf(state), seed: state.seed };

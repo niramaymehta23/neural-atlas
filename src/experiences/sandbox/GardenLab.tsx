@@ -6,10 +6,11 @@ import { BrushPicker } from "@/features/classic/BrushPicker";
 import { ClassicGarden } from "@/features/classic/ClassicGarden";
 import { paintWords } from "@/features/classic/paint-words";
 import { SegmentedControl } from "@/ui/SegmentedControl";
+import { IdeaCardButton } from "@/ui/glossary/idea-cards";
 import { NetworkView } from "@/visuals/NetworkView";
 import type { ExperienceView } from "../shell/use-experience";
 import { sandboxCaptions as words } from "./captions";
-import { afresh, dotsOf, GARDENS, RESOLUTION, type SandboxState } from "./model";
+import { afresh, dotsOf, GARDENS, IDEAS, RESOLUTION, type SandboxState } from "./model";
 
 type Props = ExperienceView<SandboxState>;
 
@@ -86,6 +87,7 @@ export function GardenDials({ state, update }: Props) {
         onChange={(model) => update(afresh({ model }))}
       />
       <p className="min-h-[4lh] text-sm text-ink-soft">{words.models.notes[state.model]}</p>
+      <IdeaCardButton about={IDEAS[state.model]} className="self-start" />
       <BrushPicker
         value={state.brush}
         onChange={(brush) => update({ brush })}

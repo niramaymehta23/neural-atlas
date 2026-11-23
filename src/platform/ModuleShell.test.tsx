@@ -1,7 +1,10 @@
+import type { ReactNode } from "react";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { Timeline } from "@/engine/timeline/timeline";
+import { IdeaCardScope } from "@/ui/glossary/idea-cards";
 import { valleyLesson, valleyModule } from "./fixture/fixture-module";
-import type { LessonModule, ModuleViewProps } from "./contract";
+import type { LessonModule, ModuleViewProps, TimelineFrame } from "./contract";
 import { ModuleShell } from "./ModuleShell";
 import { progressStore } from "./progress/progress";
 
@@ -199,5 +202,50 @@ describe("ModuleShell", () => {
     );
     await userEvent.click(screen.getByRole("switch", { name: "Compare side by side" }));
     expect(new Set(paces)).toEqual(new Set([6]));
+  });
+
+  it("gives a lesson that trains its extra dials, with the lesson's own timeline", async () => {
+    const extras = vi.fn<(timeline: Timeline<TimelineFrame>) => ReactNode>(() => <p>listen</p>);
+    const { unmount } = render(
+      <ModuleShell
+        lesson={{ ...valleyLesson, id: "shell-extras" }}
+        module={valleyModule}
+        trainingExtras={extras}
+      />,
+    );
+    expect(
+      within(screen.getByRole("complementary", { name: "Dials" })).getByText("listen"),
+    ).toBeVisible();
+    const timeline = extras.mock.calls[0]?.[0];
+    const before = timeline?.frames().length ?? 0;
+    await userEvent.click(screen.getByRole("button", { name: "Take a step" }));
+    expect(timeline?.frames().length).toBeGreaterThan(before);
+    unmount();
+    extras.mockClear();
+    render(
+      <ModuleShell
+        lesson={{ ...valleyLesson, id: "shell-still" }}
+        module={{ ...valleyModule, trains: false }}
+        trainingExtras={extras}
+      />,
+    );
+    expect(extras).not.toHaveBeenCalled();
+  });
+
+  it("opens its idea's card from the header, and from the story once it is told", async () => {
+    const open = vi.fn();
+    const { container } = render(
+      <IdeaCardScope open={open}>
+        <ModuleShell lesson={{ ...valleyLesson, id: "shell-card" }} module={valleyModule} />
+      </IdeaCardScope>,
+    );
+    const header = container.querySelector("header") ?? container;
+    await userEvent.click(within(header).getByRole("button", { name: "Idea card" }));
+    expect(open).toHaveBeenCalledWith("shell-card");
+    const caption = container.querySelector('[data-region="caption"]');
+    const beneath = caption?.querySelector("[data-idea-card]");
+    expect(beneath?.parentElement).toHaveClass("invisible");
+    await turnDialTo("Home");
+    expect(beneath?.parentElement).not.toHaveClass("invisible");
   });
 });

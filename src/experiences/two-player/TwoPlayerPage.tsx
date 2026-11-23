@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { count } from "@/design/copy";
+import { IdeaCardButton } from "@/ui/glossary/idea-cards";
 import { SegmentedControl } from "@/ui/SegmentedControl";
 import { TermTag } from "@/ui/TermTag";
 import { award } from "../achievements/achievements";
@@ -37,6 +38,9 @@ import { RacePick, RaceRun } from "./RaceGame";
 
 /** Steps a second: slow enough to cheer, fast enough to finish a round within half a minute. */
 const PACE = { race: 5, mend: 15 };
+
+/** The lesson each game comes from, for its idea card. */
+const IDEA = { race: "stacking-cells", mend: "specialising" };
 
 type ViewProps = ExperienceView<TwoState> & { announce: Announce };
 
@@ -221,6 +225,7 @@ function Game({ state, update, announce }: ViewProps) {
         </p>
       </div>
       <p className="max-w-prose text-ink-soft">{words.rules[game]}</p>
+      <IdeaCardButton about={IDEA[game]} className="self-start" />
       <section
         data-game={game}
         data-stage={stage}

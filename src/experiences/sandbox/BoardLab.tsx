@@ -7,6 +7,7 @@ import { MOVE_COUNT } from "@/engine/rl/gridworld";
 import { boardGlow, glowScale } from "@/features/rl/board-values";
 import { painted } from "@/features/rl/boards";
 import { PolicyArrows } from "@/features/rl/PolicyArrows";
+import { IdeaCardButton } from "@/ui/glossary/idea-cards";
 import { SegmentedControl } from "@/ui/SegmentedControl";
 import { Board, type BoardWords, type Square } from "@/visuals/Board";
 import type { ExperienceView } from "../shell/use-experience";
@@ -17,6 +18,7 @@ import {
   boardTrouble,
   BRUSHES,
   COLUMNS,
+  IDEAS,
   START,
   tilesOf,
   type SandboxState,
@@ -104,6 +106,7 @@ export function BoardDials({ state, update }: Props) {
         onChange={(agent) => update(afresh({ agent }))}
       />
       <p className="min-h-[4lh] text-sm text-ink-soft">{words.agents.notes[state.agent]}</p>
+      <IdeaCardButton about={IDEAS[state.agent]} className="self-start" />
       <SegmentedControl
         label={words.board.brush.label}
         showLabel

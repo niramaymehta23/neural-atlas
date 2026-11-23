@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LessonErrorBoundary } from "@/platform/LessonErrorBoundary";
+import { IdeaCardButton } from "@/ui/glossary/idea-cards";
 import { TermTag } from "@/ui/TermTag";
 import { award } from "../achievements/achievements";
 import { BUTTON, MAIN_BUTTON } from "../shell/buttons";
@@ -10,7 +11,7 @@ import { PageFrame } from "../shell/ExperiencePage";
 import { LessonStage } from "../shell/LessonStage";
 import { museumCaptions as words } from "./captions";
 import { PairExhibit } from "./PairExhibit";
-import { roomFromHash, rooms, type Room, type RoomId } from "./rooms";
+import { ideaOf, roomFromHash, rooms, type Room, type RoomId } from "./rooms";
 
 /** Rooms to try before the visit counts. */
 export const ROOMS_FOR_STAR = 5;
@@ -52,6 +53,7 @@ function RoomView({ room, open, onOpen }: RoomViewProps) {
           </h2>
           <p className="text-lg">{story}</p>
           <p className="text-ink-soft">{today}</p>
+          <IdeaCardButton about={ideaOf(exhibit)} className="self-start" />
         </div>
         <div
           ref={box}

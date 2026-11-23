@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import {
   pitchFor,
   playChime,
@@ -10,6 +10,9 @@ import {
   turnSoundOn,
 } from "./sound";
 import { SoundToggle } from "./SoundToggle";
+import { Timeline } from "@/engine/timeline/timeline";
+import type { TimelineFrame } from "@/platform/contract";
+import { TimelineSound } from "./TimelineSound";
 import { useSoundOf } from "./use-sound-of";
 
 function fakeAudio() {
@@ -119,5 +122,33 @@ describe("the sound of learning", () => {
     document.dispatchEvent(new Event("visibilitychange"));
     expect(fake.audio.suspend).toHaveBeenCalled();
     visibility.mockRestore();
+  });
+});
+
+describe("the sound of a lesson", () => {
+  it("is silent until asked for, then follows the training moment by moment", () => {
+    const timeline = new Timeline<TimelineFrame>();
+    const { unmount } = render(<TimelineSound timeline={timeline} />);
+    act(() => timeline.record({ epoch: 0, loss: 2 }));
+    expect(create).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("switch", { name: "Hear it learn" }));
+    const heard: number[] = [];
+    [1.9, 1, 0.2].forEach((loss, at) => {
+      fake.audio.currentTime += 1;
+      fake.notes.length = 0;
+      act(() => timeline.record({ epoch: at + 1, loss }));
+      heard.push(fake.notes[0] ?? 0);
+    });
+    expect(heard).toEqual([...heard].sort((a, b) => b - a));
+    expect(heard[0]).toBe(pitchFor(0.95));
+    // The last step was far better: its note, and the chime's two.
+    expect(fake.notes).toHaveLength(3);
+    // A moment without a number is silence, not a screech.
+    fake.notes.length = 0;
+    fake.audio.currentTime += 1;
+    act(() => timeline.record({ epoch: 9, loss: Infinity }));
+    expect(fake.notes).toEqual([]);
+    unmount();
+    expect(fake.audio.close).toHaveBeenCalled();
   });
 });

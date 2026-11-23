@@ -20,6 +20,7 @@ import { storageHealth } from "@/platform/storage";
 import { paletteStore } from "@/ui/palette-store";
 import { SegmentedControl } from "@/ui/SegmentedControl";
 import { constellationCaptions as captions } from "./captions";
+import type { ExtraStar } from "./ExtraStars";
 import { layoutConstellation } from "./layout";
 import { LessonList } from "./LessonList";
 
@@ -58,7 +59,7 @@ type Leaving = { id: string; fade: boolean };
  * The home page: the map of every idea. Choosing a built idea flies the camera in and opens
  * the lesson; one still being drawn, or any under reduced motion, simply fades across instead.
  */
-export function HomeMap() {
+export function HomeMap({ extras }: { extras?: readonly ExtraStar[] }) {
   const router = useRouter();
   const reduced = useReducedMotion();
   const progress = useProgress((saved) => saved);
@@ -163,6 +164,7 @@ export function HomeMap() {
             built={built}
             suggested={suggested}
             world={world}
+            extras={extras}
             flyingTo={leaving && !leaving.fade ? leaving.id : null}
             onPoint={(id) => {
               router.prefetch(`/learn/${id}`);
@@ -178,12 +180,18 @@ export function HomeMap() {
               <LessonList
                 learned={learned}
                 suggested={suggested}
+                extras={extras}
                 className="h-full overflow-y-auto px-6 pb-10 sm:px-10"
               />
             }
           />
         ) : (
-          <LessonList learned={learned} suggested={suggested} className="px-6 pb-10 sm:px-10" />
+          <LessonList
+            learned={learned}
+            suggested={suggested}
+            extras={extras}
+            className="px-6 pb-10 sm:px-10"
+          />
         )}
       </div>
     </motion.main>
