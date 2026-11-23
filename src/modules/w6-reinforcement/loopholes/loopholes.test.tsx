@@ -59,8 +59,8 @@ describe("loopholes: mission and guess", () => {
   const [guess] = predictions;
 
   it("fires once all three loopholes are found", () => {
-    expect(mission.when(at({ found: ["juggles", "paces", "puddle"] }), undefined)).toBe(true);
-    expect(mission.when(at({ found: ["juggles", "paces"] }), undefined)).toBe(false);
+    expect(mission.when(at({ found: ["juggles", "paces", "puddle"] }))).toBe(true);
+    expect(mission.when(at({ found: ["juggles", "paces"] }))).toBe(false);
   });
 
   it("answers the pick-up question from a finished day with the switch on", () => {
