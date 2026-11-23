@@ -140,6 +140,7 @@ describe("a race", () => {
   const race = (a: readonly number[], b: readonly number[], rate = 0.03) =>
     ({
       kind: "race",
+      budget: RACE_BUDGET,
       racers: [
         { sizes: a, rate },
         { sizes: b, rate },

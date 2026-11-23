@@ -24,9 +24,11 @@ export type RaceConfig = {
   fresh: readonly Dot[];
   spots: Float32Array;
   seed: number;
+  /** Multiplications each team may spend per step. */
+  budget: number;
 };
 
-/** Multiplications each team may spend per step. */
+/** What a team may spend per step, unless the garden calls for more or less. */
 export const RACE_BUDGET = 40_000;
 /** Steps a race lasts at most. */
 export const RACE_STEPS = 120;
@@ -66,7 +68,7 @@ function runner(racer: Racer, config: RaceConfig) {
   let times = 0;
   return {
     spend() {
-      purse += RACE_BUDGET;
+      purse += config.budget;
       // A round is bought when the purse can pay for it; what it really cost is what is charged.
       while (purse > 0) {
         const cost = counting(() => trainer.round()).times;
