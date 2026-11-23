@@ -8,6 +8,9 @@ import { cameraGlide, useReducedMotion } from "@/design/motion";
 
 export type Vec3 = readonly [number, number, number];
 
+/** The camera's upright field of view, in degrees. */
+export const FIELD_OF_VIEW = 40;
+
 type CameraRigProps = {
   /** Where the camera sits. */
   position: Vec3;

@@ -1,5 +1,15 @@
 import { lessons } from "@/catalog";
-import { floatOffset, layoutConstellation, partitionLinks, worldCentre } from "./layout";
+import { PerspectiveCamera, Vector3 } from "three";
+import type { WorldNumber } from "@/platform/contract";
+import { FIELD_OF_VIEW } from "@/scene3d/CameraRig";
+import {
+  floatOffset,
+  layoutConstellation,
+  mapFraming,
+  partitionLinks,
+  worldCentre,
+} from "./layout";
+import { BEAD_GROW, RADIUS } from "./bead";
 
 const { stars, links } = layoutConstellation(lessons);
 const distance = (a: readonly number[], b: readonly number[]) =>
@@ -12,14 +22,15 @@ describe("layoutConstellation", () => {
     for (const { position } of stars) expect(position[1]).toBeGreaterThan(0);
   });
 
-  it("keeps each world in its own group with room between ideas", () => {
+  it("keeps each world in its own group", () => {
     for (const { lesson, position } of stars) {
-      expect(distance(position, worldCentre(lesson.world))).toBeLessThan(1.2);
-    }
-    for (const [at, a] of stars.entries()) {
-      for (const b of stars.slice(at + 1)) {
-        expect(distance(a.position, b.position)).toBeGreaterThan(0.18);
-      }
+      expect(distance(position, worldCentre(lesson.world))).toBeLessThan(1.7);
+      const nearest = WORLDS.reduce((best, world) =>
+        distance(position, worldCentre(world)) < distance(position, worldCentre(best))
+          ? world
+          : best,
+      );
+      expect(nearest).toBe(lesson.world);
     }
   });
 
@@ -29,6 +40,103 @@ describe("layoutConstellation", () => {
     for (const { from, to } of links) {
       expect(stars[to]?.lesson.prerequisites).toContain(stars[from]?.lesson.id);
     }
+  });
+});
+
+const WORLDS: readonly WorldNumber[] = [1, 2, 3, 4, 5, 6];
+
+/** Where each star's middle lands in a `width` × `height` view, and how big its bead looks there. */
+function seenIn(world: WorldNumber | null, width: number, height: number) {
+  const camera = new PerspectiveCamera(FIELD_OF_VIEW, width / height, 0.1, 1000);
+  const { position, target } = mapFraming(world, width / height);
+  camera.position.set(...position);
+  camera.lookAt(new Vector3(...target));
+  camera.updateMatrixWorld();
+  camera.updateProjectionMatrix();
+  const focal = height / 2 / Math.tan((FIELD_OF_VIEW * Math.PI) / 360);
+  return stars
+    .filter(({ lesson }) => world === null || lesson.world === world)
+    .map(({ lesson, position: at }) => {
+      const place = new Vector3(...at);
+      const bead = (focal * RADIUS) / place.distanceTo(camera.position);
+      const onScreen = place.project(camera);
+      return {
+        id: lesson.id,
+        x: ((onScreen.x + 1) * width) / 2,
+        y: ((1 - onScreen.y) * height) / 2,
+        bead,
+      };
+    });
+}
+
+/** The map's box on a phone, a short laptop, a laptop and a large screen (the header above it). */
+const VIEWS = [
+  { width: 375, height: 320 },
+  { width: 844, height: 390 },
+  { width: 1280, height: 424 },
+  { width: 1366, height: 508 },
+  { width: 1920, height: 800 },
+];
+/** A star link's side, in px (`size-7`). */
+const LINK = 28;
+
+/** Every pair closer than `apart` says, with how close they come. */
+function tooClose(
+  seen: ReturnType<typeof seenIn>,
+  apart: (a: { bead: number }, b: { bead: number }) => number,
+) {
+  return seen.flatMap((a, at) =>
+    seen.slice(at + 1).flatMap((b) => {
+      const gap = Math.hypot(a.x - b.x, a.y - b.y);
+      return gap < apart(a, b) ? [`${a.id} / ${b.id}: ${gap.toFixed(1)}`] : [];
+    }),
+  );
+}
+
+describe("the map as it is seen", () => {
+  it.each(VIEWS)(
+    "no bead covers another at $width × $height, even swollen",
+    ({ width, height }) => {
+      for (const world of [null, ...WORLDS])
+        expect(
+          tooClose(
+            seenIn(world, width, height),
+            // One swollen under the pointer, the other a learned (slightly bigger) one.
+            (a, b) => Math.max(a.bead, b.bead) * (BEAD_GROW + 1.15),
+          ),
+          `world ${world ?? "all"}`,
+        ).toEqual([]);
+    },
+  );
+
+  it.each(VIEWS.filter(({ width }) => width >= 1280))(
+    "no star's link lies on another's at $width × $height",
+    ({ width, height }) => {
+      expect(tooClose(seenIn(null, width, height), () => LINK)).toEqual([]);
+    },
+  );
+
+  it.each(VIEWS)("no star's link lies on another's in a group at $width × $height", (view) => {
+    for (const world of WORLDS)
+      expect(
+        tooClose(seenIn(world, view.width, view.height), () => LINK),
+        `${world}`,
+      ).toEqual([]);
+  });
+
+  it.each(VIEWS)("every star is inside the view at $width × $height", ({ width, height }) => {
+    for (const world of [null, ...WORLDS])
+      for (const { id, x, y, bead } of seenIn(world, width, height)) {
+        // Room for the bob and the lean away from the pointer too.
+        const room = bead * 2.2;
+        expect([x > room, x < width - room, y > room, y < height - room, id]).toEqual([
+          true,
+          true,
+          true,
+          true,
+          id,
+        ]);
+      }
   });
 });
 

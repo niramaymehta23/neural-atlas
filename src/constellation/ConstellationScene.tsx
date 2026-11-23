@@ -20,7 +20,15 @@ import type { Vec3 } from "@/scene3d/CameraRig";
 import { SoftStage } from "@/scene3d/SoftStage";
 import { constellationCaptions as captions } from "./captions";
 import { startFloating } from "./floating";
-import { DIMMED, floatOffset, partitionLinks, worldCentre, type Link, type Star } from "./layout";
+import {
+  DIMMED,
+  floatOffset,
+  mapFraming,
+  offset,
+  partitionLinks,
+  type Link,
+  type Star,
+} from "./layout";
 import { Links } from "./Links";
 import { StarMark } from "./StarMark";
 
@@ -43,16 +51,7 @@ type ConstellationSceneProps = {
 };
 
 const WORLDS: readonly WorldNumber[] = [1, 2, 3, 4, 5, 6];
-const OVERVIEW = { target: [0, 0.3, -0.5] as Vec3, from: [0, 4.4, 5.6] as Vec3 };
-const GROUP_VIEW: Vec3 = [0, 2.1, 2.7];
 const CLOSE_UP: Vec3 = [0, 0.3, 0.75];
-/** The widest view shape the framings fit without stepping back; narrower views step back. */
-const FITS_ASPECT = 1.7;
-const offset = ([x, y, z]: Vec3, [dx, dy, dz]: Vec3, scale = 1): Vec3 => [
-  x + dx * scale,
-  y + dy * scale,
-  z + dz * scale,
-];
 
 /** How far the map leans away from the pointer, for a touch of depth. */
 const PARALLAX = 0.05;
@@ -100,10 +99,7 @@ function Drift({
   return <group ref={group}>{children}</group>;
 }
 
-/**
- * Where the camera sits: the whole map, one group, or right beside the chosen idea. In a
- * narrow view (a phone held upright) it steps back so the sides still fit.
- */
+/** Where the camera sits: the whole map, one group, or right beside the chosen idea. */
 function framing(
   stars: readonly Star[],
   world: WorldNumber | null,
@@ -112,10 +108,7 @@ function framing(
 ) {
   const star = stars.find(({ lesson }) => lesson.id === flyingTo);
   if (star) return { position: offset(star.position, CLOSE_UP), target: star.position };
-  const back = Math.max(1, FITS_ASPECT / aspect);
-  const { target, from } =
-    world === null ? OVERVIEW : { target: worldCentre(world), from: GROUP_VIEW };
-  return { position: offset(target, from, back), target };
+  return mapFraming(world, aspect);
 }
 
 /**

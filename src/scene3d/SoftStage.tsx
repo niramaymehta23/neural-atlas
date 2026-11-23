@@ -2,7 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
-import { CameraRig, type Vec3 } from "./CameraRig";
+import { CameraRig, FIELD_OF_VIEW, type Vec3 } from "./CameraRig";
 import { StageBoundary } from "./StageBoundary";
 
 type SoftStageProps = {
@@ -65,7 +65,7 @@ export function SoftStage({
                 flat
                 frameloop="demand"
                 dpr={[1, 2]}
-                camera={{ fov: 40, position: [...camera.position] }}
+                camera={{ fov: FIELD_OF_VIEW, position: [...camera.position] }}
                 onCreated={({ gl }) =>
                   gl.domElement.addEventListener("webglcontextlost", () => setLost(true), {
                     once: true,

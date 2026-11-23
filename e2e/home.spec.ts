@@ -85,7 +85,6 @@ test("the home map shows all 74 ideas and a paper label on hover", async ({ page
 test("every idea is drawn now: no star says it is still being drawn", async ({ page }) => {
   // From stage 10 every lesson is built; the locked star and its fade across are unit-tested in
   // src/constellation/HomeMap.test.tsx with one lesson made unbuilt again.
-  // Stars are read by name, not hovered: in the 3D view some stars of a world overlap.
   await openHome(page);
   for (const lesson of world6.lessons)
     await expect(
@@ -94,6 +93,49 @@ test("every idea is drawn now: no star says it is still being drawn", async ({ p
       }),
     ).toBeAttached();
   await expect(page.getByRole("link", { name: /Still being drawn/ })).toHaveCount(0);
+});
+
+test("no two stars overlap, and pointing at any one shows its own label", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openHome(page);
+  // Link boxes: no star's centre lies within another's 28 px (the layout's own test checks every
+  // framing and screen; this one checks what is really on the page).
+  const boxes = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>("[data-star]")].map((star) => {
+        const { x, y, width, height } = star.getBoundingClientRect();
+        return { id: star.dataset.star ?? "", x: x + width / 2, y: y + height / 2 };
+      }),
+    );
+  await expect
+    .poll(async () => {
+      const seen = await boxes();
+      return seen.flatMap((a, at) =>
+        seen
+          .slice(at + 1)
+          .filter((b) => Math.hypot(a.x - b.x, a.y - b.y) < 28)
+          .map((b) => `${a.id} / ${b.id}`),
+      );
+    })
+    .toEqual([]);
+  // Every star's own middle belongs to it, and the two that used to sit on top of each other
+  // each show their own label.
+  const covered = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("[data-star]")].flatMap((star) => {
+      const box = star.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      return hit?.closest("[data-star]") === star ? [] : [star.dataset.star];
+    }),
+  );
+  expect(covered).toEqual([]);
+  for (const id of ["treats-and-tricks", "now-vs-later", "many-readers-at-once"]) {
+    const star = page.locator(`[data-star="${id}"]`);
+    const title = await star.getAttribute("aria-label");
+    await star.hover(steady);
+    await expect(page.getByRole("tooltip")).toContainText(title?.split(",")[0] ?? id);
+  }
 });
 
 test("a learned idea is announced as learned", async ({ page }) => {

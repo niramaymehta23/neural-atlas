@@ -12,6 +12,7 @@ import {
   type RefObject,
 } from "react";
 import { DoubleSide, type Color, type Group } from "three";
+import { BEAD_GROW, RADIUS } from "./bead";
 import { keepInside } from "./label-place";
 import { DIMMED, type Star } from "./layout";
 import { StarLabel } from "./StarLabel";
@@ -38,10 +39,7 @@ type StarMarkProps = {
   onChoose: (id: string) => void;
 };
 
-const RADIUS = 0.07;
 const PULSE = { size: 0.18, seconds: 2.4 };
-/** How much a bead swells while its label is open. */
-export const BEAD_GROW = 1.3;
 /** Share of the remaining way the bead's size moves each frame: a soft spring. */
 const GROW_STEP = 0.2;
 
