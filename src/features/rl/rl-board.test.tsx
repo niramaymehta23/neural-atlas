@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import { boardGlow, glowScale } from "./board-values";
+import { keepTiles, painted, tilesFrom } from "./boards";
 import { PolicyArrows } from "./PolicyArrows";
 
 const square = { index: 0, x: 0, y: 0, size: 44 };
@@ -35,5 +36,31 @@ describe("the shared board pieces", () => {
     expect(glow.floorTones[0]).toContain("var(--color-good)");
     expect(glowScale([0.5, -3, 1])).toBe(3);
     expect(glowScale([])).toBeGreaterThan(0);
+  });
+
+  it("reads boards from marks, keeps a link's board safe and paints one square", () => {
+    const tiles = tilesFrom(["S#", "~G", "c."]);
+    expect(tiles).toEqual(["floor", "wall", "trap", "goal", "coin", "floor"]);
+    expect(keepTiles(["goal", "lava", "wall"], tiles, 0)).toEqual([
+      "floor",
+      "wall",
+      "wall",
+      "goal",
+      "coin",
+      "floor",
+    ]);
+    expect(keepTiles(tiles, tiles, 0, ["floor", "wall"])).toEqual([
+      "floor",
+      "wall",
+      "trap",
+      "goal",
+      "coin",
+      "floor",
+    ]);
+    expect(keepTiles(["floor", "coin", "coin"], tiles, 0, ["floor", "wall"])[2]).toBe("trap");
+    expect(painted(tiles, 1, "goal", 0)?.[1]).toBe("goal");
+    expect(painted(tiles, 0, "goal", 0)).toBeNull();
+    expect(painted(tiles, 1, "wall", 0)).toBeNull();
+    expect(painted(tiles, 9, "wall", 0)).toBeNull();
   });
 });

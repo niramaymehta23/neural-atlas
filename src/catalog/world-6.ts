@@ -31,6 +31,8 @@ export const world6: WorldEntry = {
       idea: "A world of places, moves and rewards",
       playWith: "Build your own little board",
       prerequisites: ["treats-and-tricks"],
+      load: () =>
+        import("@/modules/w6-reinforcement/the-game-board").then(({ definition }) => definition),
     },
     {
       id: "now-vs-later",
@@ -39,6 +41,8 @@ export const world6: WorldEntry = {
       idea: "How much to care about future rewards",
       playWith: 'A telescope dial from "right now" to "long term"',
       prerequisites: ["the-game-board"],
+      load: () =>
+        import("@/modules/w6-reinforcement/now-vs-later").then(({ definition }) => definition),
     },
     {
       id: "good-places-to-be",
@@ -47,6 +51,8 @@ export const world6: WorldEntry = {
       idea: "Some spots are closer to reward than others",
       playWith: "A warm glow spreads across the board",
       prerequisites: ["now-vs-later"],
+      load: () =>
+        import("@/modules/w6-reinforcement/good-places-to-be").then(({ definition }) => definition),
     },
     {
       id: "scoring-every-move",

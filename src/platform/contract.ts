@@ -108,6 +108,11 @@ export type ModuleDefinition<S extends ModuleState, F extends TimelineFrame = Ti
   /** Shows the timeline; set when anything trains. */
   trains?: boolean;
   /**
+   * How many recorded moments the timeline plays a second (30 when left out). A lesson whose
+   * moments are few and each worth seeing, such as one sweep of a board, plays them slower.
+   */
+  framesPerSecond?: number;
+  /**
    * Makes a link's state safe to draw: clamp every number to its dial's range and cap array
    * lengths. Runs after the link's values are matched by key and kind to `initialState`.
    * Required for any module with numeric dials or arrays (a hand-made link can say anything).

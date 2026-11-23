@@ -1,9 +1,11 @@
-import { createRandom } from "../random";
-import type { Tile, World } from "./gridworld";
+import { createRandom, type Random } from "../random";
+import { MOVE_COUNT, type Tile, type World } from "./gridworld";
 import {
+  averageMoves,
   bestMoveFrom,
   goalChance,
   moveValue,
+  safestChance,
   solve,
   transitions,
   valueSweeps,
@@ -101,5 +103,118 @@ describe("the worked-out board", () => {
     // slip can move it, and the only slip that moves it is away from the lava.
     expect(solve(world, { ...STILL, slip: 0.3 }).policy[world.start]).toBe(LEFT);
     expect(policy[world.start]).not.toBe(DOWN);
+  });
+});
+
+const KITCHEN = [".......", ".......", "..#.#..", ".......", "S~~~~~G"];
+
+/** A walker that picks any of the four moves at random every time, slipping like the plan does. */
+function randomWalk(world: World, rules: BoardRules, random: Random, most = 60) {
+  let cell = world.start;
+  let reward = 0;
+  for (let taken = 0; taken < most; taken += 1) {
+    const move = random.int(MOVE_COUNT);
+    const roll = random.next();
+    const slid =
+      roll < rules.slip / 2
+        ? (move + 1) % MOVE_COUNT
+        : roll < rules.slip
+          ? (move + MOVE_COUNT - 1) % MOVE_COUNT
+          : move;
+    const [way] = transitions(world, cell, slid, { ...rules, slip: 0 });
+    if (!way) break;
+    reward += way.reward;
+    cell = way.next;
+    if (way.done) break;
+  }
+  return reward;
+}
+
+describe("the worked-out board, for World 6's board lessons", () => {
+  it("the solved plan (seed 7, 200 walks on the kitchen at slip 0.2) earns at least 1 more per walk than a random walker", () => {
+    // Measured: the plan averages about 0.20 a walk, the random walker about −1.30.
+    const world = board(KITCHEN);
+    const rules = { ...STILL, slip: 0.2, care: 0.95 };
+    const { policy } = solve(world, rules);
+    const walks = 200;
+    const planned = createRandom(7);
+    const wandering = createRandom(7);
+    let plan = 0;
+    let random = 0;
+    for (let at = 0; at < walks; at += 1) {
+      plan += walk(world, policy, rules, planned).reward;
+      random += randomWalk(world, rules, wandering);
+    }
+    expect(plan / walks - random / walks).toBeGreaterThanOrEqual(1);
+  });
+
+  it("pays each bowl its own prize where bowls differ", () => {
+    const world = board(["G.S.G"]);
+    const bowls = new Map([
+      [0, 1],
+      [4, 5],
+    ]);
+    expect(transitions(world, 1, LEFT, { ...STILL, bowls })[0]?.reward).toBe(1);
+    expect(transitions(world, 3, RIGHT, { ...STILL, bowls })[0]?.reward).toBe(5);
+    // Without its own prize a bowl pays the usual.
+    expect(transitions(world, 3, RIGHT, { ...STILL, bowls: new Map([[0, 2]]) })[0]?.reward).toBe(1);
+    const care = { ...STILL, stepReward: 0, care: 0.5, bowls };
+    expect(solve(world, care).policy[world.start]).toBe(RIGHT);
+  });
+
+  it("works a changed board or rule out afresh, and never lets a caller change a landing", () => {
+    const world = board(["S.G"]);
+    const first = transitions(world, 1, RIGHT, STILL);
+    expect(Object.isFrozen(first)).toBe(true);
+    expect(Object.isFrozen(first[0])).toBe(true);
+    const walled: World = { ...world, tiles: ["floor", "floor", "wall"] };
+    expect(transitions(walled, 1, RIGHT, STILL)[0]?.next).toBe(1);
+    expect(transitions(world, 1, RIGHT, { ...STILL, stepReward: -1 })[0]?.reward).toBe(1);
+    expect(transitions(world, 0, RIGHT, { ...STILL, stepReward: -1 })[0]?.reward).toBe(-1);
+    expect(
+      transitions(world, 1, RIGHT, { ...STILL, rewards: { goal: 3, trap: -1, coin: 0 } })[0]
+        ?.reward,
+    ).toBe(3);
+  });
+
+  it("finds the safest chance home: no trap squares on the kitchen at any slip until a square is boxed in by lava", () => {
+    const kitchen = board(KITCHEN);
+    for (const slip of [0, 0.1, 0.2, 0.3, 0.4, 0.5]) {
+      const safest = safestChance(kitchen, slip);
+      for (let cell = 0; cell < safest.length; cell += 1)
+        if (kitchen.tiles[cell] === "floor") expect(safest[cell]!).toBeGreaterThanOrEqual(0.5);
+    }
+    // Lava painted above the square two in from the middle of the bottom lava: that square has
+    // lava above and below, and at slip 0.4 even the safest plan from it gets home only 42% of
+    // the time (measured).
+    const boxed: World = {
+      ...kitchen,
+      tiles: kitchen.tiles.map((tile, cell) => (cell === 17 ? "trap" : tile)),
+    };
+    expect(safestChance(boxed, 0.4)[24]).toBeCloseTo(0.42, 2);
+    expect(safestChance(boxed, 0.2)[24]!).toBeGreaterThan(0.5);
+    // No bowl: nowhere is safe.
+    expect(Math.max(...safestChance(board(["S..", "..."]), 0.2))).toBe(0);
+  });
+
+  it("knows how long a walk lasts on average, and when it may never end", () => {
+    const line = board(["S...G"]);
+    const still = solve(line, STILL);
+    expect(averageMoves(line, still.policy, STILL)[line.start]).toBeCloseTo(4);
+    // The kitchen on a still floor: up, along and down is eight moves; very slippery, it is
+    // about 35 moves on average (measured), because it waits by the wall for a lucky slide.
+    const kitchen = board(KITCHEN);
+    const rules = { ...STILL, care: 0.95 };
+    expect(averageMoves(kitchen, solve(kitchen, rules).policy, rules)[kitchen.start]).toBeCloseTo(
+      8,
+    );
+    const slippery = { ...rules, slip: 0.5 };
+    expect(
+      averageMoves(kitchen, solve(kitchen, slippery).policy, slippery)[kitchen.start],
+    ).toBeCloseTo(34.8, 1);
+    // A treat beside the start: the plan paces on it and never ends.
+    const pacing = board(["c....", "S~~~G"]);
+    const paces = solve(pacing, rules);
+    expect(averageMoves(pacing, paces.policy, rules)[pacing.start]).toBe(Infinity);
   });
 });
