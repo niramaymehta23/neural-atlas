@@ -48,8 +48,8 @@ export const pages = {
   theatre: {
     path: "/theatre",
     title: "The theatre",
-    opening: "Sit back and watch a small model think. Nothing to do here but look.",
-    card: "Sit back and watch a model think, filling the whole screen.",
+    opening: "Sit back and watch a small machine think. Nothing to do here but look.",
+    card: "Sit back and watch a machine think, filling the whole screen.",
   },
   twoPlayer: {
     path: "/two-player",
