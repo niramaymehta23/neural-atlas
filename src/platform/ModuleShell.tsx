@@ -79,9 +79,13 @@ export function ModuleShell({
     if (restored) created.restore({ ...restored, guesses: {} });
     return created;
   });
-  const [timeline] = useState(() => new Timeline<TimelineFrame>());
+  const [timeline] = useState(
+    () => new Timeline<TimelineFrame>({ framesPerSecond: module.framesPerSecond }),
+  );
   // The compare split's right half records into its own timeline, kept on the main one's moment.
-  const [alternativeTimeline] = useState(() => new Timeline<TimelineFrame>());
+  const [alternativeTimeline] = useState(
+    () => new Timeline<TimelineFrame>({ framesPerSecond: module.framesPerSecond }),
+  );
   const [watch] = useState(() => createMissionWatcher(module.missions));
   const state = useStore(store, (view) => view.state);
   const touched = useStore(store, (view) => view.touched);

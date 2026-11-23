@@ -159,4 +159,24 @@ describe("ModuleShell", () => {
       screen.getByRole("slider", { name: "How big a step" }).getAttribute("aria-valuenow"),
     ).toBe("0.2");
   });
+
+  it("plays both timelines at the lesson's own pace when it sets one, 30 a second otherwise", async () => {
+    const paces: number[] = [];
+    const Spy = (props: ModuleViewProps<{ step: number; steps: number }>) => {
+      paces.push(props.timeline.framesPerSecond);
+      return null;
+    };
+    const scene = Spy as LessonModule["scene"];
+    const { unmount } = render(
+      <ModuleShell lesson={valleyLesson} module={{ ...valleyModule, scene }} />,
+    );
+    expect(paces.at(-1)).toBe(30);
+    unmount();
+    paces.length = 0;
+    render(
+      <ModuleShell lesson={valleyLesson} module={{ ...valleyModule, scene, framesPerSecond: 6 }} />,
+    );
+    await userEvent.click(screen.getByRole("switch", { name: "Compare side by side" }));
+    expect(new Set(paces)).toEqual(new Set([6]));
+  });
 });
