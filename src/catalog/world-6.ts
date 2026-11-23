@@ -79,6 +79,8 @@ export const world6: WorldEntry = {
       idea: "Do more of what worked",
       playWith: "A field of arrows bending over time",
       prerequisites: ["treats-and-tricks", "rolling-downhill"],
+      load: () =>
+        import("@/modules/w6-reinforcement/nudging-habits").then(({ definition }) => definition),
     },
     {
       id: "player-and-coach",
@@ -97,6 +99,10 @@ export const world6: WorldEntry = {
       idea: "Breed the best performers",
       playWith: "Draw a racetrack; cars evolve to drive it",
       prerequisites: ["treats-and-tricks"],
+      load: () =>
+        import("@/modules/w6-reinforcement/survival-of-the-fittest").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "thinking-ahead",

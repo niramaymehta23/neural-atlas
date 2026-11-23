@@ -15,8 +15,8 @@ type RecordedRunOptions<S extends ModuleState, F extends TimelineFrame> = Module
   runs: number;
   /**
    * Every frame of the run `state` describes, in order. Pure: the same state, the same frames.
-   * A `null` is a breath: work done with nothing to record yet (a plan still being worked out),
-   * so a long piece of work can be spread over several slices.
+   * A `null` is a breath: work done with nothing to record yet (a plan still being worked out, or
+   * a frame that takes longer than a slice), so long work can be spread over several slices.
    */
   work: (state: S) => Iterable<F | null>;
   /**
