@@ -105,6 +105,8 @@ export const world6: WorldEntry = {
       idea: "Imagine moves before making them",
       playWith: "A tree of possible futures in Connect Four",
       prerequisites: ["the-game-board"],
+      load: () =>
+        import("@/modules/w6-reinforcement/thinking-ahead").then(({ definition }) => definition),
     },
     {
       id: "practising-against-yourself",
@@ -113,6 +115,10 @@ export const world6: WorldEntry = {
       idea: "Improve by playing a copy of yourself",
       playWith: "Two players trading wins",
       prerequisites: ["thinking-ahead"],
+      load: () =>
+        import("@/modules/w6-reinforcement/practising-against-yourself").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "loopholes",
