@@ -31,8 +31,6 @@ export const words = {
     pulls === 0
       ? "Not pulled yet."
       : `${sentenceStart(plural(wins, "win", "wins"))} from ${plural(pulls, "pull", "pulls")}.`,
-  won: "a coin",
-  lost: "nothing",
   lastPull: {
     none: "Pick any machine to start.",
     won: (machine: string) => `The ${machine} machine paid a coin!`,
