@@ -63,6 +63,10 @@ export const world6: WorldEntry = {
       idea: "A thinking network replaces the score table",
       playWith: "Watch it learn a simple arcade game",
       prerequisites: ["scoring-every-move", "stacking-cells"],
+      load: () =>
+        import("@/modules/w6-reinforcement/a-brain-for-the-game").then(
+          ({ definition }) => definition,
+        ),
     },
     {
       id: "nudging-habits",
@@ -79,6 +83,8 @@ export const world6: WorldEntry = {
       idea: "One plays, one judges, changes stay small",
       playWith: "Player and coach side by side",
       prerequisites: ["nudging-habits", "good-places-to-be"],
+      load: () =>
+        import("@/modules/w6-reinforcement/player-and-coach").then(({ definition }) => definition),
     },
     {
       id: "survival-of-the-fittest",
