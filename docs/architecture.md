@@ -650,3 +650,71 @@ Plan: `docs/06-autodiff-worlds/plan.md`. Nineteen lessons, each shaped like the 
   story and fits a phone) and an `e2e/w5-<id>.spec.ts` per lesson (interaction, star, exact link replay; shared
   steps in `e2e/w5.ts`). `w5-safe-vs-adventurous` checks the bars change before the next animation frame;
   `w5-specialising` has a `@perf` check that pirate talk appears within two minutes (the reference budget).
+
+## World 6 hand-over (stage 10)
+
+- **The fourteen lessons** live in `src/modules/w6-reinforcement/<id>/` with the World 4 file shape and are wired
+  in `src/catalog/world-6.ts`; every idea on the map is now built. Scoring every move (stage 05) is unchanged.
+  Every lesson has at least two plain dials, a guess, a mission, `parseState` clamping, `describe` and an exact
+  link replay; boards are flat. No model files were added: every agent learns in the page from a seed.
+- **RL kit** (`src/engine/rl/`, pure and seeded):
+  - `bandit.ts`: the trick learner (a gradient bandit) and the slot machines with "curious sometimes"
+    (epsilon-greedy) and "hopeful" (UCB1) players.
+  - `mdp.ts`: exact board solving (`solve`, `valueSweeps`, `moveValues`, `goalChance`, `safestChance`,
+    `averageMoves`, a seeded `walk`) over `BoardRules` with slip, step reward, care and per-bowl prizes;
+    transitions are cached per board and rules.
+  - `policy-gradient.ts` (REINFORCE with a per-square baseline), `racers.ts` (cars with feelers, bred by
+    blending a parent with a fresh random brain), `connect-four.ts`, `mcts.ts` (imagined games in slices of any
+    size), `sticks.ts` (two learners practising against each other), `reward-design.ts` (the tidy-up robot's
+    room solved exactly for the learner's reward, resumable) and `answer-policy.ts` (a chatbot's answer habits
+    trained against a judge with a leash back to its old self, exact gradient).
+  - `tiny-net.ts` (its own `exp` and `tanh`, so runs match in Node and every browser), `catch-game.ts`, `dqn.ts`
+    (replay memory and target copy) and `ppo.ts` (player and coach on a 4×3 board, exact expected score). They
+    train in one paced worker: `agent-protocol.ts`, `agent-host.ts` (12 ms slices, moments on fixed steps so
+    pacing never changes a run), `agent-worker.ts`, `agent-client.ts`; `testing/in-process-agent.ts` runs the
+    host flat out for unit tests.
+- **Shared lesson parts** (`src/features/rl/`): `PolicyArrows` (move shares on a square), `board-values.ts`
+  (`boardGlow`: values as floor tones), `boards.ts` (painted-tile helpers) and `use-agent-practice.ts` (drives a
+  worker run like `useWriterPractice`: a setting change starts fresh, a link never opens running).
+- **World 5's judge is shared, not copied**: the Bradley–Terry ranker moved from Learning from thumbs-up into
+  `src/features/language/ranker.ts` (`learnFromPicks`, `scoreOf`, `bestAnswer`); that lesson re-exports its old
+  names and behaves as before, and Back to chatbots trains against the same judge.
+- **Reward margins (REQ-W6-01)**, each a test with its seed and budget in the title:
+
+  | Agent | Seed, budget | Measured | Asserted |
+  | --- | --- | --- | --- |
+  | Curious sometimes (ε 0.1) | casino 7, bots 3, 1000 pulls | 692 wins vs random 479 | ≥ 30% more |
+  | Hopeful (UCB1) | casino 7, bots 3, 1000 pulls | 643 vs 479 | ≥ 25% more |
+  | Trick learner | seed 6, 30 rounds | ≥ 80% the rewarded trick | ≥ 80% |
+  | Solved board (MDP) | seed 7, 200 walks, slip 0.2 | +0.20 per walk vs −1.30 | ≥ 1 more |
+  | DQN, Catch the fruit | seed 1, 500 games | 25 of 25 drops vs 5 | ≥ 15 more |
+  | REINFORCE | seed 1, 600 tries | 93 of last 100 vs 1.4% | ≥ 60 more in 100 |
+  | PPO | seed 7, 40 batches | ≈ 0.70 per try vs −1.00 | ≥ 1.5 more |
+  | Evolution racers | seed 1, 50 races of 30 | best 4 → 107 squares | ≥ 60 further |
+  | MCTS Connect Four | seed 1, 20 games, 3000 imagined | 20 of 20 vs random | ≥ 19 |
+  | Self-play sticks | seed 1, 1000 games | 200 of 200 vs random | ≥ 90% |
+
+- **Measured facts the missions rest on** are named constants in each lesson's model with their tests: for
+  example the curious bot at zero curiosity sticks to the Heart (0.45) while the Bell (0.7) is best; a memory of
+  16 moves or fewer never lets DQN catch 20 of 25; PPO with no rail and 40 rounds rises then falls apart; the
+  tidy-up robot juggles with the pickup treat, paces with the closer treat and jumps in the puddle when moves cost
+  0.45; with no leash and the longest training the chatbot praises in at least 90% of answers.
+- **Shared changes** (small and additive):
+  - `src/features/building/use-recorded-run.ts`: `work` may yield `null`, a breath that records nothing, so a
+    long plan or one slow frame spreads over several slices; a link's replay on opening is not played from the
+    start.
+  - `src/platform/use-restored-moment.ts`: a new run that replaces one which never recorded a frame is still the
+    link's own run, so a scene that works its run out after opening keeps a link's moment
+    (`use-restored-moment.test.ts`, `ModuleShell.hardening.test.tsx`).
+  - `src/platform/contract.ts` and `ModuleShell.tsx`: optional `framesPerSecond` for a lesson's own play pace;
+    the compare sync has a re-entrancy guard, so a right half with no frame at the shown moment cannot recurse.
+  - `e2e/world-smoke.ts` takes an optional `test`; `e2e/w6.ts` adds a fixture that slows the CPU by
+    `E2E_CPU_THROTTLE` through CDP.
+  - Locked-lesson examples: no idea is unbuilt now, so `HomeMap.test.tsx` and the new
+    `src/app/learn/[moduleId]/page.test.tsx` mock one World 6 lesson as unbuilt; `e2e/home.spec.ts` checks no
+    star says it is still being drawn; the locked-page e2e test moved to that unit test; `e2e/a11y.spec.ts`
+    sweeps every World 6 lesson.
+- **Checks**: a unit test per lesson and per engine, `e2e/world-6.spec.ts` and an `e2e/w6-<id>.spec.ts` per
+  lesson (interaction, star, exact link replay; shared steps in `e2e/w6.ts`). Every World 6 spec also passes with
+  `E2E_CPU_THROTTLE=4`. `w6-thinking-ahead` checks a tap is answered within a frame while it thinks, and
+  `w6-survival-of-the-fittest` has a `@perf` check (a targeted run including it needs `--no-deps`).
