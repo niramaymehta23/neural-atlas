@@ -131,7 +131,7 @@ export function ChatScene(props: Props) {
                         </span>
                         <span aria-hidden>{answer.text} </span>
                         {answer.flatters && (
-                          <span className="whitespace-nowrap rounded-pill bg-sand px-2 text-xs">
+                          <span className="whitespace-nowrap rounded-pill border-2 border-ink bg-paper px-2 text-xs font-semibold">
                             {words.tags.praises}
                           </span>
                         )}{" "}
