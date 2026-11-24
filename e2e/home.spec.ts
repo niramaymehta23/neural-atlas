@@ -1,5 +1,8 @@
 import type { Locator, Page } from "@playwright/test";
+import { worlds } from "../src/catalog";
 import { world6 } from "../src/catalog/world-6";
+import { BEAD_CUT } from "../src/constellation/bead";
+import { constellationCaptions } from "../src/constellation/captions";
 import { budget, recordPerf } from "./frames";
 import { expect, test } from "./slowed";
 import { watch } from "./watch";
@@ -157,6 +160,50 @@ test("no two stars overlap, and pointing at any one shows its own label", async 
     await star.hover(steady);
     await expect(page.getByRole("tooltip")).toContainText(title?.split(",")[0] ?? id);
   }
+});
+
+test("the whole map draws light beads; a picked group and the chosen idea draw fine ones", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const beads: Record<number, number> = {};
+    Object.assign(window, { beads });
+    const draw = WebGL2RenderingContext.prototype.drawElements;
+    WebGL2RenderingContext.prototype.drawElements = function (mode, count, type, offset) {
+      beads[count] = (beads[count] ?? 0) + 1;
+      draw.call(this, mode, count, type, offset);
+    };
+  });
+  /** Starts counting afresh: how many times a bead of either cut is painted from now on. */
+  const counting = () =>
+    page.evaluate(() => {
+      const { beads } = window as unknown as { beads: Record<number, number> };
+      for (const key of Object.keys(beads)) delete beads[Number(key)];
+    });
+  const painted = (cut: readonly [number, number]) =>
+    page.evaluate(
+      (corners) => (window as unknown as { beads: Record<number, number> }).beads[corners] ?? 0,
+      // A ball cut this way has a ring of triangles at each end and two per square between.
+      cut[0] * (cut[1] - 1) * 6,
+    );
+  await openHome(page);
+  await page.keyboard.press("Shift");
+  await counting();
+  await expect.poll(() => painted(BEAD_CUT.map)).toBeGreaterThan(74);
+  expect(await painted(BEAD_CUT.close)).toBe(0);
+  await page.getByRole("radio", { name: worlds[0]?.title }).click();
+  await expect(page.locator("[data-star]")).toHaveCount(worlds[0]?.lessons.length ?? 0);
+  await counting();
+  await expect.poll(() => painted(BEAD_CUT.close)).toBeGreaterThan(0);
+  expect(await painted(BEAD_CUT.map)).toBeGreaterThan(0);
+  await page.getByRole("radio", { name: constellationCaptions.all }).click();
+  await expect(page.locator("[data-star]")).toHaveCount(74);
+  await counting();
+  await expect.poll(() => painted(BEAD_CUT.map)).toBeGreaterThan(74);
+  expect(await painted(BEAD_CUT.close)).toBe(0);
+  await page.locator('[data-star="rolling-downhill"]').focus();
+  await page.keyboard.press("Enter");
+  await expect.poll(() => painted(BEAD_CUT.close)).toBeGreaterThan(0);
 });
 
 test("a learned idea is announced as learned", async ({ page }) => {

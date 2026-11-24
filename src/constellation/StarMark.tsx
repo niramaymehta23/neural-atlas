@@ -12,7 +12,7 @@ import {
   type RefObject,
 } from "react";
 import { DoubleSide, type Color, type Group } from "three";
-import { BEAD_GROW, RADIUS } from "./bead";
+import { BEAD_CUT, BEAD_GROW, RADIUS } from "./bead";
 import { keepInside } from "./label-place";
 import { DIMMED, type Star } from "./layout";
 import { StarLabel } from "./StarLabel";
@@ -30,6 +30,8 @@ type StarMarkProps = {
   built: boolean;
   /** Another group is picked in the filter: the star fades back and cannot be chosen. */
   dimmed: boolean;
+  /** The camera is near it: its group is picked, or the camera is flying in. */
+  close: boolean;
   /** Its paper label is open (pointer over it, keyboard focus on it, or a first tap). */
   shown: boolean;
   still: boolean;
@@ -67,6 +69,7 @@ export const StarMark = memo(function StarMark({
   suggested,
   built,
   dimmed,
+  close,
   shown,
   still,
   overlay,
@@ -118,7 +121,9 @@ export const StarMark = memo(function StarMark({
       <group ref={bead}>
         {built ? (
           <mesh>
-            <sphereGeometry args={[learned ? RADIUS * 1.15 : RADIUS, 24, 16]} />
+            <sphereGeometry
+              args={[learned ? RADIUS * 1.15 : RADIUS, ...BEAD_CUT[close ? "close" : "map"]]}
+            />
             <meshStandardMaterial
               color={colour}
               roughness={0.9}

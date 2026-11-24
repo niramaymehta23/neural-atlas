@@ -191,6 +191,7 @@ export function ConstellationScene({
                       suggested={star.lesson.id === suggested}
                       built={built.has(star.lesson.id)}
                       dimmed={world !== null && world !== group}
+                      close={world === group || flyingTo === star.lesson.id}
                       shown={shown === star.lesson.id}
                       still={still}
                       overlay={portal}
