@@ -112,6 +112,8 @@ const designBans = [
 const config = [
   {
     ignores: [
+      // Other sessions' work copies (git-ignored), checked on their own branches.
+      ".claude/**",
       ".next/**",
       "out/**",
       "node_modules/**",
