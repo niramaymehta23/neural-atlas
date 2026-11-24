@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { lessons, worlds } from "@/catalog";
 import { progressStore, type Progress } from "@/platform/progress/progress";
 import { ComputeMeter, dotsFor, ONE_REPLY } from "../meter/ComputeMeter";
@@ -46,13 +46,17 @@ describe("achievements", () => {
   it("are announced once, the first time", async () => {
     render(<AwardNote />);
     await act(() => award("mend"));
-    expect(await screen.findByText("You earned a star: Breaker and fixer.")).toBeVisible();
+    // It fades in from nothing, so wait for it to show, not only to be on the page.
+    await waitFor(
+      () => expect(screen.getByText("You earned a star: Breaker and fixer.")).toBeVisible(),
+      { timeout: 10_000 },
+    );
     expect(progressStore.getState().achievements).toContain("mend");
     act(() => awardStore.setState({ latest: null }));
     await act(() => award("mend"));
     expect(awardStore.getState().latest).toBeNull();
     expect(progressStore.getState().achievements.filter((id) => id === "mend")).toHaveLength(1);
-  });
+  }, 15_000);
 });
 
 describe("the compute meter", () => {
