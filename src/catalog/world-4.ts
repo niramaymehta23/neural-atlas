@@ -12,7 +12,7 @@ export const world4: WorldEntry = {
       playWith: "Design a torch and sweep it over a photo",
       prerequisites: ["stacking-cells"],
       load: () =>
-        import("@/modules/w4-deep-architectures/the-pattern-torch").then(
+        import("#modules/w4-deep-architectures/the-pattern-torch").then(
           ({ definition }) => definition,
         ),
     },
@@ -24,7 +24,7 @@ export const world4: WorldEntry = {
       playWith: "Your webcam, seen layer by layer",
       prerequisites: ["the-pattern-torch"],
       load: () =>
-        import("@/modules/w4-deep-architectures/how-machines-see").then(
+        import("#modules/w4-deep-architectures/how-machines-see").then(
           ({ definition }) => definition,
         ),
     },
@@ -36,7 +36,7 @@ export const world4: WorldEntry = {
       playWith: "Shrink a picture tile by tile",
       prerequisites: ["the-pattern-torch"],
       load: () =>
-        import("@/modules/w4-deep-architectures/zooming-out").then(({ definition }) => definition),
+        import("#modules/w4-deep-architectures/zooming-out").then(({ definition }) => definition),
     },
     {
       id: "standing-on-giants",
@@ -46,7 +46,7 @@ export const world4: WorldEntry = {
       playWith: "Teach it your own objects with the webcam in seconds",
       prerequisites: ["how-machines-see"],
       load: () =>
-        import("@/modules/w4-deep-architectures/standing-on-giants").then(
+        import("#modules/w4-deep-architectures/standing-on-giants").then(
           ({ definition }) => definition,
         ),
     },
@@ -58,7 +58,7 @@ export const world4: WorldEntry = {
       playWith: "A memory bead travels along the words",
       prerequisites: ["stacking-cells"],
       load: () =>
-        import("@/modules/w4-deep-architectures/reading-one-word-at-a-time").then(
+        import("#modules/w4-deep-architectures/reading-one-word-at-a-time").then(
           ({ definition }) => definition,
         ),
     },
@@ -70,7 +70,7 @@ export const world4: WorldEntry = {
       playWith: "Open and close the memory gates",
       prerequisites: ["reading-one-word-at-a-time"],
       load: () =>
-        import("@/modules/w4-deep-architectures/choosing-what-to-remember").then(
+        import("#modules/w4-deep-architectures/choosing-what-to-remember").then(
           ({ definition }) => definition,
         ),
     },
@@ -82,7 +82,7 @@ export const world4: WorldEntry = {
       playWith: "Similar words drift together on a map",
       prerequisites: ["stacking-cells", "a-map-of-everything"],
       load: () =>
-        import("@/modules/w4-deep-architectures/meaning-as-places").then(
+        import("#modules/w4-deep-architectures/meaning-as-places").then(
           ({ definition }) => definition,
         ),
     },
@@ -94,7 +94,7 @@ export const world4: WorldEntry = {
       playWith: "Tighten the squeeze; watch the rebuild blur",
       prerequisites: ["stacking-cells", "the-best-shadow"],
       load: () =>
-        import("@/modules/w4-deep-architectures/squeeze-and-rebuild").then(
+        import("#modules/w4-deep-architectures/squeeze-and-rebuild").then(
           ({ definition }) => definition,
         ),
     },
@@ -106,7 +106,7 @@ export const world4: WorldEntry = {
       playWith: "Glide across a map of faces as they morph",
       prerequisites: ["squeeze-and-rebuild"],
       load: () =>
-        import("@/modules/w4-deep-architectures/smooth-imagination").then(
+        import("#modules/w4-deep-architectures/smooth-imagination").then(
           ({ definition }) => definition,
         ),
     },
@@ -118,7 +118,7 @@ export const world4: WorldEntry = {
       playWith: "The duel arena with live scores",
       prerequisites: ["stacking-cells"],
       load: () =>
-        import("@/modules/w4-deep-architectures/forger-vs-detective").then(
+        import("#modules/w4-deep-architectures/forger-vs-detective").then(
           ({ definition }) => definition,
         ),
     },
@@ -130,7 +130,7 @@ export const world4: WorldEntry = {
       playWith: "Scrub from fog to image; paint where to steer it",
       prerequisites: ["smooth-imagination"],
       load: () =>
-        import("@/modules/w4-deep-architectures/painting-from-fog").then(
+        import("#modules/w4-deep-architectures/painting-from-fog").then(
           ({ definition }) => definition,
         ),
     },
@@ -142,7 +142,7 @@ export const world4: WorldEntry = {
       playWith: "Pulses spread through a friendship network",
       prerequisites: ["stacking-cells"],
       load: () =>
-        import("@/modules/w4-deep-architectures/learning-from-friends").then(
+        import("#modules/w4-deep-architectures/learning-from-friends").then(
           ({ definition }) => definition,
         ),
     },

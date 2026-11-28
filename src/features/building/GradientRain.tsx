@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef } from "react";
+import { drawingLoop, FLOW_RATE, REST_MS, type DrawingLoop } from "@/design/drawing-loop";
 import { speed } from "@/design/encodings";
 import { useReducedMotion } from "@/design/motion";
 import { createRandom } from "@/engine/random";
@@ -40,12 +41,18 @@ export function rainShares(blame: readonly number[]): number[] {
  * Gradient rain: blame falls back through the network, one band per layer, answer on the
  * right and the start on the left. More blame means more drops falling faster and a longer
  * puddle under the band; a band that gets almost none is marked dry in words, not just by an
- * empty band. With reduced motion the drops hang still.
+ * empty band. The rain rests while the learner is away or it is out of view, and with reduced
+ * motion the drops hang still.
  */
 export function GradientRain({ blame, words }: GradientRainProps) {
   const reduced = useReducedMotion();
   const shares = useMemo(() => rainShares(blame), [blame]);
   const bands = useRef<(SVGGElement | null)[]>([]);
+  const picture = useRef<SVGSVGElement>(null);
+  /** Seconds it has rained: kept when the blame changes or it rests, so the drops never jump. */
+  const falling = useRef(0);
+  const loop = useRef<DrawingLoop>(null);
+  const latest = useRef(shares);
   const clip = useId();
   const count = Math.max(1, shares.length);
   const band = WIDTH / count;
@@ -58,30 +65,42 @@ export function GradientRain({ blame, words }: GradientRainProps) {
     }));
   }, []);
 
+  // New blame wakes the rain, and it carries on falling where it was.
+  useEffect(() => {
+    latest.current = shares;
+    loop.current?.wake();
+  }, [shares]);
+
   useEffect(() => {
     if (reduced) {
       for (const group of bands.current) group?.setAttribute("transform", "translate(0 0)");
       return;
     }
-    let frame = 0;
-    const started = performance.now();
-    const loop = (now: number) => {
-      const seconds = (now - started) / 1000;
-      shares.forEach((share, index) => {
-        const fall = (seconds / speed(share)) * FLOOR;
+    const draw = (passed: number) => {
+      falling.current += passed;
+      latest.current.forEach((share, index) => {
+        const fall = (falling.current / speed(share)) * FLOOR;
         bands.current[index]?.setAttribute(
           "transform",
           `translate(0 ${(fall % FLOOR).toFixed(1)})`,
         );
       });
-      frame = requestAnimationFrame(loop);
     };
-    frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
-  }, [reduced, shares]);
+    const started = drawingLoop(draw, {
+      rate: FLOW_RATE,
+      element: picture.current,
+      restAfter: REST_MS,
+    });
+    loop.current = started;
+    return () => {
+      loop.current = null;
+      started();
+    };
+  }, [reduced]);
 
   return (
     <svg
+      ref={picture}
       role="img"
       aria-label={words.label}
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import type { Timeline } from "@/engine/timeline/timeline";
 import { TimelineScrubber } from "@/ui/TimelineScrubber";
 import type { TimelineFrame } from "./contract";
@@ -14,6 +14,9 @@ type TimelineBarProps = {
   onReplayEnd: (finished: boolean) => void;
 };
 
+/** A replay moves on by at most this much between two frames. */
+const MOST_SECONDS = 0.25;
+
 /** The stage 01 scrubber bound to a lesson's Timeline, ticking playback from the frame loop. */
 export function TimelineBar({ timeline, replay, onReplayEnd }: TimelineBarProps) {
   const state = useSyncExternalStore(timeline.subscribe, timeline.getState, timeline.getState);
@@ -23,7 +26,8 @@ export function TimelineBar({ timeline, replay, onReplayEnd }: TimelineBarProps)
     let frame = 0;
     let last = performance.now();
     const loop = (now: number) => {
-      const seconds = (now - last) / 1000;
+      // A tab that was hidden carries on where it stopped, rather than leaping over the time away.
+      const seconds = Math.min((now - last) / 1000, MOST_SECONDS);
       last = now;
       if (replay) {
         if (!advanceReplay(timeline, replay, seconds)) return onReplayEnd(true);
@@ -34,7 +38,11 @@ export function TimelineBar({ timeline, replay, onReplayEnd }: TimelineBarProps)
     return () => cancelAnimationFrame(frame);
   }, [state.playing, timeline, replay, onReplayEnd]);
 
+  // The same lists while nothing new is recorded, so a replay moves the thumb and redraws no line.
   const frames = timeline.frames();
+  const ghost = timeline.ghostFrames();
+  const losses = useMemo(() => frames.map(({ loss }) => loss), [frames]);
+  const ghostLosses = useMemo(() => ghost.map(({ loss }) => loss), [ghost]);
   return (
     <TimelineScrubber
       length={state.length}
@@ -54,8 +62,8 @@ export function TimelineBar({ timeline, replay, onReplayEnd }: TimelineBarProps)
         onReplayEnd(false);
         timeline.seek(position);
       }}
-      losses={frames.map(({ loss }) => loss)}
-      ghostLosses={timeline.ghostFrames().map(({ loss }) => loss)}
+      losses={losses}
+      ghostLosses={ghostLosses}
     />
   );
 }

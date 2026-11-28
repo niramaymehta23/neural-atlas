@@ -96,17 +96,24 @@ export function gradient(
   for (let i = 0; i < n; i += 1) {
     const yi0 = y[2 * i] ?? 0;
     const yi1 = y[2 * i + 1] ?? 0;
-    for (let j = i + 1; j < n; j += 1) {
-      const d0 = yi0 - (y[2 * j] ?? 0);
-      const d1 = yi1 - (y[2 * j + 1] ?? 0);
+    // Row i's sums are kept in hand and written back once, added up in the same order.
+    let push0 = repel[2 * i] ?? 0;
+    let push1 = repel[2 * i + 1] ?? 0;
+    for (let at = 2 * i + 2; at < 2 * n; at += 2) {
+      const d0 = yi0 - (y[at] ?? 0);
+      const d1 = yi1 - (y[at + 1] ?? 0);
       const q = 1 / (1 + d0 * d0 + d1 * d1);
       z += 2 * q;
       const q2 = q * q;
-      repel[2 * i] = (repel[2 * i] ?? 0) + q2 * d0;
-      repel[2 * i + 1] = (repel[2 * i + 1] ?? 0) + q2 * d1;
-      repel[2 * j] = (repel[2 * j] ?? 0) - q2 * d0;
-      repel[2 * j + 1] = (repel[2 * j + 1] ?? 0) - q2 * d1;
+      const away0 = q2 * d0;
+      const away1 = q2 * d1;
+      push0 += away0;
+      push1 += away1;
+      repel[at] = (repel[at] ?? 0) - away0;
+      repel[at + 1] = (repel[at + 1] ?? 0) - away1;
     }
+    repel[2 * i] = push0;
+    repel[2 * i + 1] = push1;
   }
   let cost = 0;
   for (let at = 0; at < values.length; at += 1) {
@@ -237,16 +244,18 @@ export function spacing(positions: ArrayLike<number>): number {
   if (n < 3 || area <= 0) return 1;
   let total = 0;
   for (let i = 0; i < n; i += 1) {
+    const x = positions[2 * i] ?? 0;
+    const y = positions[2 * i + 1] ?? 0;
     let best = Infinity;
+    // The exact distance is slow to work out, so only dots that may be the nearest get it.
+    let worthIt = Infinity;
     for (let j = 0; j < n; j += 1) {
       if (j === i) continue;
-      best = Math.min(
-        best,
-        Math.hypot(
-          (positions[2 * i] ?? 0) - (positions[2 * j] ?? 0),
-          (positions[2 * i + 1] ?? 0) - (positions[2 * j + 1] ?? 0),
-        ),
-      );
+      const dx = x - (positions[2 * j] ?? 0);
+      const dy = y - (positions[2 * j + 1] ?? 0);
+      if (dx * dx + dy * dy > worthIt) continue;
+      best = Math.min(best, Math.hypot(dx, dy));
+      worthIt = best * best * (1 + 1e-9);
     }
     total += best;
   }

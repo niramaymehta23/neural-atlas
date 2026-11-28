@@ -3,6 +3,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import { BufferAttribute, BufferGeometry, type Color } from "three";
+import type { Drifting } from "./floating";
 import { floatOffset, type Link, type Star } from "./layout";
 
 type LinksProps = {
@@ -12,10 +13,11 @@ type LinksProps = {
   /** Full strength, or faded back when these lines belong to groups not picked. */
   opacity: number;
   still: boolean;
+  drifting: Drifting;
 };
 
 /** Thin warm lines from each idea to the ones it builds on, riding along as the groups bob. */
-export function Links({ stars, links, colour, opacity, still }: LinksProps) {
+export function Links({ stars, links, colour, opacity, still, drifting }: LinksProps) {
   const invalidate = useThree((state) => state.invalidate);
   const geometry = useMemo(() => {
     const lines = new BufferGeometry();
@@ -41,12 +43,12 @@ export function Links({ stars, links, colour, opacity, still }: LinksProps) {
   );
 
   useLayoutEffect(() => {
-    place(0);
+    place(drifting.seconds());
     invalidate();
-  }, [place, invalidate]);
+  }, [place, invalidate, drifting]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  useFrame(({ clock }) => {
-    if (!still) place(clock.elapsedTime);
+  useFrame(() => {
+    if (!still) place(drifting.seconds());
   });
 
   return (

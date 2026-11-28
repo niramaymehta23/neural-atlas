@@ -6,6 +6,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type MouseEvent,
@@ -13,8 +14,10 @@ import {
 } from "react";
 import { DoubleSide, type Color, type Group } from "three";
 import { BEAD_CUT, BEAD_GROW, RADIUS } from "./bead";
+import type { Drifting } from "./floating";
 import { keepInside } from "./label-place";
 import { DIMMED, type Star } from "./layout";
+import { LINK_SLACK, steadyPlace, TICK_SLACK } from "./link-place";
 import { StarLabel } from "./StarLabel";
 import { starName, starStatus } from "./status";
 
@@ -35,6 +38,7 @@ type StarMarkProps = {
   /** Its paper label is open (pointer over it, keyboard focus on it, or a first tap). */
   shown: boolean;
   still: boolean;
+  drifting: Drifting;
   /** Where the star links live, laid over the canvas. */
   overlay: RefObject<HTMLElement>;
   onShow: (id: string | null) => void;
@@ -72,6 +76,7 @@ export const StarMark = memo(function StarMark({
   close,
   shown,
   still,
+  drifting,
   overlay,
   onShow,
   onChoose,
@@ -96,12 +101,13 @@ export const StarMark = memo(function StarMark({
   const [tapped, setTapped] = useState(false);
   const status = starStatus({ learned, suggested, built });
   const open = shown && !dimmed;
+  const placeLink = useMemo(() => steadyPlace(learned ? TICK_SLACK : LINK_SLACK), [learned]);
 
   useEffect(() => invalidate(), [open, invalidate]);
 
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (ring.current && !still) {
-      const phase = (clock.elapsedTime / PULSE.seconds) * Math.PI * 2;
+      const phase = (drifting.seconds() / PULSE.seconds) * Math.PI * 2;
       ring.current.scale.setScalar(1 + PULSE.size * (0.5 + 0.5 * Math.sin(phase)));
     }
     if (bead.current) {
@@ -155,7 +161,7 @@ export const StarMark = memo(function StarMark({
         </group>
       )}
       {!dimmed && (
-        <Html portal={overlay} center zIndexRange={[10, 0]}>
+        <Html portal={overlay} center zIndexRange={[10, 0]} calculatePosition={placeLink}>
           <a
             href={`/learn/${lesson.id}`}
             aria-label={starName(lesson.title, status)}

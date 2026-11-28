@@ -2,6 +2,7 @@
  * The page's handle on one practice worker, so practice never holds up the page. A worker that
  * fails to start, or a message it cannot read, is reported through `onError`.
  */
+import { onTabHidden } from "../tab";
 import type { PracticeCommand, PracticeEvent } from "./protocol";
 
 /** The slice of a Worker the client uses, so tests can connect the host in-process. */
@@ -23,6 +24,7 @@ export class PracticeClient<Config, Moment> {
   private readonly port: PracticePort<Config, Moment>;
   private run = 0;
   private disposed = false;
+  private readonly stopWatching: () => void = () => undefined;
 
   constructor(
     connect: () => PracticePort<Config, Moment>,
@@ -46,6 +48,7 @@ export class PracticeClient<Config, Moment> {
     this.port.onerror = () => this.fail("The practice worker could not start.");
     this.port.onmessageerror = () =>
       this.fail("A message from the practice worker could not be read.");
+    this.stopWatching = onTabHidden((resting) => this.port.postMessage({ type: "rest", resting }));
   }
 
   private fail(message: string) {
@@ -72,6 +75,7 @@ export class PracticeClient<Config, Moment> {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.stopWatching();
     this.port.onmessage = null;
     this.port.terminate();
   }

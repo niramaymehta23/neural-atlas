@@ -5,8 +5,12 @@ import type { Value } from "../../autodiff/value";
 import type { Random } from "../../random";
 import type { ModelSpec, Samples, TrainSettings } from "../protocol";
 import type { Backend } from "./backend";
+import { createDenseLearner } from "./dense-autodiff";
 
-/** The transparent backend: a scalar-autodiff MLP, for small nets where every weight is shown. */
+/**
+ * The transparent backend: a scalar-autodiff MLP, for small nets where every weight is shown. A
+ * yes/no network with one answer learns on plain arrays instead, with exactly the same numbers.
+ */
 export function createAutodiffBackend(
   model: ModelSpec,
   train: TrainSettings,
@@ -17,6 +21,11 @@ export function createAutodiffBackend(
   const inputWidth = model.sizes[0] ?? 0;
   const outputWidth = model.sizes.at(-1) ?? 1;
   let optimiser = createOptimiser(train.optimiser);
+
+  const learn =
+    model.loss === "binaryCrossEntropy" && outputWidth === 1
+      ? createDenseLearner(model, params)
+      : null;
 
   const exampleLoss = (outputs: Value[], data: Samples, index: number): Value => {
     if (model.loss === "softmaxCrossEntropy")
@@ -31,20 +40,25 @@ export function createAutodiffBackend(
   const row = (inputs: Float32Array, index: number) =>
     Array.from(inputs.subarray(index * inputWidth, (index + 1) * inputWidth));
 
+  /** Fills the parameters' grads for one batch; returns its mean mistake. */
+  const learnFrom = (data: Samples, batch: readonly number[]): number => {
+    if (learn) return learn(data, batch);
+    const loss = mean(
+      batch.map((index) => exampleLoss(mlp.call(row(data.inputs, index)), data, index)),
+    );
+    zeroGrad(params);
+    loss.backward();
+    return loss.data;
+  };
+
   return {
     name: "autodiff",
     async trainEpoch(data, order, batchSize) {
       let total = 0;
       let batches = 0;
       for (let start = 0; start < order.length; start += batchSize) {
-        const batch = order.slice(start, start + batchSize);
-        const loss = mean(
-          batch.map((index) => exampleLoss(mlp.call(row(data.inputs, index)), data, index)),
-        );
-        zeroGrad(params);
-        loss.backward();
+        total += learnFrom(data, order.slice(start, start + batchSize));
         optimiser.step(params);
-        total += loss.data;
         batches += 1;
       }
       return batches === 0 ? 0 : total / batches;

@@ -1,6 +1,7 @@
 "use client";
 
 import { Slider as RadixSlider } from "radix-ui";
+import { memo } from "react";
 import { count } from "@/design/copy";
 import { extent, linePath } from "@/design/encodings";
 import { uiCaptions } from "./captions";
@@ -26,6 +27,7 @@ type TimelineScrubberProps = {
   className?: string;
 };
 
+const NONE: readonly number[] = [];
 const SPARK = { width: 400, height: 36 };
 
 const momentWords = (position: number, length: number) =>
@@ -42,7 +44,7 @@ export function TimelineScrubber({
   onPlayToggle,
   onSeek,
   losses,
-  ghostLosses = [],
+  ghostLosses = NONE,
   describe = momentWords,
   live = true,
   onLive,
@@ -52,10 +54,6 @@ export function TimelineScrubber({
   const empty = length === 0;
   // One value feeds the thumb, its number and its words, so they never disagree (LIVE-10).
   const shown = Math.min(position, last);
-  const range = extent([...losses, ...ghostLosses]);
-  const span = Math.max(losses.length, ghostLosses.length, 2) - 1;
-  const lineFor = (values: readonly number[]) =>
-    linePath(values, (SPARK.width * Math.max(0, values.length - 1)) / span, SPARK.height, range);
   const seek = (next: number) => onSeek(Math.min(last, Math.max(0, next)));
 
   return (
@@ -99,30 +97,7 @@ export function TimelineScrubber({
         disabled={empty}
         onValueChange={([next]) => next !== undefined && seek(next)}
       >
-        <svg
-          aria-hidden
-          viewBox={`0 0 ${SPARK.width} ${SPARK.height}`}
-          preserveAspectRatio="none"
-          className="absolute inset-x-0 top-0 h-full w-full overflow-visible"
-        >
-          <path
-            data-line="ghost"
-            d={lineFor(ghostLosses)}
-            fill="none"
-            stroke="var(--color-ink-soft)"
-            strokeOpacity={0.5}
-            strokeDasharray="4 4"
-            vectorEffect="non-scaling-stroke"
-          />
-          <path
-            data-line="current"
-            d={lineFor(losses)}
-            fill="none"
-            stroke="var(--color-ink)"
-            strokeWidth={1.5}
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
+        <MistakeLines losses={losses} ghostLosses={ghostLosses} />
         <RadixSlider.Track className="relative h-1 grow self-end rounded-pill bg-inset">
           <RadixSlider.Range className="absolute h-full rounded-pill bg-ink" />
         </RadixSlider.Track>
@@ -145,6 +120,46 @@ export function TimelineScrubber({
     </div>
   );
 }
+
+/** The mistake curves behind the track, drawn again only when the mistakes change. */
+const MistakeLines = memo(function MistakeLines({
+  losses,
+  ghostLosses,
+}: {
+  losses: readonly number[];
+  ghostLosses: readonly number[];
+}) {
+  const range = extent([...losses, ...ghostLosses]);
+  const span = Math.max(losses.length, ghostLosses.length, 2) - 1;
+  const lineFor = (values: readonly number[]) =>
+    linePath(values, (SPARK.width * Math.max(0, values.length - 1)) / span, SPARK.height, range);
+  return (
+    <svg
+      aria-hidden
+      viewBox={`0 0 ${SPARK.width} ${SPARK.height}`}
+      preserveAspectRatio="none"
+      className="absolute inset-x-0 top-0 h-full w-full overflow-visible"
+    >
+      <path
+        data-line="ghost"
+        d={lineFor(ghostLosses)}
+        fill="none"
+        stroke="var(--color-ink-soft)"
+        strokeOpacity={0.5}
+        strokeDasharray="4 4"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        data-line="current"
+        d={lineFor(losses)}
+        fill="none"
+        stroke="var(--color-ink)"
+        strokeWidth={1.5}
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+});
 
 function PlayIcon() {
   return (

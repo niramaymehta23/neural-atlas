@@ -12,7 +12,7 @@ export const world3: WorldEntry = {
       playWith: "Pluck strings for how much it trusts each voice",
       prerequisites: ["splitting-into-groups", "rolling-downhill"],
       load: () =>
-        import("@/modules/w3-neural-networks/one-tiny-brain-cell").then(
+        import("#modules/w3-neural-networks/one-tiny-brain-cell").then(
           ({ definition }) => definition,
         ),
     },
@@ -24,7 +24,7 @@ export const world3: WorldEntry = {
       playWith: "Swap the bend and see what it can draw",
       prerequisites: ["one-tiny-brain-cell"],
       load: () =>
-        import("@/modules/w3-neural-networks/the-decision-curve").then(
+        import("#modules/w3-neural-networks/the-decision-curve").then(
           ({ definition }) => definition,
         ),
     },
@@ -36,7 +36,7 @@ export const world3: WorldEntry = {
       playWith: "Draw your own dots and add layers",
       prerequisites: ["the-decision-curve"],
       load: () =>
-        import("@/modules/w3-neural-networks/stacking-cells").then(({ definition }) => definition),
+        import("#modules/w3-neural-networks/stacking-cells").then(({ definition }) => definition),
     },
     {
       id: "thinking-forwards",
@@ -46,7 +46,7 @@ export const world3: WorldEntry = {
       playWith: "Watch dots flow left to right",
       prerequisites: ["stacking-cells"],
       load: () =>
-        import("@/modules/w3-neural-networks/thinking-forwards").then(
+        import("#modules/w3-neural-networks/thinking-forwards").then(
           ({ definition }) => definition,
         ),
     },
@@ -58,7 +58,7 @@ export const world3: WorldEntry = {
       playWith: "Blame rain falls back through the network",
       prerequisites: ["thinking-forwards"],
       load: () =>
-        import("@/modules/w3-neural-networks/passing-back-the-blame").then(
+        import("#modules/w3-neural-networks/passing-back-the-blame").then(
           ({ definition }) => definition,
         ),
     },
@@ -70,7 +70,7 @@ export const world3: WorldEntry = {
       playWith: "Three walkers race down the valley",
       prerequisites: ["passing-back-the-blame"],
       load: () =>
-        import("@/modules/w3-neural-networks/smarter-ways-downhill").then(
+        import("#modules/w3-neural-networks/smarter-ways-downhill").then(
           ({ definition }) => definition,
         ),
     },
@@ -82,7 +82,7 @@ export const world3: WorldEntry = {
       playWith: "Draw a step-size plan",
       prerequisites: ["smarter-ways-downhill"],
       load: () =>
-        import("@/modules/w3-neural-networks/big-steps-then-small").then(
+        import("#modules/w3-neural-networks/big-steps-then-small").then(
           ({ definition }) => definition,
         ),
     },
@@ -94,7 +94,7 @@ export const world3: WorldEntry = {
       playWith: "Re-roll the start and compare",
       prerequisites: ["stacking-cells"],
       load: () =>
-        import("@/modules/w3-neural-networks/where-you-start").then(({ definition }) => definition),
+        import("#modules/w3-neural-networks/where-you-start").then(({ definition }) => definition),
     },
     {
       id: "dont-cram",
@@ -104,7 +104,7 @@ export const world3: WorldEntry = {
       playWith: "Randomly switch cells off while it learns",
       prerequisites: ["stacking-cells", "memorising-vs-understanding"],
       load: () =>
-        import("@/modules/w3-neural-networks/dont-cram").then(({ definition }) => definition),
+        import("#modules/w3-neural-networks/dont-cram").then(({ definition }) => definition),
     },
     {
       id: "keeping-things-steady",
@@ -114,7 +114,7 @@ export const world3: WorldEntry = {
       playWith: "Wild vs calm signals side by side",
       prerequisites: ["passing-back-the-blame"],
       load: () =>
-        import("@/modules/w3-neural-networks/keeping-things-steady").then(
+        import("#modules/w3-neural-networks/keeping-things-steady").then(
           ({ definition }) => definition,
         ),
     },
@@ -126,7 +126,7 @@ export const world3: WorldEntry = {
       playWith: "Draw a squiggle; add cells until it matches",
       prerequisites: ["stacking-cells"],
       load: () =>
-        import("@/modules/w3-neural-networks/it-can-draw-anything").then(
+        import("#modules/w3-neural-networks/it-can-draw-anything").then(
           ({ definition }) => definition,
         ),
     },

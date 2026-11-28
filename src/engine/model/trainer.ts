@@ -5,6 +5,7 @@
  * trains wait until it is done, so a replayed run applies its changes at exactly their epochs.
  */
 import { createRandom, type Random } from "../random";
+import { createSlices } from "../slices";
 import { createAutodiffBackend } from "./backends/autodiff";
 import { meanLoss, scoresToOutputs, type Backend } from "./backends/backend";
 import { writeLive } from "./live";
@@ -16,6 +17,10 @@ export type LoadBackend = (init: InitCommand, random: Random) => Promise<Backend
 
 /** Longest stretch of training before letting queued commands (or timers) in. */
 const SLICE_MS = 12;
+/** While ahead of the pace it was asked for, training waits this long: about one frame. */
+const PACE_MS = 16;
+/** A paced run catches up by no more than this. */
+const BEHIND_MS = 250;
 /** The newest parameters are read (and published) at most this often while training: one frame. */
 const LIVE_MS = 16;
 
@@ -26,8 +31,6 @@ const loadBackend: LoadBackend = async (init, random) =>
 
 const wholeAtLeastOne = (value: number) => Number.isInteger(value) && value >= 1;
 const allFinite = (values: Float64Array) => values.every(Number.isFinite);
-/** Lets timers and incoming messages run between slices. */
-const breathe = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /** What one epoch came to: trained, nothing to learn from, or numbers that blew up. */
 type Outcome = "trained" | "empty" | "diverged";
@@ -47,9 +50,15 @@ export function createTrainer(post: Post, load: LoadBackend = loadBackend) {
   let lastRead = -Infinity;
   let lastSnapshotAt = -Infinity;
   let running = false;
+  /** Epochs a paced run may train by now, and when that was last worked out. */
+  let owed = 0;
+  let owedAt = 0;
   /** Bumped by every run and pause, so a slice scheduled for an older run never trains. */
   let generation = 0;
   let queue = Promise.resolve();
+  const slices = createSlices();
+  /** Lets timers and incoming messages run between slices, and waits out a hidden page. */
+  const breathe = () => new Promise<void>((resolve) => slices.next(resolve));
   let liveSentAt = -Infinity;
   let liveWaiting: { epoch: number; loss: number; params: Float64Array } | null = null;
 
@@ -155,13 +164,20 @@ export function createTrainer(post: Post, load: LoadBackend = loadBackend) {
   const slice = (run: number) =>
     enqueue(async () => {
       const active = () => running && run === generation;
-      const until = performance.now() + SLICE_MS;
-      while (active() && performance.now() < until) {
+      const started = performance.now();
+      const { perSecond } = current().init.train;
+      // A device that cannot keep the pace does not save up a debt to rush through later.
+      owed = perSecond
+        ? Math.min(owed + (started - owedAt) * (perSecond / 1000), (perSecond / 1000) * BEHIND_MS)
+        : Infinity;
+      owedAt = started;
+      while (active() && owed >= 1 && performance.now() < started + SLICE_MS) {
+        owed -= 1;
         const outcome = await trainEpoch();
         if (outcome === "empty") idle();
         if (outcome !== "trained") break;
       }
-      if (active()) setTimeout(() => void slice(run), 0);
+      if (active()) slices.next(() => void slice(run), owed >= 1 ? 0 : PACE_MS);
     });
 
   /** Posts where training stopped: the newest parameters and a snapshot of them. */
@@ -232,11 +248,18 @@ export function createTrainer(post: Post, load: LoadBackend = loadBackend) {
         if (running) return queue;
         running = true;
         generation += 1;
+        owed = 0;
+        owedAt = performance.now();
         return slice(generation);
       case "pause":
         running = false;
         generation += 1;
         return enqueue(settle);
+      case "rest":
+        // Back again: the pace is counted from here, so it does not rush to make up the time.
+        if (!command.resting) owedAt = performance.now();
+        slices.rest(command.resting);
+        return queue;
       case "step":
         running = false;
         generation += 1;

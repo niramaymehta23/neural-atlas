@@ -4,6 +4,7 @@
  * was asked for, and posts a moment every few steps. Moments fall on fixed steps, so a run's
  * moments never depend on how its work was sliced or paced.
  */
+import { createSlices, type Later } from "../slices";
 import type { PracticeCommand, PracticeEvent, PracticeRun } from "./protocol";
 
 /** Work done before giving way. */
@@ -12,9 +13,10 @@ const SLICE_MS = 12;
 export function createPracticeHost<Config, Moment extends object>(
   begin: (config: Config) => PracticeRun<Moment>,
   post: (event: PracticeEvent<Moment>) => void,
-  later: (next: () => void, wait: number) => void = (next, wait) => setTimeout(next, wait),
+  later?: Later,
   now: () => number = () => performance.now(),
 ) {
+  const slices = createSlices(later);
   let run = -1;
   let practising: PracticeRun<Moment> | null = null;
   let until = 0;
@@ -53,7 +55,7 @@ export function createPracticeHost<Config, Moment extends object>(
       return;
     }
     // Ahead of the pace: wait for the next step's turn; behind it: carry straight on.
-    later(slice, current.step >= allowed ? Math.ceil(1000 / pace) : 0);
+    slices.next(slice, current.step >= allowed ? Math.ceil(1000 / pace) : 0);
   };
 
   return (command: PracticeCommand<Config>) => {
@@ -66,6 +68,12 @@ export function createPracticeHost<Config, Moment extends object>(
       } catch (error) {
         fail(error);
       }
+      return;
+    }
+    if (command.type === "rest") {
+      // Back again: the pace is counted from here, so it does not rush to make up the time away.
+      if (!command.resting && practising) paceFrom = { time: now(), step: practising.step };
+      slices.rest(command.resting);
       return;
     }
     if (command.run !== run || !practising) return;
@@ -87,7 +95,7 @@ export function createPracticeHost<Config, Moment extends object>(
     }
     if (!stepping) {
       stepping = true;
-      later(slice, 0);
+      slices.next(slice);
     }
   };
 }

@@ -127,6 +127,8 @@ export type Show = {
   /** Moves on by this much time. Under reduced motion it is called rarely, with more time at once. */
   advance: (seconds: number) => void;
   draw: (painter: Painter) => void;
+  /** Names the picture `draw` would make now; while the name stays the same, it is not made again. */
+  picture?: (still: boolean) => string;
   /** What is happening, in words. */
   describe: () => string;
 };

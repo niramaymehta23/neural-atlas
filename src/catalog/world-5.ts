@@ -12,7 +12,7 @@ export const world5: WorldEntry = {
       playWith: "Type anything and see the pieces",
       prerequisites: ["reading-one-word-at-a-time"],
       load: () =>
-        import("@/modules/w5-transformers/chopping-text-into-pieces").then(
+        import("#modules/w5-transformers/chopping-text-into-pieces").then(
           ({ definition }) => definition,
         ),
     },
@@ -24,7 +24,7 @@ export const world5: WorldEntry = {
       playWith: "King minus man plus woman lands near queen",
       prerequisites: ["chopping-text-into-pieces", "meaning-as-places"],
       load: () =>
-        import("@/modules/w5-transformers/words-as-places").then(({ definition }) => definition),
+        import("#modules/w5-transformers/words-as-places").then(({ definition }) => definition),
     },
     {
       id: "who-is-looking-at-whom",
@@ -34,7 +34,7 @@ export const world5: WorldEntry = {
       playWith: "Soft threads between words",
       prerequisites: ["words-as-places"],
       load: () =>
-        import("@/modules/w5-transformers/who-is-looking-at-whom").then(
+        import("#modules/w5-transformers/who-is-looking-at-whom").then(
           ({ definition }) => definition,
         ),
     },
@@ -46,7 +46,7 @@ export const world5: WorldEntry = {
       playWith: "A gallery of readers, each with its own threads",
       prerequisites: ["who-is-looking-at-whom"],
       load: () =>
-        import("@/modules/w5-transformers/many-readers-at-once").then(
+        import("#modules/w5-transformers/many-readers-at-once").then(
           ({ definition }) => definition,
         ),
     },
@@ -58,7 +58,7 @@ export const world5: WorldEntry = {
       playWith: "Switch word order on and off",
       prerequisites: ["who-is-looking-at-whom"],
       load: () =>
-        import("@/modules/w5-transformers/knowing-the-order").then(({ definition }) => definition),
+        import("#modules/w5-transformers/knowing-the-order").then(({ definition }) => definition),
     },
     {
       id: "the-thinking-block",
@@ -68,7 +68,7 @@ export const world5: WorldEntry = {
       playWith: "A river where each block adds a stream",
       prerequisites: ["many-readers-at-once", "knowing-the-order", "keeping-things-steady"],
       load: () =>
-        import("@/modules/w5-transformers/the-thinking-block").then(({ definition }) => definition),
+        import("#modules/w5-transformers/the-thinking-block").then(({ definition }) => definition),
     },
     {
       id: "guess-the-next-word",
@@ -78,9 +78,7 @@ export const world5: WorldEntry = {
       playWith: "The next-word slot machine",
       prerequisites: ["the-thinking-block", "how-sure-is-it"],
       load: () =>
-        import("@/modules/w5-transformers/guess-the-next-word").then(
-          ({ definition }) => definition,
-        ),
+        import("#modules/w5-transformers/guess-the-next-word").then(({ definition }) => definition),
     },
     {
       id: "safe-vs-adventurous",
@@ -90,9 +88,7 @@ export const world5: WorldEntry = {
       playWith: 'A "boring ↔ wild" dial with live text',
       prerequisites: ["guess-the-next-word"],
       load: () =>
-        import("@/modules/w5-transformers/safe-vs-adventurous").then(
-          ({ definition }) => definition,
-        ),
+        import("#modules/w5-transformers/safe-vs-adventurous").then(({ definition }) => definition),
     },
     {
       id: "reading-the-internet",
@@ -102,7 +98,7 @@ export const world5: WorldEntry = {
       playWith: "Train a tiny writer on your own text",
       prerequisites: ["guess-the-next-word"],
       load: () =>
-        import("@/modules/w5-transformers/reading-the-internet").then(
+        import("#modules/w5-transformers/reading-the-internet").then(
           ({ definition }) => definition,
         ),
     },
@@ -114,7 +110,7 @@ export const world5: WorldEntry = {
       playWith: "Grow three dials and see what helps",
       prerequisites: ["reading-the-internet"],
       load: () =>
-        import("@/modules/w5-transformers/bigger-and-bigger").then(({ definition }) => definition),
+        import("#modules/w5-transformers/bigger-and-bigger").then(({ definition }) => definition),
     },
     {
       id: "short-term-memory",
@@ -124,7 +120,7 @@ export const world5: WorldEntry = {
       playWith: "A tunnel where old words fall out of view",
       prerequisites: ["guess-the-next-word"],
       load: () =>
-        import("@/modules/w5-transformers/short-term-memory").then(({ definition }) => definition),
+        import("#modules/w5-transformers/short-term-memory").then(({ definition }) => definition),
     },
     {
       id: "specialising",
@@ -134,7 +130,7 @@ export const world5: WorldEntry = {
       playWith: "Retrain the tiny writer on pirate talk",
       prerequisites: ["reading-the-internet", "standing-on-giants"],
       load: () =>
-        import("@/modules/w5-transformers/specialising").then(({ definition }) => definition),
+        import("#modules/w5-transformers/specialising").then(({ definition }) => definition),
     },
     {
       id: "learning-from-thumbs-up",
@@ -144,7 +140,7 @@ export const world5: WorldEntry = {
       playWith: "Choose between two answers and watch it change",
       prerequisites: ["specialising", "treats-and-tricks"],
       load: () =>
-        import("@/modules/w5-transformers/learning-from-thumbs-up").then(
+        import("#modules/w5-transformers/learning-from-thumbs-up").then(
           ({ definition }) => definition,
         ),
     },
@@ -156,7 +152,7 @@ export const world5: WorldEntry = {
       playWith: "A librarian fetching books",
       prerequisites: ["short-term-memory"],
       load: () =>
-        import("@/modules/w5-transformers/looking-things-up").then(({ definition }) => definition),
+        import("#modules/w5-transformers/looking-things-up").then(({ definition }) => definition),
     },
     {
       id: "ai-that-takes-actions",
@@ -166,7 +162,7 @@ export const world5: WorldEntry = {
       playWith: "A little stage play of an AI helper at work",
       prerequisites: ["looking-things-up"],
       load: () =>
-        import("@/modules/w5-transformers/ai-that-takes-actions").then(
+        import("#modules/w5-transformers/ai-that-takes-actions").then(
           ({ definition }) => definition,
         ),
     },
@@ -178,7 +174,7 @@ export const world5: WorldEntry = {
       playWith: "Drag captions onto pictures",
       prerequisites: ["words-as-places", "how-machines-see"],
       load: () =>
-        import("@/modules/w5-transformers/pictures-and-words-together").then(
+        import("#modules/w5-transformers/pictures-and-words-together").then(
           ({ definition }) => definition,
         ),
     },
@@ -190,9 +186,7 @@ export const world5: WorldEntry = {
       playWith: "Confidence vs truth side by side",
       prerequisites: ["safe-vs-adventurous"],
       load: () =>
-        import("@/modules/w5-transformers/confident-but-wrong").then(
-          ({ definition }) => definition,
-        ),
+        import("#modules/w5-transformers/confident-but-wrong").then(({ definition }) => definition),
     },
   ],
 };

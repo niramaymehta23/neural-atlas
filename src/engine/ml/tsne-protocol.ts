@@ -11,7 +11,9 @@ export type MapCommand =
     }
   /** Keep stepping until this many steps have been taken (a paused run sits still). */
   | { type: "go"; run: number; until: number }
-  | { type: "pause"; run: number };
+  | { type: "pause"; run: number }
+  /** The page is hidden: the map holds still until it is shown again. */
+  | { type: "rest"; resting: boolean };
 
 export type MapEvent =
   /** A recorded moment: every `RECORD_EVERY` steps, and the start (step 0). */

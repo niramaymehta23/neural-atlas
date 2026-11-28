@@ -9,7 +9,9 @@ export type PracticeCommand<Config> =
    * when given (so a learner can watch), else as fast as it can (a link replaying).
    */
   | { type: "go"; run: number; until: number; perSecond?: number }
-  | { type: "pause"; run: number };
+  | { type: "pause"; run: number }
+  /** The page is hidden: practice holds still until it is shown again. */
+  | { type: "rest"; resting: boolean };
 
 export type PracticeEvent<Moment> =
   /** A recorded moment: the start (step 0), then every few steps. */

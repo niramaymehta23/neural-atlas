@@ -5,6 +5,7 @@
  * the copies the worker posts about once a frame.
  */
 import type { OptimiserSettings } from "../autodiff/optimisers";
+import { onTabHidden } from "../tab";
 import { parameterCount } from "./backends/backend";
 import { createLiveBuffer, readLive, type LiveFrame } from "./live";
 import type {
@@ -67,6 +68,7 @@ export class ModelEngine {
   >();
   private nextId = 0;
   private disposed = false;
+  private readonly stopWatching: () => void;
 
   constructor(
     private readonly options: ModelEngineOptions,
@@ -122,6 +124,7 @@ export class ModelEngine {
     };
     const { backend, model, data, train } = options;
     this.send({ type: "init", backend, model, data, train, live: this.live });
+    this.stopWatching = onTabHidden((resting) => this.send({ type: "rest", resting }));
   }
 
   run(): void {
@@ -170,6 +173,7 @@ export class ModelEngine {
     if (this.disposed) return;
     this.disposed = true;
     clearTimeout(this.readyTimer);
+    this.stopWatching();
     this.port.onmessage = null;
     this.port.onerror = null;
     this.port.onmessageerror = null;

@@ -12,7 +12,7 @@ export const world1: WorldEntry = {
       playWith: "Sort fruit yourself; a little robot copies you",
       prerequisites: [],
       load: () =>
-        import("@/modules/w1-foundations/teach-by-showing").then(({ definition }) => definition),
+        import("#modules/w1-foundations/teach-by-showing").then(({ definition }) => definition),
     },
     {
       id: "what-the-machine-sees",
@@ -22,7 +22,7 @@ export const world1: WorldEntry = {
       playWith: "Pick which facts describe a house and watch the price guess change",
       prerequisites: ["teach-by-showing"],
       load: () =>
-        import("@/modules/w1-foundations/what-the-machine-sees").then(
+        import("#modules/w1-foundations/what-the-machine-sees").then(
           ({ definition }) => definition,
         ),
     },
@@ -34,7 +34,7 @@ export const world1: WorldEntry = {
       playWith: 'Drag a line; little "miss" bars shrink and grow',
       prerequisites: ["what-the-machine-sees"],
       load: () =>
-        import("@/modules/w1-foundations/drawing-the-best-line").then(
+        import("#modules/w1-foundations/drawing-the-best-line").then(
           ({ definition }) => definition,
         ),
     },
@@ -46,7 +46,7 @@ export const world1: WorldEntry = {
       playWith: "Paint two colours of dots; a fence appears",
       prerequisites: ["what-the-machine-sees"],
       load: () =>
-        import("@/modules/w1-foundations/splitting-into-groups").then(
+        import("#modules/w1-foundations/splitting-into-groups").then(
           ({ definition }) => definition,
         ),
     },
@@ -58,7 +58,7 @@ export const world1: WorldEntry = {
       playWith: "Compare a gentle and a strict mistake-scorer",
       prerequisites: ["drawing-the-best-line"],
       load: () =>
-        import("@/modules/w1-foundations/keeping-score-of-mistakes").then(
+        import("#modules/w1-foundations/keeping-score-of-mistakes").then(
           ({ definition }) => definition,
         ),
     },
@@ -70,7 +70,7 @@ export const world1: WorldEntry = {
       playWith: "Balls racing down the valley",
       prerequisites: ["keeping-score-of-mistakes"],
       load: () =>
-        import("@/modules/w1-foundations/rolling-downhill").then(({ definition }) => definition),
+        import("#modules/w1-foundations/rolling-downhill").then(({ definition }) => definition),
     },
     {
       id: "memorising-vs-understanding",
@@ -80,7 +80,7 @@ export const world1: WorldEntry = {
       playWith: "A student who crammed past papers sits a new exam",
       prerequisites: ["drawing-the-best-line"],
       load: () =>
-        import("@/modules/w1-foundations/memorising-vs-understanding").then(
+        import("#modules/w1-foundations/memorising-vs-understanding").then(
           ({ definition }) => definition,
         ),
     },
@@ -92,7 +92,7 @@ export const world1: WorldEntry = {
       playWith: "Slide how much to hide; see the honest score",
       prerequisites: ["memorising-vs-understanding"],
       load: () =>
-        import("@/modules/w1-foundations/the-surprise-test").then(({ definition }) => definition),
+        import("#modules/w1-foundations/the-surprise-test").then(({ definition }) => definition),
     },
     {
       id: "stubborn-vs-jumpy",
@@ -102,7 +102,7 @@ export const world1: WorldEntry = {
       playWith: "A darts board of slightly different robots",
       prerequisites: ["the-surprise-test"],
       load: () =>
-        import("@/modules/w1-foundations/stubborn-vs-jumpy").then(({ definition }) => definition),
+        import("#modules/w1-foundations/stubborn-vs-jumpy").then(({ definition }) => definition),
     },
     {
       id: "how-sure-is-it",
@@ -112,7 +112,7 @@ export const world1: WorldEntry = {
       playWith: "Confidence bars above each guess",
       prerequisites: ["splitting-into-groups"],
       load: () =>
-        import("@/modules/w1-foundations/how-sure-is-it").then(({ definition }) => definition),
+        import("#modules/w1-foundations/how-sure-is-it").then(({ definition }) => definition),
     },
   ],
 };

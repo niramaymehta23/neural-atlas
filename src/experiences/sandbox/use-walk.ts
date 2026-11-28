@@ -4,39 +4,38 @@ import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "@/design/motion";
 
 const STEP_MS = 160;
+const NOWHERE: readonly number[] = [];
 
 /**
  * Where the piece stands: it walks the latest try square by square, then takes up the next one
- * that has come in. Under reduced motion it stands where the latest try ended.
+ * that has come in, and stands still when there is none. Under reduced motion it stands where
+ * the latest try ended.
  */
 export function useWalk(walk: readonly number[] | null, start: number): number {
   const reduced = useReducedMotion();
-  const [at, setAt] = useState(start);
+  const [shown, setShown] = useState({ path: NOWHERE, step: 0 });
   const latest = useRef(walk);
-  const waiting = useRef(false);
   useEffect(() => {
     latest.current = walk;
-    waiting.current = walk !== null;
-  }, [walk]);
+  });
 
   const going = walk !== null && walk.length > 1 && !reduced;
+  const ended = shown.step >= shown.path.length - 1;
+  // A try that comes in while another is being walked waits its turn, and never delays a step.
+  const moving = going && (!ended || shown.path !== walk);
   useEffect(() => {
-    if (!going) return;
-    let path: readonly number[] = [];
-    let step = 0;
-    const timer = setInterval(() => {
-      if (step >= path.length) {
-        if (!waiting.current) return;
-        waiting.current = false;
-        path = latest.current ?? [];
-        step = 0;
-      }
-      const square = path[step];
-      step += 1;
-      if (square !== undefined) setAt(square);
-    }, STEP_MS);
-    return () => clearInterval(timer);
-  }, [going]);
+    if (!moving) return;
+    const timer = setTimeout(
+      () =>
+        setShown(({ path, step }) =>
+          step < path.length - 1
+            ? { path, step: step + 1 }
+            : { path: latest.current ?? NOWHERE, step: 0 },
+        ),
+      STEP_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [moving, shown]);
 
-  return going ? at : (walk?.at(-1) ?? start);
+  return going ? (shown.path[shown.step] ?? start) : (walk?.at(-1) ?? start);
 }
