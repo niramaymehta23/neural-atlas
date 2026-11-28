@@ -20,7 +20,7 @@ import type { Vec3 } from "@/scene3d/CameraRig";
 import { SoftStage } from "@/scene3d/SoftStage";
 import { constellationCaptions as captions } from "./captions";
 import { ExtraStars, type ExtraStar } from "./ExtraStars";
-import { startFloating } from "./floating";
+import { LEAN_RATE, createDrifting, startFloating, type Drifting } from "./floating";
 import {
   DIMMED,
   floatOffset,
@@ -58,29 +58,47 @@ const CLOSE_UP: Vec3 = [0, 0.3, 0.75];
 
 /** How far the map leans away from the pointer, for a touch of depth. */
 const PARALLAX = 0.05;
-/** Share of the remaining lean taken each frame. */
+/** Share of the remaining lean taken each drawing, at LEAN_RATE drawings a second. */
 const LEAN_STEP = 0.1;
+/** Less lean than this left to take is none: well under a tenth of a pixel. */
+const LEANT = 0.0005;
+/** A drawing after a rest counts as no more than this many seconds. */
+const MOST_DELTA = 0.1;
 const INK = "var(--color-ink)";
 
 /**
- * Keeps frames coming while the map floats (the stage only draws on demand), about 30 a second
- * and only while the learner is around. It stops once a flight starts: the camera glide draws
- * its own frames, and the lesson then loads on a quiet page.
+ * Keeps frames coming while the map floats (the stage only draws on demand), and only while the
+ * learner is around. It stops once a flight starts: the camera glide draws its own frames, and
+ * the lesson then loads on a quiet page.
  */
-function KeepFloating() {
+function KeepFloating({ drifting }: { drifting: Drifting }) {
   const invalidate = useThree((state) => state.invalidate);
-  useEffect(() => startFloating(invalidate), [invalidate]);
+  const canvas = useThree((state) => state.gl.domElement);
+  useEffect(() => startFloating(drifting, invalidate, canvas), [drifting, invalidate, canvas]);
   return null;
 }
 
 /** Leans the whole map a little away from the pointer. Off under reduced motion. */
-function Parallax({ still, children }: { still: boolean; children: ReactNode }) {
+function Parallax({
+  still,
+  drifting,
+  children,
+}: {
+  still: boolean;
+  drifting: Drifting;
+  children: ReactNode;
+}) {
   const group = useRef<Group>(null);
-  useFrame(({ pointer }) => {
+  useFrame(({ pointer }, delta) => {
     if (!group.current || still) return;
     const lean = group.current.position;
-    lean.x += (-pointer.x * PARALLAX - lean.x) * LEAN_STEP;
-    lean.y += (-pointer.y * PARALLAX - lean.y) * LEAN_STEP;
+    const x = -pointer.x * PARALLAX - lean.x;
+    const y = -pointer.y * PARALLAX - lean.y;
+    // The same lean in the same time, however often it is drawn.
+    const step = 1 - (1 - LEAN_STEP) ** (Math.min(delta, MOST_DELTA) * LEAN_RATE);
+    lean.x += x * step;
+    lean.y += y * step;
+    drifting.lean(Math.hypot(x, y) > LEANT);
   });
   return <group ref={group}>{children}</group>;
 }
@@ -89,15 +107,17 @@ function Parallax({ still, children }: { still: boolean; children: ReactNode }) 
 function Drift({
   world,
   still,
+  drifting,
   children,
 }: {
   world: WorldNumber;
   still: boolean;
+  drifting: Drifting;
   children: ReactNode;
 }) {
   const group = useRef<Group>(null);
-  useFrame(({ clock }) => {
-    if (group.current && !still) group.current.position.y = floatOffset(world, clock.elapsedTime);
+  useFrame(() => {
+    if (group.current && !still) group.current.position.y = floatOffset(world, drifting.seconds());
   });
   return <group ref={group}>{children}</group>;
 }
@@ -132,6 +152,7 @@ export function ConstellationScene({
   fallback,
 }: ConstellationSceneProps) {
   const still = useReducedMotion();
+  const [drifting] = useState(createDrifting);
   // Star links render into the overlay once it exists (the canvas is role="img", so not in there).
   const [overlay, setOverlay] = useState<HTMLElement | null>(null);
   const portal = useMemo(() => overlay && { current: overlay }, [overlay]);
@@ -174,10 +195,10 @@ export function ConstellationScene({
           className="h-full w-full"
           fallback={fallback}
         >
-          {!still && !flyingTo && <KeepFloating />}
-          <Parallax still={still || flyingTo !== null}>
+          {!still && !flyingTo && <KeepFloating drifting={drifting} />}
+          <Parallax still={still || flyingTo !== null} drifting={drifting}>
             {WORLDS.map((group) => (
-              <Drift key={group} world={group} still={still}>
+              <Drift key={group} world={group} still={still} drifting={drifting}>
                 {stars
                   .filter(({ lesson }) => lesson.world === group)
                   .map((star) => (
@@ -194,6 +215,7 @@ export function ConstellationScene({
                       close={world === group || flyingTo === star.lesson.id}
                       shown={shown === star.lesson.id}
                       still={still}
+                      drifting={drifting}
                       overlay={portal}
                       onShow={show}
                       onChoose={choose}
@@ -202,8 +224,22 @@ export function ConstellationScene({
               </Drift>
             ))}
             {world === null && !flyingTo && <ExtraStars extras={extras} overlay={portal} />}
-            <Links stars={stars} links={lines.chosen} colour={link} opacity={0.85} still={still} />
-            <Links stars={stars} links={lines.other} colour={link} opacity={DIMMED} still={still} />
+            <Links
+              stars={stars}
+              links={lines.chosen}
+              colour={link}
+              opacity={0.85}
+              still={still}
+              drifting={drifting}
+            />
+            <Links
+              stars={stars}
+              links={lines.other}
+              colour={link}
+              opacity={DIMMED}
+              still={still}
+              drifting={drifting}
+            />
           </Parallax>
           {/* Drawn once: the bob is too small to move a soft shadow, and redrawing it costs. */}
           <ContactShadows

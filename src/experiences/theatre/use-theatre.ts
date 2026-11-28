@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { drawingLoop } from "@/design/drawing-loop";
 import { useReducedMotion } from "@/design/motion";
 import { useTheme } from "@/design/use-theme";
 import { makeShapes, readPalette, type Painter, type Show } from "./painter";
 
 /** Calm and kind to batteries: thirty pictures a second. */
-const FRAME_SECONDS = 1 / 30;
+const RATE = 30;
 /** Under reduced motion a still picture changes this often, and nothing slides. */
 const STILL_SECONDS = 2.5;
-/** A frame never moves a show on by more than this, however long the page slept. */
-const MOST_SECONDS = 0.25;
 const MOST_PIXELS = 2;
 
 type Options = {
@@ -23,8 +22,9 @@ type Options = {
 };
 
 /**
- * Plays a show on a canvas that fills its box. The loop stops while the page is hidden or the
- * show is paused; a pause, a new size or a new page colour still redraws the picture.
+ * Plays a show on a canvas that fills its box, drawing only pictures that differ from the last.
+ * The loop stops while the page is hidden or the show is paused; a pause, a new size or a new
+ * page colour still redraws the picture.
  */
 export function useTheatre({ show, playing, onWatched, onBroken }: Options) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -49,10 +49,15 @@ export function useTheatre({ show, playing, onWatched, onBroken }: Options) {
       sans: getComputedStyle(element).fontFamily,
       still: reduced,
     };
-    /** Moves on (if asked) and draws; false when the show threw. */
+    let left = false;
+    let drawn: string | undefined;
+    /** Moves on (if asked) and draws what changed; false when the show threw. */
     const draw = (seconds = 0): boolean => {
       try {
         if (seconds > 0) show.advance(seconds);
+        const picture = show.picture?.(reduced);
+        if (seconds > 0 && picture !== undefined && picture === drawn) return true;
+        drawn = picture;
         if (painter.width === 0 || painter.height === 0) return true;
         context.fillStyle = painter.palette.paper;
         context.fillRect(0, 0, painter.width, painter.height);
@@ -74,45 +79,29 @@ export function useTheatre({ show, playing, onWatched, onBroken }: Options) {
       draw();
     };
     fit();
+    // The typefaces may arrive after the first picture.
+    void document.fonts?.ready.then(() => !left && draw());
     const observer = new ResizeObserver(fit);
     observer.observe(element);
 
-    let frame = 0;
-    let last: number | null = null;
-    let owed = 0;
     let seen = 0;
-    const every = reduced ? STILL_SECONDS : FRAME_SECONDS;
-    const loop = (now: number) => {
-      const passed = last === null ? 0 : Math.max(0, (now - last) / 1000);
-      last = now;
-      owed += Math.min(passed, MOST_SECONDS);
-      seen += Math.min(passed, MOST_SECONDS);
-      if (seen >= 1) {
-        told.current.onWatched(seen);
-        seen = 0;
-      }
-      if (owed >= every) {
-        if (!draw(owed)) return;
-        owed = 0;
-      }
-      frame = requestAnimationFrame(loop);
-    };
-    const start = () => {
-      if (frame || !playing || document.visibilityState === "hidden") return;
-      last = null;
-      frame = requestAnimationFrame(loop);
-    };
-    const stop = () => {
-      cancelAnimationFrame(frame);
-      frame = 0;
-    };
-    const follow = () => (document.visibilityState === "hidden" ? stop() : start());
-    document.addEventListener("visibilitychange", follow);
-    start();
+    let end: (() => void) | null = null;
+    if (playing)
+      end = drawingLoop(
+        (seconds) => {
+          seen += seconds;
+          if (seen >= 1) {
+            told.current.onWatched(seen);
+            seen = 0;
+          }
+          if (!draw(seconds)) end?.();
+        },
+        { rate: reduced ? 1 / STILL_SECONDS : RATE },
+      );
     return () => {
-      stop();
+      left = true;
+      end?.();
       observer.disconnect();
-      document.removeEventListener("visibilitychange", follow);
     };
     // The theme is read when the palette is: a new one draws in the new colours.
   }, [show, playing, reduced, theme]);

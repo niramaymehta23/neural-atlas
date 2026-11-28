@@ -29,6 +29,8 @@ export class Timeline<T extends Frame> {
   private head = 0;
   private size = 0;
   private ghost: readonly T[] = [];
+  /** Every kept frame in order, until another is recorded. */
+  private kept: readonly T[] | null = null;
   private cursor = -1;
   private playing = false;
   private live = true;
@@ -47,6 +49,7 @@ export class Timeline<T extends Frame> {
   /** Adds the newest frame. A live view follows it; a scrubbed view stays put. */
   record(frame: T): void {
     const capacity = this.ring.length;
+    this.kept = null;
     this.ring[(this.head + this.size) % capacity] = frame;
     if (this.size < capacity) this.size += 1;
     else {
@@ -63,9 +66,10 @@ export class Timeline<T extends Frame> {
       : this.ring[(this.head + index) % this.ring.length];
   }
 
-  /** Every kept frame, oldest first (for sparklines). */
-  frames(): T[] {
-    return Array.from({ length: this.size }, (_, index) => this.at(index) as T);
+  /** Every kept frame, oldest first (for sparklines): the same list until one is recorded. */
+  frames(): readonly T[] {
+    this.kept ??= Array.from({ length: this.size }, (_, index) => this.at(index) as T);
+    return this.kept;
   }
 
   current(): T | undefined {
@@ -131,6 +135,7 @@ export class Timeline<T extends Frame> {
   /** Freezes the current run as the ghost (an empty run keeps the old ghost) and starts afresh. */
   newRun(): void {
     if (this.size > 0) this.ghost = this.frames();
+    this.kept = null;
     this.ring.fill(undefined);
     this.head = 0;
     this.size = 0;

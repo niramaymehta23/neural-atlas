@@ -75,6 +75,9 @@ export function createWordsShow(teller: Storyteller, seed = 1): Show {
     } else begin();
   };
   begin();
+  /** How far the bars have grown towards what was weighed, 0–1. */
+  const grownBy = (still: boolean) =>
+    phase === "weigh" && !still ? Math.min(1, clock / (SECONDS.weigh * 0.6)) : 1;
 
   return {
     advance(seconds) {
@@ -117,7 +120,7 @@ export function createWordsShow(teller: Storyteller, seed = 1): Show {
       const start = Math.max(y + size * 1.6, top);
       const labels = Math.min(width * 0.26, 220);
       const longest = width - margin * 2 - labels - 24;
-      const grown = phase === "weigh" && !still ? Math.min(1, clock / (SECONDS.weigh * 0.6)) : 1;
+      const grown = grownBy(still);
       const most = Math.max(0.0001, ...choices.map(({ chance }) => chance));
       context.font = `${small}px ${sans}`;
       choices.forEach(({ word, chance }, index) => {
@@ -147,6 +150,7 @@ export function createWordsShow(teller: Storyteller, seed = 1): Show {
       });
       context.textAlign = "left";
     },
+    picture: (still) => `${story} ${ids.length} ${phase} ${grownBy(still)}`,
     describe: () => words.now.words(storyText(line)),
   };
 }

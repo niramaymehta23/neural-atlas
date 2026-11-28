@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { count } from "@/design/copy";
+import { drawingLoop, FLOW_RATE } from "@/design/drawing-loop";
 import { DecisionField } from "@/data/DecisionField";
 import { gridInputs, toSamples, type Point } from "@/data/datasets";
 import { PaintCanvas, type PaintWords } from "@/data/PaintCanvas";
@@ -42,6 +43,8 @@ const SNAPSHOT_EVERY = 10;
 const SNAPSHOT_MS = 100;
 /** A redraw slower than this skips the next frame, so the page keeps its 60 fps (MLP-01). */
 const BUSY_MS = 8;
+/** Rounds a second while practising: quick, but the fences can be watched moving. */
+const ROUNDS_PER_SECOND = 240;
 
 type View = {
   params: ArrayLike<number>;
@@ -92,6 +95,8 @@ function useTeam({ state, update, timeline, side }: Props) {
   const [failure, setFailure] = useState<Error | null>(null);
   const [notice, setNotice] = useState<"tooBig" | "needFlowers" | null>(null);
   const [replayTo, setReplayTo] = useState(0);
+  /** Counts what the worker has reported, for the picture of a team that is not practising. */
+  const [reports, setReports] = useState(0);
   const { live, cursor, length } = useSyncExternalStore(
     timeline.subscribe,
     timeline.getState,
@@ -124,8 +129,10 @@ function useTeam({ state, update, timeline, side }: Props) {
         seed: SEED + now.attempt,
         snapshotEvery: SNAPSHOT_EVERY,
         snapshotMs: SNAPSHOT_MS,
+        perSecond: ROUNDS_PER_SECOND,
       },
       onSnapshot: (snapshot) => {
+        setReports((count) => count + 1);
         timeline.record({ ...snapshot, run });
         // Replayed moments are already counted in state; new practice is saved as it lands.
         if (main && snapshot.epoch > latest.current.epochs)
@@ -144,6 +151,7 @@ function useTeam({ state, update, timeline, side }: Props) {
         setNotice("needFlowers");
       },
       onDiverged: () => {
+        setReports((count) => count + 1);
         if (main) update({ learning: false }, { touch: false });
         setNotice("tooBig");
       },
@@ -234,29 +242,39 @@ function useTeam({ state, update, timeline, side }: Props) {
   );
 
   // Live: a fresh field whenever the worker has finished another round, at most once a frame.
+  const practising = learning || replayTo > 0;
   useEffect(() => {
-    if (!engine || !live) return;
-    let frame = 0;
+    if (!engine || !live || !practising) return;
     let seen = -1;
     let rest = false;
     let previous: Float64Array | null = null;
-    const loop = () => {
-      frame = requestAnimationFrame(loop);
-      if (rest) {
-        rest = false;
-        return;
-      }
+    return drawingLoop(
+      () => {
+        if (rest) {
+          rest = false;
+          return;
+        }
+        const newest = engine.readLive();
+        if (!newest || newest.version === seen) return;
+        seen = newest.version;
+        const started = performance.now();
+        setView(draw(newest.params, previous));
+        previous = newest.params;
+        rest = performance.now() - started > BUSY_MS;
+      },
+      { rate: FLOW_RATE },
+    );
+  }, [engine, live, draw, practising]);
+
+  // Not practising: one field for each thing the worker reports (it is ready, or where it stopped).
+  useEffect(() => {
+    if (!engine || !live || practising) return;
+    const frame = requestAnimationFrame(() => {
       const newest = engine.readLive();
-      if (!newest || newest.version === seen) return;
-      seen = newest.version;
-      const started = performance.now();
-      setView(draw(newest.params, previous));
-      previous = newest.params;
-      rest = performance.now() - started > BUSY_MS;
-    };
-    frame = requestAnimationFrame(loop);
+      if (newest) setView(draw(newest.params, null));
+    });
     return () => cancelAnimationFrame(frame);
-  }, [engine, live, draw]);
+  }, [engine, live, draw, practising, reports]);
 
   // Scrubbed: the recorded moment.
   const scrubbed = useMemo(() => {

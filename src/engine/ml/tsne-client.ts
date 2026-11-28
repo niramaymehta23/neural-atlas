@@ -3,6 +3,7 @@
  * page (the spec's risk note). A worker that fails to start, or a message it cannot read, is
  * reported through `onError`.
  */
+import { onTabHidden } from "../tab";
 import type { MapCommand, MapEvent } from "./tsne-protocol";
 
 /** The slice of a Worker the client uses, so tests can connect the host in-process. */
@@ -29,6 +30,7 @@ export class MapClient {
   private readonly port: MapPort;
   private run = 0;
   private disposed = false;
+  private readonly stopWatching: () => void = () => undefined;
 
   constructor(
     private readonly options: MapClientOptions,
@@ -51,6 +53,7 @@ export class MapClient {
     };
     this.port.onerror = () => this.fail("The map worker could not start.");
     this.port.onmessageerror = () => this.fail("A message from the map worker could not be read.");
+    this.stopWatching = onTabHidden((resting) => this.port.postMessage({ type: "rest", resting }));
   }
 
   private fail(message: string) {
@@ -77,6 +80,7 @@ export class MapClient {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.stopWatching();
     this.port.onmessage = null;
     this.port.terminate();
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { drawingLoop, FLOW_RATE } from "@/design/drawing-loop";
 import { speed } from "@/design/encodings";
 import { useReducedMotion } from "@/design/motion";
 import { cssRgb, useResolvedColours } from "@/design/paint";
@@ -42,23 +43,22 @@ export function FlowParticles({ paths, width, height }: FlowParticlesProps) {
     context.canvas.height = height * scale;
     context.setTransform(scale, 0, 0, scale, 0, 0);
     context.fillStyle = cssRgb(flow);
-    let frame = 0;
-    const draw = (time: number) => {
+    let time = 0;
+    const draw = (seconds: number) => {
+      time += seconds;
       context.clearRect(0, 0, width, height);
       context.beginPath();
       latest.current.forEach(({ from, to, activity }, index) => {
         if (activity <= 0.02) return;
-        const progress = (time / 1000 / speed(activity) + index * 0.618) % 1;
+        const progress = (time / speed(activity) + index * 0.618) % 1;
         const x = from[0] + (to[0] - from[0]) * progress;
         const y = from[1] + (to[1] - from[1]) * progress;
         context.moveTo(x + DOT_RADIUS, y);
         context.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
       });
       context.fill();
-      frame = requestAnimationFrame(draw);
     };
-    frame = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(frame);
+    return drawingLoop(draw, { rate: FLOW_RATE, element: context.canvas });
   }, [flow, reduced, width, height]);
 
   if (reduced) return <StillFlow paths={paths} width={width} height={height} />;

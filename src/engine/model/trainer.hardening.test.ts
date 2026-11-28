@@ -171,17 +171,17 @@ describe("trainer replays a run exactly (ENG-09)", () => {
   });
 
   it("replays in slices, so a long replay keeps the worker answering", async () => {
-    // Slices are cut by time, so a small garden still takes many of them over 3000 epochs.
+    // Slices are cut by time, so a small garden still takes many of them over 60000 epochs.
     const { send, events, init } = harness({ data: blobs(6, 1) });
     await init;
-    const replay = send({ type: "step", epochs: 3000 });
+    const replay = send({ type: "step", epochs: 60_000 });
     let checks = 0;
     const timer = setInterval(() => (checks += 1), 1);
     await replay;
     clearInterval(timer);
     expect(checks).toBeGreaterThan(2);
     expect(events.filter((event) => event.type === "snapshot").at(-1)).toMatchObject({
-      snapshot: { epoch: 3000 },
+      snapshot: { epoch: 60_000 },
     });
   });
 
@@ -345,5 +345,42 @@ describe("ModelEngine after dispose (MLP-06)", () => {
       port.onmessage?.({ data } as MessageEvent<Event>);
     expect(seen).toEqual(["idle no-data", "diverged 12", "applied 3 40"]);
     engine.dispose();
+  });
+});
+
+describe("trainer keeps to its pace and rests with the page", () => {
+  it("trains at most `perSecond` epochs a second while running, and a step stays flat out", async () => {
+    const { send, snapshots, init } = harness({
+      data: blobs(6, 1),
+      train: { ...TRAIN, perSecond: 100 },
+    });
+    await init;
+    void send({ type: "run" });
+    await wait(500);
+    await send({ type: "pause" });
+    const paced = snapshots().at(-1)!.epoch;
+    expect(paced).toBeGreaterThan(10);
+    expect(paced).toBeLessThanOrEqual(55);
+    await send({ type: "step", epochs: 2000 });
+    expect(snapshots().at(-1)!.epoch).toBe(paced + 2000);
+  });
+
+  it("holds a run and a step still while the page is hidden, with the same numbers after", async () => {
+    const hidden = harness({ data: blobs(6, 1) });
+    await hidden.init;
+    void hidden.send({ type: "rest", resting: true });
+    const stepping = hidden.send({ type: "step", epochs: 200_000 });
+    await wait(100);
+    const held = hidden.snapshots().at(-1)!.epoch;
+    await wait(100);
+    expect(hidden.snapshots().at(-1)!.epoch).toBe(held);
+    expect(held).toBeLessThan(200_000);
+    void hidden.send({ type: "rest", resting: false });
+    await stepping;
+
+    const shown = harness({ data: blobs(6, 1) });
+    await shown.init;
+    await shown.send({ type: "step", epochs: 200_000 });
+    expect(hidden.snapshots().at(-1)).toEqual(shown.snapshots().at(-1));
   });
 });

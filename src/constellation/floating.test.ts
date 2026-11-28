@@ -1,31 +1,44 @@
-import { FLOAT_FRAME_MS, FLOAT_IDLE_MS, startFloating } from "./floating";
+import { DRIFT_RATE, REST_MS } from "@/design/drawing-loop";
+import { LEAN_RATE, createDrifting, startFloating } from "./floating";
 
 describe("startFloating", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it("draws about 30 frames a second, then stops after 20 s without a pointer", () => {
+  it("draws rarely while the map drifts, more often while it leans, and rests after 20 s", () => {
+    const drifting = createDrifting();
     const invalidate = vi.fn();
-    const stop = startFloating(invalidate);
+    const stop = startFloating(drifting, invalidate);
     vi.advanceTimersByTime(1000);
-    expect(invalidate.mock.calls.length).toBeGreaterThanOrEqual(28);
-    expect(invalidate.mock.calls.length).toBeLessThanOrEqual(31);
+    expect(invalidate.mock.calls.length).toBeGreaterThan(DRIFT_RATE / 2);
+    expect(invalidate.mock.calls.length).toBeLessThanOrEqual(DRIFT_RATE + 2);
+    expect(drifting.seconds()).toBeGreaterThan(0.8);
+    expect(drifting.seconds()).toBeLessThanOrEqual(1);
 
-    vi.advanceTimersByTime(FLOAT_IDLE_MS + 4000);
-    const idle = invalidate.mock.calls.length;
+    invalidate.mockClear();
+    drifting.lean(true);
+    vi.advanceTimersByTime(1000);
+    expect(invalidate.mock.calls.length).toBeGreaterThan(DRIFT_RATE);
+    expect(invalidate.mock.calls.length).toBeLessThanOrEqual(LEAN_RATE + 2);
+
+    vi.advanceTimersByTime(REST_MS);
+    invalidate.mockClear();
+    const seconds = drifting.seconds();
     vi.advanceTimersByTime(5000);
-    expect(invalidate.mock.calls.length).toBe(idle);
+    expect(invalidate).not.toHaveBeenCalled();
 
     window.dispatchEvent(new Event("pointermove"));
-    vi.advanceTimersByTime(FLOAT_FRAME_MS * 3);
-    expect(invalidate.mock.calls.length).toBeGreaterThan(idle);
+    vi.advanceTimersByTime(200);
+    expect(invalidate).toHaveBeenCalled();
+    // The drift carries on from where it rested.
+    expect(drifting.seconds() - seconds).toBeLessThanOrEqual(0.25);
     stop();
   });
 
   it("draws nothing while the tab is hidden", () => {
     const hidden = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
     const invalidate = vi.fn();
-    const stop = startFloating(invalidate);
+    const stop = startFloating(createDrifting(), invalidate);
     vi.advanceTimersByTime(1000);
     expect(invalidate).not.toHaveBeenCalled();
     stop();
@@ -34,7 +47,7 @@ describe("startFloating", () => {
 
   it("stops for good when the map goes away", () => {
     const invalidate = vi.fn();
-    startFloating(invalidate)();
+    startFloating(createDrifting(), invalidate)();
     vi.advanceTimersByTime(1000);
     expect(invalidate).not.toHaveBeenCalled();
   });

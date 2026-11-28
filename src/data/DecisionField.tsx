@@ -16,6 +16,18 @@ type DecisionFieldProps = {
 
 /** Performance mark name for one redraw, so tests can hold it under a frame (16 ms). */
 export const FIELD_PAINT_MEASURE = "decision-field-paint";
+/** The browser keeps every mark for as long as the page lives, so they are cleared now and then. */
+const MOST_MEASURES = 600;
+let measures = 0;
+
+function measurePaint(start: number) {
+  measures += 1;
+  if (measures > MOST_MEASURES) {
+    performance.clearMeasures(FIELD_PAINT_MEASURE);
+    measures = 1;
+  }
+  performance.measure(FIELD_PAINT_MEASURE, { start, end: performance.now() });
+}
 
 /** The model's opinion of every spot, as soft colour regions under the points. */
 export function DecisionField({
@@ -47,7 +59,7 @@ export function DecisionField({
     const image = context.createImageData(resolution, resolution);
     paintField(image.data, outputs, groups, tables);
     context.putImageData(image, 0, 0);
-    performance.measure(FIELD_PAINT_MEASURE, { start, end: performance.now() });
+    measurePaint(start);
   }, [outputs, groups, resolution, tables]);
 
   return (

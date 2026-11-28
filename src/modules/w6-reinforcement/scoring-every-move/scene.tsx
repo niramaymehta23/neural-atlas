@@ -110,12 +110,15 @@ function usePuppy({ state, update, timeline, side }: Props) {
           const previous = timeline.at(timeline.getState().length - 1);
           timeline.record(tryFrame(episode, runner, previous));
         }
-      if (moves > 0) behind = true;
+      // Between moves nothing on screen changes, so there is nothing to draw again.
+      if (moves > 0) {
+        behind = true;
+        setTick((tick) => tick + 1);
+      }
       if (now - synced >= SYNC_MS) {
         synced = now;
         sync();
       }
-      setTick((tick) => tick + 1);
       frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);

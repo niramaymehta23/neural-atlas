@@ -118,3 +118,21 @@ describe("Timeline", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("the kept frames", () => {
+  it("are the same list until something is recorded or a new run starts", () => {
+    const timeline = new Timeline<{ epoch: number }>({ capacity: 2 });
+    timeline.record({ epoch: 1 });
+    timeline.record({ epoch: 2 });
+    const first = timeline.frames();
+    timeline.play();
+    timeline.seek(0);
+    expect(timeline.frames()).toBe(first);
+    timeline.record({ epoch: 3 });
+    expect(timeline.frames()).toEqual([{ epoch: 2 }, { epoch: 3 }]);
+    expect(first).toEqual([{ epoch: 1 }, { epoch: 2 }]);
+    timeline.newRun();
+    expect(timeline.frames()).toEqual([]);
+    expect(timeline.ghostFrames()).toEqual([{ epoch: 2 }, { epoch: 3 }]);
+  });
+});

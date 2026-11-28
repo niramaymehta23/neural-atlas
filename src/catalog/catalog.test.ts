@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { lessonById, lessons, worlds } from "./index";
 
 describe("catalog", () => {
@@ -66,5 +67,13 @@ describe("catalog", () => {
         .map((prerequisite) => `${id} → ${prerequisite}`),
     );
     expect(redundant).toEqual([]);
+  });
+
+  it("leads every built lesson through #modules, so a page never sends another lesson's code", () => {
+    for (const world of [1, 2, 3, 4, 5, 6]) {
+      const source = readFileSync(`src/catalog/world-${world}.ts`, "utf8");
+      expect(source).toContain('import("#modules/');
+      expect(source).not.toMatch(/["']@\/modules/);
+    }
   });
 });

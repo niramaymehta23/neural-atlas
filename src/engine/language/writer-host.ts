@@ -3,6 +3,7 @@
  * in short slices, giving way between them so a pause or a new run is heard, and posts a moment
  * every MOMENT_EVERY steps.
  */
+import { createSlices, type Later } from "../slices";
 import { createWriterRun, MOMENT_EVERY, type WriterRun } from "./baby-gpt";
 import type { WriterCommand, WriterEvent } from "./writer-protocol";
 
@@ -11,9 +12,10 @@ const SLICE_MS = 12;
 
 export function createWriterHost(
   post: (event: WriterEvent) => void,
-  later: (next: () => void) => void = (next) => setTimeout(next, 0),
+  later?: Later,
   now: () => number = () => performance.now(),
 ) {
+  const slices = createSlices(later);
   let run = -1;
   let writer: WriterRun | null = null;
   let until = 0;
@@ -42,7 +44,7 @@ export function createWriterHost(
       post({ type: "stopped", run, step: current.step });
       return;
     }
-    later(slice);
+    slices.next(slice);
   };
 
   return (command: WriterCommand) => {
@@ -57,6 +59,7 @@ export function createWriterHost(
       }
       return;
     }
+    if (command.type === "rest") return slices.rest(command.resting);
     if (command.run !== run || !writer) return;
     if (command.type === "pause") {
       if (stepping) {
@@ -68,7 +71,7 @@ export function createWriterHost(
     until = command.until;
     if (!stepping) {
       stepping = true;
-      later(slice);
+      slices.next(slice);
     }
   };
 }

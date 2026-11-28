@@ -31,6 +31,8 @@ export function createOptimiser(settings: OptimiserSettings): Optimiser {
     step(params) {
       const { kind, learningRate, momentum = 0.9, beta1 = 0.9, beta2 = 0.999 } = optimiser.settings;
       steps += 1;
+      const fade1 = 1 - beta1 ** steps;
+      const fade2 = 1 - beta2 ** steps;
       params.forEach((param, index) => {
         const { grad } = param;
         if (kind === "sgd") {
@@ -44,8 +46,8 @@ export function createOptimiser(settings: OptimiserSettings): Optimiser {
           const s = beta2 * (second[index] ?? 0) + (1 - beta2) * grad * grad;
           velocity[index] = m;
           second[index] = s;
-          const mHat = m / (1 - beta1 ** steps);
-          const sHat = s / (1 - beta2 ** steps);
+          const mHat = m / fade1;
+          const sHat = s / fade2;
           param.data -= (learningRate * mHat) / (Math.sqrt(sHat) + EPSILON);
         }
       });

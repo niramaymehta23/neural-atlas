@@ -36,6 +36,8 @@ export type TrainSettings = {
    * pause or step is always posted). Omitted: no limit.
    */
   snapshotMs?: number;
+  /** While running, at most this many epochs a second, so it can be watched. Omitted: flat out. */
+  perSecond?: number;
 };
 
 /**
@@ -66,6 +68,8 @@ export type Command =
   | { type: "configure"; optimiser: OptimiserSettings; tag?: number }
   | { type: "run" }
   | { type: "pause" }
+  /** The page is hidden: training holds still until it is shown again. */
+  | { type: "rest"; resting: boolean }
   /** Trains `epochs` more (in short slices), applying `schedule` at its epochs on the way. */
   | { type: "step"; epochs: number; schedule?: readonly ScheduledChange[] }
   | { type: "restore"; snapshot: Snapshot }

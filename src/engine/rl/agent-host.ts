@@ -1,5 +1,6 @@
 /** The worker side of World 6's agents: a run of either agent, practised by the shared host. */
 import { createPracticeHost } from "../practice/host";
+import type { Later } from "../slices";
 import type { AgentEvent, AgentRun, AgentRunConfig } from "./agent-protocol";
 import { createDqnRun } from "./dqn";
 import { createPpoRun } from "./ppo";
@@ -34,6 +35,6 @@ export function createAgentRun(config: AgentRunConfig): AgentRun {
 /** The worker's side: see `practice/host.ts`. */
 export const createAgentHost = (
   post: (event: AgentEvent) => void,
-  later?: (next: () => void, wait: number) => void,
+  later?: Later,
   now?: () => number,
 ) => createPracticeHost(createAgentRun, post, later, now);

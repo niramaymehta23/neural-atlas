@@ -1,6 +1,7 @@
 /**
  * The curriculum: the only source of lesson metadata. A built lesson adds
- * `load: () => import("@/modules/<world>/<id>").then(({ definition }) => definition)` to its entry.
+ * `load: () => import("#modules/<world>/<id>").then(({ definition }) => definition)` to its entry
+ * (`#modules/` is `@/modules/`, except on the server: see server-lesson.ts).
  */
 import type { Lesson, WorldEntry } from "@/platform/contract";
 import { world1 } from "./world-1";

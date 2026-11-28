@@ -7,6 +7,12 @@
   "engines": {
     "node": ">=24"
   },
+  "imports": {
+    "#modules/*": {
+      "react-server": "./src/catalog/server-lesson.ts",
+      "default": "./src/modules/*/index.ts"
+    }
+  },
   "scripts": {
     "dev": "tsx scripts/copy-runtime.ts && next dev",
     "build": "tsx scripts/copy-runtime.ts && next build && tsx scripts/check-build.ts",

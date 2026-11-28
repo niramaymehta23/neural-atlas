@@ -3,6 +3,7 @@
  * map in short slices, giving way between them so a pause arrives, and posts a frame every
  * RECORD_EVERY steps.
  */
+import { createSlices, type Later } from "../slices";
 import { createMap, spacing, type MapRun } from "./tsne";
 import { RECORD_EVERY, type MapCommand, type MapEvent } from "./tsne-protocol";
 
@@ -11,9 +12,10 @@ const SLICE_MS = 12;
 
 export function createMapHost(
   post: (event: MapEvent, transfer?: Transferable[]) => void,
-  later: (next: () => void) => void = (next) => setTimeout(next, 0),
+  later?: Later,
   now: () => number = () => performance.now(),
 ) {
+  const slices = createSlices(later);
   let run = -1;
   let map: MapRun | null = null;
   let until = 0;
@@ -49,13 +51,14 @@ export function createMapHost(
       return;
     }
     const mine = current;
-    later(() => {
+    slices.next(() => {
       if (map === mine) slice();
     });
   };
 
   return (command: MapCommand) => {
     try {
+      if (command.type === "rest") return slices.rest(command.resting);
       if (command.type === "start") {
         run = command.run;
         stepping = false;
@@ -81,7 +84,7 @@ export function createMapHost(
         return;
       }
       stepping = true;
-      slice();
+      slices.next(slice);
     } catch (error) {
       stepping = false;
       post({ type: "error", message: error instanceof Error ? error.message : String(error) });

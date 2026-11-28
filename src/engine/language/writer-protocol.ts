@@ -5,7 +5,9 @@ export type WriterCommand =
   | { type: "start"; run: number; config: WriterRunConfig }
   /** Keep practising until this many steps have been taken (a paused run sits still). */
   | { type: "go"; run: number; until: number }
-  | { type: "pause"; run: number };
+  | { type: "pause"; run: number }
+  /** The page is hidden: practice holds still until it is shown again. */
+  | { type: "rest"; resting: boolean };
 
 export type WriterEvent =
   /** A recorded moment: the start (step 0), then every MOMENT_EVERY steps. */
