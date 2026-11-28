@@ -4,10 +4,9 @@ import { journeys } from "../src/experiences/journeys/journeys";
 import { words as mapWords } from "../src/modules/w2-classic-ml/a-map-of-everything/captions";
 import { words as internetWords } from "../src/modules/w5-transformers/reading-the-internet/captions";
 import { words as catchWords } from "../src/modules/w6-reinforcement/a-brain-for-the-game/captions";
-import { budget, recordPerf, settle } from "./frames";
 import { gpuTagFor } from "./gpu";
 import { countWork, hideTab, stillDoing, workOver } from "./light";
-import { openPage, expect, slowed, test } from "./x";
+import { openPage, expect, test } from "./x";
 
 /**
  * Kind to the processor (docs/light/spec.md): a page with nothing moving does nothing, a hidden
@@ -181,30 +180,3 @@ test("a lesson brings its own code, not the other lessons'", async ({ page }) =>
   const lesson = await scripts("/learn/ask-the-neighbours", "[data-region=scene]");
   expect(lesson).toBeLessThan(sandbox * 1.6);
 });
-
-/**
- * How long the page's main thread works, per second, as a share of how long this same machine
- * takes over a fixed sum: a budget that means the same on a fast laptop and a slow runner.
- */
-async function effort(page: Page, seconds = 4) {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Performance.enable");
-  const worked = async () => {
-    const { metrics } = await cdp.send("Performance.getMetrics");
-    return (metrics.find(({ name }) => name === "TaskDuration")?.value ?? 0) * 1000;
-  };
-  const sum = await page.evaluate(() => {
-    const times = [0, 1, 2].map(() => {
-      const started = performance.now();
-      let total = 0;
-      for (let at = 1; at < 3e6; at += 1) total += Math.sqrt(at) * Math.sin(at);
-      return performance.now() - started + (total === 0 ? 1 : 0);
-    });
-    return Math.min(...times);
-  });
-  const before = await worked();
-  await page.waitForTimeout(seconds * 1000);
-  const perSecond = ((await worked()) - before) / seconds;
-  await cdp.detach();
-  return { perSecond, sum, effort: perSecond / sum };
-}
